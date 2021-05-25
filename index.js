@@ -17,7 +17,7 @@ var _react2 = require("@mdi/react");
 
 var _js = require("@mdi/js");
 
-require("./index.css");
+require("./r-table.css");
 
 var _jquery = _interopRequireDefault(require("jquery"));
 
@@ -934,6 +934,15 @@ var RTable = /*#__PURE__*/function (_Component) {
       }, items);
     }
   }, {
+    key: "getLoading",
+    value: function getLoading() {
+      return /*#__PURE__*/_react.default.createElement("div", {
+        className: "r-table-loading"
+      }, this.cubes2({
+        thickness: [6, 40]
+      }));
+    }
+  }, {
     key: "render",
     value: function render() {
       var _this6 = this;
@@ -966,6 +975,7 @@ var RTable = /*#__PURE__*/function (_Component) {
         onScroll: this.onScroll.bind(this),
         onMouseEnter: this.onMouseEnter.bind(this),
         getClient: this.getClient.bind(this),
+        getLoading: this.getLoading.bind(this),
         groups: this.groups
       };
       return /*#__PURE__*/_react.default.createElement(RTableContext.Provider, {
@@ -1148,16 +1158,6 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   }
 
   _createClass(RTableUnit, [{
-    key: "getLoading",
-    value: function getLoading() {
-      var cubes2 = this.context.cubes2;
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-loading"
-      }, cubes2({
-        thickness: [6, 40]
-      }));
-    }
-  }, {
     key: "getNoData",
     value: function getNoData() {
       var rowHeight = this.context.rowHeight;
@@ -1476,7 +1476,8 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
           _onMouseEnter = _this$context8.onMouseEnter,
           _onScroll = _this$context8.onScroll,
           rowGap = _this$context8.rowGap,
-          groups = _this$context8.groups;
+          groups = _this$context8.groups,
+          getLoading = _this$context8.getLoading;
       var _this$props8 = this.props,
           rows = _this$props8.rows,
           id = _this$props8.id,
@@ -1539,7 +1540,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
             relativeFilter: row.show === 'relativeFilter'
           }));
         });
-      }), rows && rows.length === 0 && this.getNoData(), !rows && this.getLoading());
+      }), rows && rows.length === 0 && this.getNoData(), !rows && getLoading());
     }
   }]);
 

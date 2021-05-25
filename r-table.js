@@ -4,8 +4,8 @@ import {Icon} from '@mdi/react';
 import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
   mdiClose,mdiCheckboxMarkedOutline,mdiCheckboxBlankOutline,mdiChevronDown,mdiEye,mdiFileTree,
-  mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
-import './index.css';
+  mdiAlignHorizontalLeft,mdiMagnify,mdiDotsHorizontal } from '@mdi/js';
+import './r-table.css';
 import $ from 'jquery';
 var RTableContext = createContext();
 export default class RTable extends Component{
@@ -457,6 +457,9 @@ export default class RTable extends Component{
       </div>
     )
   }
+  getLoading(){
+    return <div className='r-table-loading'>{this.cubes2({thickness:[6,40]})}</div>;
+  }
   render(){
     var {columns,rowHeight,headerHeight,toolbarHeight,rowGap,className,columnGap,rtl} = this.props;
     this.rh = rowHeight; this.hh = headerHeight; this.th = toolbarHeight; this.rg = rowGap; this.cg = columnGap;
@@ -472,6 +475,7 @@ export default class RTable extends Component{
       onScroll:this.onScroll.bind(this),
       onMouseEnter:this.onMouseEnter.bind(this),
       getClient:this.getClient.bind(this),
+      getLoading:this.getLoading.bind(this),
       groups:this.groups
     }
     return (
@@ -542,10 +546,6 @@ class RTableUnit extends Component{
   constructor(props){
     super(props);
     this.dom = createRef();
-  }
-  getLoading(){
-    var {cubes2} = this.context;
-    return <div className='r-table-loading'>{cubes2({thickness:[6,40]})}</div>;
   }
   getNoData(){
     var {rowHeight} = this.context;
@@ -698,7 +698,7 @@ class RTableUnit extends Component{
     return {rowIndex,colIndex};
   }
   render(){
-    var {indent,onMouseEnter,onScroll,rowGap,groups} = this.context;
+    var {indent,onMouseEnter,onScroll,rowGap,groups,getLoading} = this.context;
     var {rows,id,index,type} = this.props;
     return (
       <div 
@@ -740,7 +740,7 @@ class RTableUnit extends Component{
           return row.cells.map((r)=><RTableCell {...r} relativeFilter={row.show === 'relativeFilter'}/>)
         })}
         {rows && rows.length === 0 && this.getNoData()}
-        {!rows && this.getLoading()}
+        {!rows && getLoading()}
       </div>
     )
   }
