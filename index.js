@@ -17,7 +17,7 @@ var _react2 = require("@mdi/react");
 
 var _js = require("@mdi/js");
 
-require("./r-table.css");
+require("./index.css");
 
 var _jquery = _interopRequireDefault(require("jquery"));
 

@@ -5,7 +5,7 @@ import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
   mdiClose,mdiCheckboxMarkedOutline,mdiCheckboxBlankOutline,mdiChevronDown,mdiEye,mdiFileTree,
   mdiAlignHorizontalLeft,mdiMagnify,mdiDotsHorizontal } from '@mdi/js';
-import './r-table.css';
+import './index.css';
 import $ from 'jquery';
 var RTableContext = createContext();
 export default class RTable extends Component{
