@@ -4,8 +4,8 @@ import {Icon} from '@mdi/react';
 import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
   mdiClose,mdiCheckboxMarkedOutline,mdiCheckboxBlankOutline,mdiChevronDown,mdiEye,mdiFileTree,
-  mdiAlignHorizontalLeft,mdiMagnify,mdiDotsHorizontal } from '@mdi/js';
-import './r-table.css';
+  mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
+import './index.css';
 import $ from 'jquery';
 var RTableContext = createContext();
 export default class RTable extends Component{

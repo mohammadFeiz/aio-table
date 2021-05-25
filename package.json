@@ -1,0 +1,31 @@
+{
+  "name": "aio-table",
+  "version": "1.0.0",
+  "description": "all in one table. tree mode , simple mode , tree mode, gantt mode , groupby mode, freeze mode.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohammadFeiz/aio-table.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mohammadFeiz/aio-table/issues"
+  },
+  "homepage": "https://github.com/mohammadFeiz/aio-table#readme",
+  "dependencies": {
+    "@mdi/js": "5.9.55",
+    "@mdi/react": "1.5.0",
+    "jquery": "3.6.0",
+    "prop-types": "^15.7.2",
+    "r-dropdown-button": "3.0.7",
+    "react": "17.0.0",
+    "react-dom": "17.0.0"
+  },
+  "devDependencies": {
+    "react-scripts": "latest"
+  }
+}
