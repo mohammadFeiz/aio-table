@@ -219,7 +219,7 @@ export default class RTable extends Component{
       row._isFirstChild = i === 0;
       row._isLastChild = i === model.length - 1;
       row._getParents = ()=> parents;
-      if(this.dataset.id){
+      if(this.dataset && this.dataset.id){
         let id = this.getValueByField(row,this.dataset.id);
         if(id === undefined){console.error('RTable => id of row is not defined, please check getId props of RTable')}
         openDictionary[id] = openDictionary[id] === false?false:true;
@@ -229,7 +229,7 @@ export default class RTable extends Component{
       else {row._opened = row._opened === false?false:true;}
       row._childsLength = 0;
       let childs = [];
-      if(this.dataset.childs){
+      if(this.dataset && this.dataset.childs){
         childs = this.getValueByField(row,this.dataset.childs) || [];
         row._childsLength = childs.length;
       }
@@ -712,11 +712,11 @@ class RTableUnit extends Component{
         onScroll={(e)=>onScroll(e,index)}
       >
         {this.getTitles()}
-        {rows && rows.length !== 0 && rows.filter((row)=>row.show !== false).map((row)=>{
+        {rows && rows.length !== 0 && rows.filter((row)=>row.show !== false).map((row,i)=>{
           if(row._groupField){
             let width = indent * row._level;
             return (
-              <div className='r-table-group' style={this.getFullCellStyle()}>
+              <div className='r-table-group' key={'group' + i} style={this.getFullCellStyle()}>
                 {
                   index !== 1 &&
                   (
@@ -732,12 +732,12 @@ class RTableUnit extends Component{
             )
           }
           if(type === 'freeze'){
-            return row.freezeCells.map((r)=><RTableCell {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.freezeCells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
           }
           if(type === 'unFreeze'){
-            return row.unFreezeCells.map((r)=><RTableCell {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.unFreezeCells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
           }
-          return row.cells.map((r)=><RTableCell {...r} relativeFilter={row.show === 'relativeFilter'}/>)
+          return row.cells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)
         })}
         {rows && rows.length === 0 && this.getNoData()}
         {!rows && getLoading()}

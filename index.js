@@ -435,7 +435,7 @@ var RTable = /*#__PURE__*/function (_Component) {
           return parents;
         };
 
-        if (this.dataset.id) {
+        if (this.dataset && this.dataset.id) {
           var id = this.getValueByField(row, this.dataset.id);
 
           if (id === undefined) {
@@ -452,7 +452,7 @@ var RTable = /*#__PURE__*/function (_Component) {
         row._childsLength = 0;
         var childs = [];
 
-        if (this.dataset.childs) {
+        if (this.dataset && this.dataset.childs) {
           childs = this.getValueByField(row, this.dataset.childs) || [];
           row._childsLength = childs.length;
         }
@@ -1501,11 +1501,12 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         }
       }, this.getTitles(), rows && rows.length !== 0 && rows.filter(function (row) {
         return row.show !== false;
-      }).map(function (row) {
+      }).map(function (row, i) {
         if (row._groupField) {
           var width = indent * row._level;
           return /*#__PURE__*/_react.default.createElement("div", {
             className: "r-table-group",
+            key: 'group' + i,
             style: _this13.getFullCellStyle()
           }, index !== 1 && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
             style: {
@@ -1520,23 +1521,29 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         }
 
         if (type === 'freeze') {
-          return row.freezeCells.map(function (r) {
-            return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({}, r, {
+          return row.freezeCells.map(function (r, j) {
+            return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
+              key: i + '-' + j
+            }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
           });
         }
 
         if (type === 'unFreeze') {
-          return row.unFreezeCells.map(function (r) {
-            return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({}, r, {
+          return row.unFreezeCells.map(function (r, j) {
+            return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
+              key: i + '-' + j
+            }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
           });
         }
 
-        return row.cells.map(function (r) {
-          return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({}, r, {
+        return row.cells.map(function (r, j) {
+          return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
+            key: i + '-' + j
+          }, r, {
             relativeFilter: row.show === 'relativeFilter'
           }));
         });
