@@ -26,9 +26,11 @@
 }
 #r-table-first-split{
   width:fit-content;
+  overflow-x:scroll;
 }
 #r-table-second-split{
   flex:1;
+  overflow-x:scroll;
 }
 
 /* custom scrollbar */
@@ -63,7 +65,7 @@
     position:sticky;
     box-sizing:border-box;
     position: -webkit-sticky;
-    z-index:10;
+    z-index:100;
     border-bottom:1px solid #ddd;
     border-left:1px solid #ddd;
     box-shadow: 1px 4px 6px -2px rgba(0,0,0,0.2);
@@ -399,4 +401,30 @@ select.r-table-paging-button{
     outline:none;
     height:100%;
     background:none;
+  }
+  .r-table-title-gantt{
+    background:#fff !important;
+  }
+  .r-table-title-gantt .r-range-slider{
+    flex:1;
+    padding:0;
+    height:unset;
+  }
+  .r-table-cell-gantt .r-range-slider{
+    flex:1;
+    padding:0;
+    height:100%;
+  }
+  .r-table-cell-gantt .r-range-slider-fill{
+    height:16px !important;
+    color:#79a4cf
+  }
+  .r-table-cell-gantt .r-range-slider-fill-container div:not(.r-range-slider-fill){
+    z-index:1;
+    color:#fff;
+    font-size:10px;
+  }
+  .r-table-cell-gantt .r-range-slider-point{
+    border-radius:0;
+    background:rgba(0, 174, 255, 0);
   }

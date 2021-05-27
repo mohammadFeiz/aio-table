@@ -17,6 +17,8 @@ var _react2 = require("@mdi/react");
 
 var _js = require("@mdi/js");
 
+var _rRangeSlider = _interopRequireDefault(require("r-range-slider"));
+
 require("./index.css");
 
 var _jquery = _interopRequireDefault(require("jquery"));
@@ -1250,16 +1252,58 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       });
     }
   }, {
+    key: "getGanttTitle",
+    value: function getGanttTitle(column) {
+      var _this$context4 = this.context,
+          headerHeight = _this$context4.headerHeight,
+          columnGap = _this$context4.columnGap;
+      var keys = column.keys,
+          padding = column.padding;
+      return /*#__PURE__*/_react.default.createElement("div", {
+        className: "r-table-title r-table-title-gantt",
+        style: {
+          padding: "0 ".concat(padding),
+          height: headerHeight,
+          top: 0,
+          borderLeft: columnGap ? 'none' : undefined,
+          borderRight: columnGap ? 'none' : undefined
+        },
+        key: column._index + 'title'
+      }, /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
+        start: 0,
+        end: keys.length - 1,
+        label: {
+          step: 1,
+          edit: function edit(value) {
+            return keys[value];
+          },
+          style: {
+            top: 0
+          }
+        },
+        pointStyle: {
+          display: 'none'
+        },
+        lineStyle: {
+          display: 'none'
+        }
+      }));
+    }
+  }, {
     key: "getTitle",
     value: function getTitle(column) {
       var _this12 = this;
 
-      var _this$context4 = this.context,
-          onChange = _this$context4.onChange,
-          columns = _this$context4.columns,
-          headerHeight = _this$context4.headerHeight,
-          columnGap = _this$context4.columnGap,
-          touch = _this$context4.touch;
+      if (column.template === 'gantt') {
+        return this.getGanttTitle(column);
+      }
+
+      var _this$context5 = this.context,
+          onChange = _this$context5.onChange,
+          columns = _this$context5.columns,
+          headerHeight = _this$context5.headerHeight,
+          columnGap = _this$context5.columnGap,
+          touch = _this$context5.touch;
 
       if (column.template === 'checkbox') {
         if (column.checkAll) {
@@ -1332,9 +1376,9 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   }, {
     key: "resizeDown",
     value: function resizeDown(e, column) {
-      var _this$context5 = this.context,
-          touch = _this$context5.touch,
-          getClient = _this$context5.getClient;
+      var _this$context6 = this.context,
+          touch = _this$context6.touch,
+          getClient = _this$context6.getClient;
       (0, _jquery.default)(window).bind(touch ? 'touchmove' : 'mousemove', _jquery.default.proxy(this.resizeMove, this));
       (0, _jquery.default)(window).bind(touch ? 'touchend' : 'mouseup', _jquery.default.proxy(this.resizeUp, this));
       this.resizeDetails = {
@@ -1348,9 +1392,9 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   }, {
     key: "resizeMove",
     value: function resizeMove(e) {
-      var _this$context6 = this.context,
-          rtl = _this$context6.rtl,
-          getClient = _this$context6.getClient;
+      var _this$context7 = this.context,
+          rtl = _this$context7.rtl,
+          getClient = _this$context7.getClient;
       var Client = getClient(e);
       var _this$resizeDetails2 = this.resizeDetails,
           client = _this$resizeDetails2.client,
@@ -1377,10 +1421,10 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       var touch = this.context.touch;
       (0, _jquery.default)(window).unbind(touch ? 'touchmove' : 'mousemove', this.resizeMove);
       (0, _jquery.default)(window).unbind(touch ? 'touchend' : 'mouseup', this.resizeUp);
-      var _this$context7 = this.context,
-          columns = _this$context7.columns,
-          _this$context7$onChan = _this$context7.onChange,
-          onChange = _this$context7$onChan === void 0 ? function () {} : _this$context7$onChan;
+      var _this$context8 = this.context,
+          columns = _this$context8.columns,
+          _this$context8$onChan = _this$context8.onChange,
+          onChange = _this$context8$onChan === void 0 ? function () {} : _this$context8$onChan;
       var _this$resizeDetails3 = this.resizeDetails,
           index = _this$resizeDetails3.index,
           newWidth = _this$resizeDetails3.newWidth;
@@ -1471,13 +1515,13 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
     value: function render() {
       var _this13 = this;
 
-      var _this$context8 = this.context,
-          indent = _this$context8.indent,
-          _onMouseEnter = _this$context8.onMouseEnter,
-          _onScroll = _this$context8.onScroll,
-          rowGap = _this$context8.rowGap,
-          groups = _this$context8.groups,
-          getLoading = _this$context8.getLoading;
+      var _this$context9 = this.context,
+          indent = _this$context9.indent,
+          _onMouseEnter = _this$context9.onMouseEnter,
+          _onScroll = _this$context9.onScroll,
+          rowGap = _this$context9.rowGap,
+          groups = _this$context9.groups,
+          getLoading = _this$context9.getLoading;
       var _this$props8 = this.props,
           rows = _this$props8.rows,
           id = _this$props8.id,
@@ -1506,7 +1550,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
           var width = indent * row._level;
           return /*#__PURE__*/_react.default.createElement("div", {
             className: "r-table-group",
-            key: 'group' + i,
+            key: 'group' + i + '-' + index,
             style: _this13.getFullCellStyle()
           }, index !== 1 && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
             style: {
@@ -1523,7 +1567,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         if (type === 'freeze') {
           return row.freezeCells.map(function (r, j) {
             return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-              key: i + '-' + j
+              key: i + '-' + j + '-' + index
             }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
@@ -1533,7 +1577,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         if (type === 'unFreeze') {
           return row.unFreezeCells.map(function (r, j) {
             return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-              key: i + '-' + j
+              key: i + '-' + j + '-' + index
             }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
@@ -1542,7 +1586,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
 
         return row.cells.map(function (r, j) {
           return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-            key: i + '-' + j
+            key: i + '-' + j + '-' + index
           }, r, {
             relativeFilter: row.show === 'relativeFilter'
           }));
@@ -1608,18 +1652,28 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       var _column$minWidth = column.minWidth,
           minWidth = _column$minWidth === void 0 ? '30px' : _column$minWidth,
           justify = column.justify;
-      return {
+      var style = {
         height: rowHeight,
         overflow: column.template ? undefined : 'hidden',
         minWidth: minWidth,
         justifyContent: justify ? 'center' : undefined
       };
+
+      if (column.template === 'gantt') {
+        style.padding = "0 ".concat(column.padding || '36px');
+      }
+
+      return style;
     }
   }, {
     key: "getClassName",
     value: function getClassName(row, column) {
       var relativeFilter = this.props.relativeFilter;
       var className = 'r-table-cell';
+
+      if (column.template === 'gantt') {
+        className += ' r-table-cell-gantt';
+      }
 
       if (column.className) {
         className += ' ' + column.className;
@@ -1638,13 +1692,13 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
   }, {
     key: "getToggleIcon",
     value: function getToggleIcon(row) {
-      var _this$context9 = this.context,
-          rtl = _this$context9.rtl,
-          onChange = _this$context9.onChange,
-          model = _this$context9.model,
-          id = _this$context9.id,
-          openDictionary = _this$context9.openDictionary,
-          SetState = _this$context9.SetState;
+      var _this$context10 = this.context,
+          rtl = _this$context10.rtl,
+          onChange = _this$context10.onChange,
+          model = _this$context10.model,
+          id = _this$context10.id,
+          openDictionary = _this$context10.openDictionary,
+          SetState = _this$context10.SetState;
       var icon;
 
       if (!row._childsLength) {
@@ -1719,6 +1773,73 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
 
       if (column.template === 'checkbox') {
         content = this.getCheckbox(row, column);
+      } else if (column.template === 'gantt') {
+        var _this$context11 = this.context,
+            getValueByField = _this$context11.getValueByField,
+            rtl = _this$context11.rtl;
+        var keys = column.keys,
+            _column$color = column.color,
+            color = _column$color === void 0 ? '#69bedb' : _column$color,
+            _column$progressColor = column.progressColor,
+            progressColor = _column$progressColor === void 0 ? '#1891be' : _column$progressColor,
+            _column$flags = column.flags,
+            flags = _column$flags === void 0 ? [] : _column$flags,
+            _column$getProgress = column.getProgress,
+            getProgress = _column$getProgress === void 0 ? function () {
+          return false;
+        } : _column$getProgress,
+            _column$getText = column.getText,
+            getText = _column$getText === void 0 ? function () {
+          return false;
+        } : _column$getText;
+        var progress = getProgress(row);
+        var text = getText(row);
+        var startIndex = keys.indexOf(getValueByField(row, column.startField));
+        var endIndex = keys.indexOf(getValueByField(row, column.endField));
+        var background = progress === false ? color : "linear-gradient(to ".concat(rtl ? 'left' : 'right', ",").concat(progressColor, " 0%,").concat(progressColor, " ").concat(progress, "% ,").concat(color, " ").concat(progress, "%,").concat(color, " 100%)");
+        content = /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
+          start: 0,
+          editValue: function editValue(_ref) {
+            var value = _ref.value;
+            return keys[value];
+          },
+          end: keys.length - 1,
+          points: [{
+            value: startIndex
+          }, {
+            value: endIndex,
+            fillStyle: {
+              background: background
+            },
+            text: text === false ? undefined : text
+          }],
+          pin: {
+            step: 1,
+            style: {
+              height: '100%',
+              top: 0,
+              opacity: .4
+            },
+            items: flags.map(function (_ref2) {
+              var index = _ref2.index,
+                  value = _ref2.value,
+                  _ref2$color = _ref2.color,
+                  color = _ref2$color === void 0 ? 'red' : _ref2$color;
+              var flag = index !== undefined ? index : keys.indexOf(value);
+              return {
+                value: flag,
+                style: {
+                  background: color,
+                  height: '100%',
+                  top: 0
+                }
+              };
+            })
+          },
+          lineStyle: {
+            opacity: .4
+          }
+        });
       } else if (column.template) {
         content = column.template(row, column);
       } else if (column.input) {
@@ -1858,10 +1979,10 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
     value: function render() {
       var _this16 = this;
 
-      var _this$context10 = this.context,
-          indent = _this$context10.indent,
-          onChange = _this$context10.onChange,
-          cubes2 = _this$context10.cubes2;
+      var _this$context12 = this.context,
+          indent = _this$context12.indent,
+          onChange = _this$context12.onChange,
+          cubes2 = _this$context12.cubes2;
       var _this$props9 = this.props,
           row = _this$props9.row,
           column = _this$props9.column,
@@ -1943,9 +2064,9 @@ var RTableFilter = /*#__PURE__*/function (_Component5) {
   _createClass(RTableFilter, [{
     key: "render",
     value: function render() {
-      var _this$context11 = this.context,
-          filterDictionary = _this$context11.filterDictionary,
-          rtl = _this$context11.rtl;
+      var _this$context13 = this.context,
+          filterDictionary = _this$context13.filterDictionary,
+          rtl = _this$context13.rtl;
       var column = this.props.column;
 
       if (!column.filter || column.search) {
@@ -1993,9 +2114,9 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
   _createClass(RTableFilterPopup, [{
     key: "add",
     value: function add() {
-      var _this$context12 = this.context,
-          filterDictionary = _this$context12.filterDictionary,
-          SetState = _this$context12.SetState;
+      var _this$context14 = this.context,
+          filterDictionary = _this$context14.filterDictionary,
+          SetState = _this$context14.SetState;
       var column = this.props.column;
 
       filterDictionary[column._index].items.push({
@@ -2013,10 +2134,10 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
       var _this17 = this;
 
       var column = this.props.column;
-      var _this$context13 = this.context,
-          filterDictionary = _this$context13.filterDictionary,
-          SetState = _this$context13.SetState,
-          translate = _this$context13.translate;
+      var _this$context15 = this.context,
+          filterDictionary = _this$context15.filterDictionary,
+          SetState = _this$context15.SetState,
+          translate = _this$context15.translate;
       var filters = filterDictionary[column._index].items;
       var booleanType = filterDictionary[column._index].booleanType;
       var filterItems = filters.map(function (filter, i) {
@@ -2077,9 +2198,9 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
   _createClass(RTableFilterItem, [{
     key: "remove",
     value: function remove(index) {
-      var _this$context14 = this.context,
-          filterDictionary = _this$context14.filterDictionary,
-          SetState = _this$context14.SetState;
+      var _this$context16 = this.context,
+          filterDictionary = _this$context16.filterDictionary,
+          SetState = _this$context16.SetState;
       var column = this.props.column;
 
       filterDictionary[column._index].items.splice(index, 1);
@@ -2115,10 +2236,10 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
     value: function render() {
       var _this20 = this;
 
-      var _this$context15 = this.context,
-          filterDictionary = _this$context15.filterDictionary,
-          SetState = _this$context15.SetState,
-          translate = _this$context15.translate;
+      var _this$context17 = this.context,
+          filterDictionary = _this$context17.filterDictionary,
+          SetState = _this$context17.SetState,
+          translate = _this$context17.translate;
       var _this$props10 = this.props,
           filter = _this$props10.filter,
           column = _this$props10.column,

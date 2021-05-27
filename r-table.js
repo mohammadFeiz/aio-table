@@ -5,6 +5,7 @@ import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
   mdiClose,mdiCheckboxMarkedOutline,mdiCheckboxBlankOutline,mdiChevronDown,mdiEye,mdiFileTree,
   mdiAlignHorizontalLeft,mdiMagnify,mdiDotsHorizontal } from '@mdi/js';
+import Slider from 'r-range-slider';
 import './index.css';
 import $ from 'jquery';
 var RTableContext = createContext();
@@ -589,7 +590,27 @@ class RTableUnit extends Component{
     var {columns} = this.props;
     return columns.map((column)=>this.getTitle(column))
   }
+  getGanttTitle(column){
+    var {headerHeight,columnGap} = this.context
+    var {keys,padding} = column;
+    return <div className='r-table-title r-table-title-gantt' style={{padding:`0 ${padding}`,height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined}} key={column._index + 'title'}>
+      <Slider
+          start={0}
+          end={keys.length - 1}
+          label={{
+            step:1,
+            edit:(value)=>keys[value],
+            style:{top:0}
+          }}
+          pointStyle={{display:'none'}}
+          lineStyle={{display:'none'}}
+      />
+    </div>
+  }
   getTitle(column){
+    if(column.template === 'gantt'){
+      return this.getGanttTitle(column);
+    }
     let {onChange,columns,headerHeight,columnGap,touch} = this.context;
     if(column.template === 'checkbox'){
       if(column.checkAll){column.title = <Icon path={mdiCheckboxMarkedOutline} size={1}/>}
@@ -716,7 +737,7 @@ class RTableUnit extends Component{
           if(row._groupField){
             let width = indent * row._level;
             return (
-              <div className='r-table-group' key={'group' + i} style={this.getFullCellStyle()}>
+              <div className='r-table-group' key={'group' + i + '-' + index} style={this.getFullCellStyle()}>
                 {
                   index !== 1 &&
                   (
@@ -732,12 +753,12 @@ class RTableUnit extends Component{
             )
           }
           if(type === 'freeze'){
-            return row.freezeCells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.freezeCells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
           }
           if(type === 'unFreeze'){
-            return row.unFreezeCells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.unFreezeCells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
           }
-          return row.cells.map((r,j)=><RTableCell key={i + '-' + j} {...r} relativeFilter={row.show === 'relativeFilter'}/>)
+          return row.cells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)
         })}
         {rows && rows.length === 0 && this.getNoData()}
         {!rows && getLoading()}
@@ -767,11 +788,16 @@ class RTableCell extends Component{
   getStyle(column){
     var {rowHeight} = this.context;
     var {minWidth = '30px',justify} = column;
-    return {height:rowHeight,overflow:column.template?undefined:'hidden',minWidth,justifyContent:justify?'center':undefined}
+    var style = {height:rowHeight,overflow:column.template?undefined:'hidden',minWidth,justifyContent:justify?'center':undefined}
+    if(column.template === 'gantt'){
+      style.padding = `0 ${column.padding || '36px'}`
+    }
+    return style
   }
   getClassName(row,column){
     var {relativeFilter} = this.props;
     var className = 'r-table-cell';
+    if(column.template === 'gantt'){className += ' r-table-cell-gantt'}
     if(column.className){className += ' ' + column.className;}
     if(column.input){className += ' r-table-cell-input';}
     if(relativeFilter){className += ' r-table-relative-filter'}
@@ -817,6 +843,33 @@ class RTableCell extends Component{
     var content = '';
     if(column.template === 'checkbox'){
       content = this.getCheckbox(row,column);
+    }
+    else if(column.template === 'gantt'){
+      let {getValueByField,rtl} = this.context;
+      let {keys,color = '#69bedb',progressColor = '#1891be',flags = [],getProgress = ()=>false,getText = ()=>false} = column;
+      let progress = getProgress(row);
+      let text = getText(row);
+      let startIndex = keys.indexOf(getValueByField(row,column.startField));
+      let endIndex = keys.indexOf(getValueByField(row,column.endField));
+      let background = progress === false?color:`linear-gradient(to ${rtl?'left':'right'},${progressColor} 0%,${progressColor} ${progress}% ,${color} ${progress}%,${color} 100%)`
+      content = <Slider
+        start={0}
+        editValue={({value})=>keys[value]}
+        end={keys.length - 1}
+        points={[
+          {value:startIndex},
+          {value:endIndex,fillStyle:{background},text:text === false?undefined:text},
+        ]}
+        pin={{
+          step:1,
+          style:{height:'100%',top:0,opacity:.4},
+          items:flags.map(({index,value,color = 'red'})=>{
+            let flag = index !== undefined?index:keys.indexOf(value);
+            return {value:flag,style:{background:color,height:'100%',top:0}}
+          })
+        }}
+        lineStyle={{opacity:.4}}
+      />
     }
     else if(column.template){content = column.template(row,column);}
     else if(column.input){content = this.getInput(row,column)}
