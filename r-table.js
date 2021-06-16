@@ -4,7 +4,7 @@ import {Icon} from '@mdi/react';
 import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
   mdiClose,mdiCheckboxMarkedOutline,mdiCheckboxBlankOutline,mdiChevronDown,mdiEye,mdiFileTree,
-  mdiAlignHorizontalLeft,mdiMagnify,mdiDotsHorizontal } from '@mdi/js';
+  mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
 import Slider from 'r-range-slider';
 import './index.css';
 import $ from 'jquery';
@@ -168,12 +168,11 @@ export default class RTable extends Component{
         groupedRows = groupedRows.concat(obj);
       }
       else{
-        let group = groups[_level];
         for(var prop in obj){
           groupsOpen[_parentField + prop] = groupsOpen[_parentField + prop] === undefined?true:groupsOpen[_parentField + prop];
           groupedRows.push({
             _groupField:prop,
-            _groupText:prop === 'undefined'?'Without ' + group.text:group.text + ':' + prop,
+            _groupText:prop,
             _level,_opened:groupsOpen[_parentField + prop],_parentField});
           if(groupsOpen[_parentField + prop]){
             msf(obj[prop],_level + 1,_parentField + prop);
@@ -185,7 +184,14 @@ export default class RTable extends Component{
     for(let i = 0; i < model.length; i++){
       let row = model[i];
       var obj = newModel;
-      let values = groups.map((group)=>this.getValueByField(row,group.field));
+      let values = groups.map((group)=>{          
+        if(typeof group.field === 'function'){
+          return group.field(row);
+        }
+        else{
+          return this.getValueByField(row,group.field);
+        }
+      });
       for(let j = 0; j < values.length; j++){
         let value = values[j];
         if(j === values.length - 1){
@@ -238,7 +244,7 @@ export default class RTable extends Component{
       rows.push(Row);
       if(row._opened){
         if(row._childsLength){
-          this.getRowsReq(childs,rows,_level + 1,parents.concat(Row));
+          this.getRowsReq(childs,rows,_level + 1,parents.concat(row));
         }
       }
       else{this.rowRealIndex += row._childsLength;}
@@ -290,8 +296,9 @@ export default class RTable extends Component{
     let freezeCells = [];
     let unFreezeCells = [];
     for(let i = 0; i < this.visibleColumns.length; i++){
-      let column = this.visibleColumns[i];
-      let value = column.field?this.getValueByField(row,column.field):undefined;
+      let column = this.visibleColumns[i],value;
+      if(typeof column.field === 'function'){value = column.field(row);}
+      else {value = column.field?this.getValueByField(row,column.field):undefined;}
       row._values[column._index] = value;
       if(show){show = show && this.getFilterResult(column,value)}
       let obj = {key:row._index + ',' + column._index,row,column,value,freeze:column.freeze};
@@ -356,12 +363,12 @@ export default class RTable extends Component{
         if(column.toggleGroupBy){
           this.toolbar.show = true;
           this.toolbar.groupBy.push({
-            field:column.field,text:column.title,checked:column.groupBy,
+            field:column.field,text:column.title,checked:column.groupBy === true,
             onClick:()=>{column.groupBy = !column.groupBy; onChange({columns});}
           });
         }
       }
-      if(column.show !== false){
+      if(column.show !== false && column.groupBy !== true){
         this.visibleColumns.push(column)
         if(freezeMode){
           if(column.freeze){this.freezeMode = true; this.freezeColumns.push(column)}
@@ -719,7 +726,7 @@ class RTableUnit extends Component{
     return {rowIndex,colIndex};
   }
   render(){
-    var {indent,onMouseEnter,onScroll,rowGap,groups,getLoading} = this.context;
+    var {indent,onMouseEnter,onScroll,rowHeight,groups,getLoading} = this.context;
     var {rows,id,index,type} = this.props;
     return (
       <div 
@@ -737,18 +744,13 @@ class RTableUnit extends Component{
           if(row._groupField){
             let width = indent * row._level;
             return (
-              <div className='r-table-group' key={'group' + i + '-' + index} style={this.getFullCellStyle()}>
+              <div className='r-table-group' key={'group' + i + '-' + index} style={{...this.getFullCellStyle(),height:rowHeight}}>
                 {
                   index !== 1 &&
                   (
                     <Fragment><div style={{width}}></div>{this.getGroupToggleIcon(row)}{row._groupText}</Fragment>
                   )
                 }
-                {
-                  row._level < groups.length - 1 &&
-                  <div className='r-table-group-bottom' style={{height:rowGap}}></div>
-                }
-                
               </div>
             )
           }
@@ -871,10 +873,10 @@ class RTableCell extends Component{
         lineStyle={{opacity:.4}}
       />
     }
-    else if(column.template){content = column.template(row,column);}
+    else if(column.template){content = <div style={{flex:1,alignItems:'center'}}>{column.template(row,column)}</div>}
     else if(column.input){content = this.getInput(row,column)}
     else if(column.field){
-      content = value;
+      content = <div style={{flex:1}}>{value}</div>;
     }
     if(column.subText){
       return (
@@ -1068,7 +1070,7 @@ class RTableFilterItem extends Component{
       return null;
     }
     var {value} = this.state;
-    var type = column.filter;
+    var {type} = column.filter;
     return (
       <div className='r-table-filter-item'>
         <select value={filter.operator} onChange={(e)=>{

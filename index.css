@@ -339,13 +339,7 @@ select.r-table-paging-button{
     background:#fff;
     text-overflow:ellipsis;
     position:relative;
-  }
-  .r-table-group-bottom{
-    background:inherit;
-    position:absolute;
-    top:100%;
-    left:0;
-    width:100%;
+    box-shadow: 1px 4px 6px -2px rgba(0,0,0,0.2);
   }
   .r-table-toolbar{
     background:#fff;

@@ -359,13 +359,11 @@ var RTable = /*#__PURE__*/function (_Component) {
         if (Array.isArray(obj)) {
           groupedRows = groupedRows.concat(obj);
         } else {
-          var group = groups[_level];
-
           for (var prop in obj) {
             groupsOpen[_parentField + prop] = groupsOpen[_parentField + prop] === undefined ? true : groupsOpen[_parentField + prop];
             groupedRows.push({
               _groupField: prop,
-              _groupText: prop === 'undefined' ? 'Without ' + group.text : group.text + ':' + prop,
+              _groupText: prop,
               _level: _level,
               _opened: groupsOpen[_parentField + prop],
               _parentField: _parentField
@@ -384,7 +382,11 @@ var RTable = /*#__PURE__*/function (_Component) {
         var row = model[i];
         obj = newModel;
         var values = groups.map(function (group) {
-          return _this4.getValueByField(row, group.field);
+          if (typeof group.field === 'function') {
+            return group.field(row);
+          } else {
+            return _this4.getValueByField(row, group.field);
+          }
         });
 
         for (var j = 0; j < values.length; j++) {
@@ -464,7 +466,7 @@ var RTable = /*#__PURE__*/function (_Component) {
 
         if (row._opened) {
           if (row._childsLength) {
-            this.getRowsReq(childs, rows, _level + 1, parents.concat(Row));
+            this.getRowsReq(childs, rows, _level + 1, parents.concat(row));
           }
         } else {
           this.rowRealIndex += row._childsLength;
@@ -575,8 +577,15 @@ var RTable = /*#__PURE__*/function (_Component) {
       var unFreezeCells = [];
 
       for (var i = 0; i < this.visibleColumns.length; i++) {
-        var column = this.visibleColumns[i];
-        var value = column.field ? this.getValueByField(row, column.field) : undefined;
+        var column = this.visibleColumns[i],
+            value = void 0;
+
+        if (typeof column.field === 'function') {
+          value = column.field(row);
+        } else {
+          value = column.field ? this.getValueByField(row, column.field) : undefined;
+        }
+
         row._values[column._index] = value;
 
         if (show) {
@@ -705,7 +714,7 @@ var RTable = /*#__PURE__*/function (_Component) {
             _this5.toolbar.groupBy.push({
               field: column.field,
               text: column.title,
-              checked: column.groupBy,
+              checked: column.groupBy === true,
               onClick: function onClick() {
                 column.groupBy = !column.groupBy;
                 onChange({
@@ -716,7 +725,7 @@ var RTable = /*#__PURE__*/function (_Component) {
           }
         }
 
-        if (column.show !== false) {
+        if (column.show !== false && column.groupBy !== true) {
           _this5.visibleColumns.push(column);
 
           if (freezeMode) {
@@ -1519,7 +1528,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
           indent = _this$context9.indent,
           _onMouseEnter = _this$context9.onMouseEnter,
           _onScroll = _this$context9.onScroll,
-          rowGap = _this$context9.rowGap,
+          rowHeight = _this$context9.rowHeight,
           groups = _this$context9.groups,
           getLoading = _this$context9.getLoading;
       var _this$props8 = this.props,
@@ -1551,17 +1560,14 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
           return /*#__PURE__*/_react.default.createElement("div", {
             className: "r-table-group",
             key: 'group' + i + '-' + index,
-            style: _this13.getFullCellStyle()
+            style: { ..._this13.getFullCellStyle(),
+              height: rowHeight
+            }
           }, index !== 1 && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
             style: {
               width: width
             }
-          }), _this13.getGroupToggleIcon(row), row._groupText), row._level < groups.length - 1 && /*#__PURE__*/_react.default.createElement("div", {
-            className: "r-table-group-bottom",
-            style: {
-              height: rowGap
-            }
-          }));
+          }), _this13.getGroupToggleIcon(row), row._groupText));
         }
 
         if (type === 'freeze') {
@@ -1841,11 +1847,20 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
           }
         });
       } else if (column.template) {
-        content = column.template(row, column);
+        content = /*#__PURE__*/_react.default.createElement("div", {
+          style: {
+            flex: 1,
+            alignItems: 'center'
+          }
+        }, column.template(row, column));
       } else if (column.input) {
         content = this.getInput(row, column);
       } else if (column.field) {
-        content = value;
+        content = /*#__PURE__*/_react.default.createElement("div", {
+          style: {
+            flex: 1
+          }
+        }, value);
       }
 
       if (column.subText) {
@@ -2254,7 +2269,7 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
       }
 
       var value = this.state.value;
-      var type = column.filter;
+      var type = column.filter.type;
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "r-table-filter-item"
       }, /*#__PURE__*/_react.default.createElement("select", {
