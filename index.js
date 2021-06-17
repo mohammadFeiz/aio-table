@@ -29,9 +29,9 @@ function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "functio
 
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
-
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
@@ -119,7 +119,7 @@ var RTable = /*#__PURE__*/function (_Component) {
         return;
       }
 
-      var units = (0, _jquery.default)(this.dom.current).find('.r-table-unit');
+      var units = (0, _jquery.default)(this.dom.current).find('.aio-table-unit');
       var scrollTop = units.eq(this.activeTableIndex).scrollTop();
       units.eq(this.deactiveTableIndex).scrollTop(scrollTop);
     }
@@ -161,7 +161,7 @@ var RTable = /*#__PURE__*/function (_Component) {
     value: function getGap() {
       var cellGap = this.props.cellGap;
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-gap",
+        className: "aio-table-gap",
         style: {
           width: cellGap
         }
@@ -200,7 +200,7 @@ var RTable = /*#__PURE__*/function (_Component) {
       }
 
       this.resizeDetails.newWidth = newWidth;
-      (0, _jquery.default)('#r-table-first-split').css({
+      (0, _jquery.default)('#aio-table-first-split').css({
         width: newWidth
       });
     }
@@ -223,7 +223,7 @@ var RTable = /*#__PURE__*/function (_Component) {
 
       if (!this.freezeMode) {
         return /*#__PURE__*/_react.default.createElement("div", {
-          className: 'r-table-body'
+          className: 'aio-table-body'
         }, /*#__PURE__*/_react.default.createElement(RTableUnit, {
           rows: rows,
           columns: this.visibleColumns
@@ -231,10 +231,10 @@ var RTable = /*#__PURE__*/function (_Component) {
       } else {
         var freezeSize = this.state.freezeSize;
         return /*#__PURE__*/_react.default.createElement("div", {
-          className: 'r-table-body'
+          className: 'aio-table-body'
         }, /*#__PURE__*/_react.default.createElement(RTableUnit, {
           key: 0,
-          id: "r-table-first-split",
+          id: "aio-table-first-split",
           rows: rows,
           columns: this.freezeColumns,
           index: 0,
@@ -243,7 +243,7 @@ var RTable = /*#__PURE__*/function (_Component) {
             width: freezeSize
           }
         }), /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-splitter",
+          className: "aio-table-splitter",
           onMouseDown: function onMouseDown(e) {
             return _this2.resizeDown(e);
           },
@@ -252,7 +252,7 @@ var RTable = /*#__PURE__*/function (_Component) {
           }
         }), true && /*#__PURE__*/_react.default.createElement(RTableUnit, {
           key: 1,
-          id: "r-table-second-split",
+          id: "aio-table-second-split",
           rows: rows,
           columns: this.unFreezeColumns,
           index: 1,
@@ -302,7 +302,8 @@ var RTable = /*#__PURE__*/function (_Component) {
     value: function getRows() {
       var _this$props2 = this.props,
           model = _this$props2.model,
-          flat = _this$props2.flat;
+          flat = _this$props2.flat,
+          paging = _this$props2.paging;
 
       if (!model) {
         return false;
@@ -313,33 +314,65 @@ var RTable = /*#__PURE__*/function (_Component) {
       this.rowRealIndex = 0;
       this.perf = 0;
       var convertedModel = flat ? this.convertFlat(_toConsumableArray(model)) : _toConsumableArray(model);
-      var pagedModel = this.getModelByPaging(convertedModel);
-      var groupedModel = this.getModelByGroup(pagedModel);
+      var groupedModel = this.getModelByGroup(convertedModel);
       this.getRowsReq(groupedModel, rows, 0, []);
-      return rows;
-    }
-  }, {
-    key: "getModelByPaging",
-    value: function getModelByPaging(model) {
-      var paging = this.props.paging;
+      this.roots = [];
 
       if (!paging || paging.outSide) {
-        return model;
+        return rows;
       }
 
-      var length = paging.length === undefined ? model.length : paging.length;
+      var roots = [];
+
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+
+        if (row.show === false) {
+          continue;
+        }
+
+        if (row.row._level === 0) {
+          roots.push([]);
+        }
+
+        roots[roots.length - 1].push(row);
+      }
+
+      return this.getRowsByPaging(roots);
+    }
+  }, {
+    key: "getRowsByPaging",
+    value: function getRowsByPaging(roots) {
+      var paging = this.props.paging;
+      var length = roots.length;
       paging.pages = Math.ceil(length / paging.size);
       var start = 0;
-      var end = model.length;
+      var end = length;
 
-      if (paging.number > Math.ceil(model.length / paging.size)) {
-        paging.number = Math.ceil(model.length / paging.size);
+      if (paging.number > Math.ceil(length / paging.size)) {
+        paging.number = Math.ceil(length / paging.size);
+
+        if (paging.number < 1) {
+          paging.number = 1;
+        }
       }
 
       start = (paging.number - 1) * paging.size;
       end = start + paging.size;
       this.rowRealIndex = start;
-      return model.slice(start, end);
+      var Rows = [];
+
+      for (var i = start; i <= end; i++) {
+        var root = roots[i];
+
+        if (!root) {
+          continue;
+        }
+
+        Rows = Rows.concat(root);
+      }
+
+      return Rows;
     }
   }, {
     key: "getModelByGroup",
@@ -462,7 +495,9 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
 
         var Row = this.getRow(row);
-        rows.push(Row);
+        rows.push({ ...Row,
+          row: row
+        });
 
         if (row._opened) {
           if (row._childsLength) {
@@ -830,17 +865,18 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
 
         _onChange({
-          number: newNumber
+          number: newNumber,
+          size: size
         });
       };
 
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging",
+        className: "aio-table-paging",
         style: {
           direction: 'ltr'
         }
       }, /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging-button",
+        className: "aio-table-paging-button",
         onClick: function onClick() {
           return changePage(rtl ? 'last' : 'first');
         },
@@ -849,7 +885,7 @@ var RTable = /*#__PURE__*/function (_Component) {
         path: _js.mdiChevronDoubleLeft,
         size: .8
       })), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging-button",
+        className: "aio-table-paging-button",
         onClick: function onClick() {
           return changePage(rtl ? 'next' : 'prev');
         },
@@ -858,9 +894,9 @@ var RTable = /*#__PURE__*/function (_Component) {
         path: _js.mdiChevronLeft,
         size: .8
       })), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging-number"
+        className: "aio-table-paging-number"
       }, number + ' / ' + pages), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging-button",
+        className: "aio-table-paging-button",
         onClick: function onClick() {
           return changePage(rtl ? 'prev' : 'next');
         },
@@ -869,7 +905,7 @@ var RTable = /*#__PURE__*/function (_Component) {
         path: _js.mdiChevronRight,
         size: .8
       })), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-paging-button",
+        className: "aio-table-paging-button",
         onClick: function onClick() {
           return changePage(rtl ? 'first' : 'last');
         },
@@ -878,10 +914,11 @@ var RTable = /*#__PURE__*/function (_Component) {
         path: _js.mdiChevronDoubleRight,
         size: .8
       })), /*#__PURE__*/_react.default.createElement("select", {
-        className: "r-table-paging-button",
+        className: "aio-table-paging-button",
         value: size,
         onChange: function onChange(e) {
           return _onChange({
+            number: number,
             size: parseInt(e.target.value)
           });
         },
@@ -948,7 +985,7 @@ var RTable = /*#__PURE__*/function (_Component) {
     key: "getLoading",
     value: function getLoading() {
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-loading"
+        className: "aio-table-loading"
       }, this.cubes2({
         thickness: [6, 40]
       }));
@@ -966,7 +1003,10 @@ var RTable = /*#__PURE__*/function (_Component) {
           rowGap = _this$props5.rowGap,
           className = _this$props5.className,
           columnGap = _this$props5.columnGap,
-          rtl = _this$props5.rtl;
+          rtl = _this$props5.rtl,
+          style = _this$props5.style,
+          _this$props5$attrs = _this$props5.attrs,
+          attrs = _this$props5$attrs === void 0 ? {} : _this$props5$attrs;
       this.rh = rowHeight;
       this.hh = headerHeight;
       this.th = toolbarHeight;
@@ -991,11 +1031,12 @@ var RTable = /*#__PURE__*/function (_Component) {
       };
       return /*#__PURE__*/_react.default.createElement(RTableContext.Provider, {
         value: context
-      }, /*#__PURE__*/_react.default.createElement("div", {
-        className: 'r-table' + (className ? ' ' + className : '') + (rtl ? ' rtl' : ''),
+      }, /*#__PURE__*/_react.default.createElement("div", _extends({
+        className: 'aio-table' + (className ? ' ' + className : '') + (rtl ? ' rtl' : ''),
         tabIndex: 0,
-        ref: this.dom
-      }, /*#__PURE__*/_react.default.createElement(RTableToolbar, this.toolbar), this.visibleColumns.length === 0 && this.getLoading(), table, /*#__PURE__*/_react.default.createElement("div", {
+        ref: this.dom,
+        style: style
+      }, attrs), /*#__PURE__*/_react.default.createElement(RTableToolbar, this.toolbar), this.visibleColumns.length === 0 && this.getLoading(), table, /*#__PURE__*/_react.default.createElement("div", {
         style: {
           height: rowGap
         }
@@ -1096,11 +1137,11 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
 
       var buttonProps = {
         rtl: rtl,
-        className: 'r-table-toolbar-dropdown',
+        className: 'aio-table-toolbar-dropdown',
         animate: true
       };
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-toolbar"
+        className: "aio-table-toolbar"
       }, groupBy.length !== 0 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
         key: 0
       }, buttonProps, {
@@ -1132,16 +1173,16 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
         title: translate('Freeze Columns')
       })), searchColumnIndex !== false && /*#__PURE__*/_react.default.createElement("div", {
         key: 3,
-        className: "r-table-search"
+        className: "aio-table-search"
       }, /*#__PURE__*/_react.default.createElement("input", {
-        className: "r-table-search-input",
+        className: "aio-table-search-input",
         type: "text",
         value: searchText,
         onChange: function onChange(e) {
           return _this9.changeSearch(e.target.value);
         }
       }), /*#__PURE__*/_react.default.createElement(_react2.Icon, {
-        className: "r-table-search-icon",
+        className: "aio-table-search-icon",
         path: _js.mdiMagnify,
         size: 0.8
       })));
@@ -1173,7 +1214,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
     value: function getNoData() {
       var rowHeight = this.context.rowHeight;
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-nodata",
+        className: "aio-table-nodata",
         style: { ...this.getFullCellStyle(),
           height: rowHeight
         }
@@ -1203,7 +1244,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       }
 
       return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-toggle",
+        className: "aio-table-toggle",
         onClick: function onClick() {
           var _groupField = row._groupField,
               _parentField = row._parentField;
@@ -1269,7 +1310,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       var keys = column.keys,
           padding = column.padding;
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-title r-table-title-gantt",
+        className: "aio-table-title aio-table-title-gantt",
         style: {
           padding: "0 ".concat(padding),
           height: headerHeight,
@@ -1334,18 +1375,18 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         },
         key: column._index + 'title',
         draggable: false,
-        className: 'r-table-title'
+        className: 'aio-table-title'
       };
 
       var resizeProps = _defineProperty({
-        className: 'r-table-resize',
+        className: 'aio-table-resize',
         draggable: false
       }, touch ? 'onTouchStart' : 'onMouseDown', function (e) {
         return _this12.resizeDown(e, column);
       });
 
       var titleProps = {
-        className: 'r-table-title-text',
+        className: 'aio-table-title-text',
         style: {
           justifyContent: column.center ? 'center' : undefined,
           cursor: column.movable === false ? undefined : 'move'
@@ -1452,7 +1493,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       var container = (0, _jquery.default)(this.dom.current);
       var rtl = this.context.rtl;
       var columns = this.props.columns;
-      var inputs = container.find('.r-table-input');
+      var inputs = container.find('.aio-table-input');
 
       if (inputs.length === 0) {
         return;
@@ -1465,7 +1506,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         return;
       }
 
-      var _this$getCellIndex = this.getCellIndex(focusedInput.parents('.r-table-cell')),
+      var _this$getCellIndex = this.getCellIndex(focusedInput.parents('.aio-table-cell')),
           rowIndex = _this$getCellIndex.rowIndex,
           colIndex = _this$getCellIndex.colIndex;
 
@@ -1539,7 +1580,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       return /*#__PURE__*/_react.default.createElement("div", {
         id: id,
         tabIndex: 0,
-        className: "r-table-unit",
+        className: "aio-table-unit",
         onKeyDown: this.keyDown.bind(this),
         style: this.getStyle(),
         ref: this.dom,
@@ -1552,13 +1593,11 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         onScroll: function onScroll(e) {
           return _onScroll(e, index);
         }
-      }, this.getTitles(), rows && rows.length !== 0 && rows.filter(function (row) {
-        return row.show !== false;
-      }).map(function (row, i) {
+      }, this.getTitles(), rows && rows.length !== 0 && rows.map(function (row, i) {
         if (row._groupField) {
           var width = indent * row._level;
           return /*#__PURE__*/_react.default.createElement("div", {
-            className: "r-table-group",
+            className: "aio-table-group",
             key: 'group' + i + '-' + index,
             style: { ..._this13.getFullCellStyle(),
               height: rowHeight
@@ -1636,7 +1675,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
 
       var prev = typeof column.prev === 'function' ? column.prev(row, column) : column.prev;
       return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-icon"
+        className: "aio-table-icon"
       }, prev), this.context.getGap());
     }
   }, {
@@ -1647,8 +1686,12 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       }
 
       var next = typeof column.next === 'function' ? column.next(row, column) : column.next;
-      return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, this.context.getGap(), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-icon"
+      return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+        style: {
+          flex: 1
+        }
+      }), /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-icon"
       }, next));
     }
   }, {
@@ -1675,10 +1718,10 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
     key: "getClassName",
     value: function getClassName(row, column) {
       var relativeFilter = this.props.relativeFilter;
-      var className = 'r-table-cell';
+      var className = 'aio-table-cell';
 
       if (column.template === 'gantt') {
-        className += ' r-table-cell-gantt';
+        className += ' aio-table-cell-gantt';
       }
 
       if (column.className) {
@@ -1686,11 +1729,11 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       }
 
       if (column.input) {
-        className += ' r-table-cell-input';
+        className += ' aio-table-cell-input';
       }
 
       if (relativeFilter) {
-        className += ' r-table-relative-filter';
+        className += ' aio-table-relative-filter';
       }
 
       return className;
@@ -1726,7 +1769,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       }
 
       return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-toggle",
+        className: "aio-table-toggle",
         onClick: function onClick() {
           if (row._id !== undefined) {
             openDictionary[row._id] = !openDictionary[row._id];
@@ -1761,7 +1804,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       var value = row._values[_index];
       var isDisabled = disabled(row);
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: 'r-table-checkbox' + (isDisabled ? ' disabled' : ''),
+        className: 'aio-table-checkbox' + (isDisabled ? ' disabled' : ''),
         onClick: function onClick() {
           if (!isDisabled) {
             onChange(row, !value);
@@ -1847,20 +1890,11 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
           }
         });
       } else if (column.template) {
-        content = /*#__PURE__*/_react.default.createElement("div", {
-          style: {
-            flex: 1,
-            alignItems: 'center'
-          }
-        }, column.template(row, column));
+        content = column.template(row, column);
       } else if (column.input) {
         content = this.getInput(row, column);
       } else if (column.field) {
-        content = /*#__PURE__*/_react.default.createElement("div", {
-          style: {
-            flex: 1
-          }
-        }, value);
+        content = value;
       }
 
       if (column.subText) {
@@ -1902,7 +1936,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       var type = column.input.type;
       var value = this.state.value;
       var props = { ...column.input,
-        className: 'r-table-input',
+        className: 'aio-table-input',
         rowindex: row._renderIndex,
         colindex: column._renderIndex,
         value: value
@@ -1910,7 +1944,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
 
       if (type === 'text' || type === 'number') {
         return /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-input-container"
+          className: "aio-table-input-container"
         }, /*#__PURE__*/_react.default.createElement("input", _extends({}, props, {
           onChange: function onChange(e) {
             return _this15.setState({
@@ -1935,13 +1969,13 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
             }
           }
         })), /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-input-border"
+          className: "aio-table-input-border"
         }));
       }
 
       if (type === 'select') {
         return /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-input-container"
+          className: "aio-table-input-container"
         }, /*#__PURE__*/_react.default.createElement("select", _extends({}, props, {
           onFocus: function onFocus() {
             return _this15.focus = true;
@@ -1974,7 +2008,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
             value: o.value
           }, o.text);
         })), /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-input-border"
+          className: "aio-table-input-border"
         }));
       }
 
@@ -1986,7 +2020,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       var column = this.props.column;
 
       if (column.input && column.input.type === 'select' && this.focus) {
-        (0, _jquery.default)(this.dom.current).find('.r-table-input').focus();
+        (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
       }
     }
   }, {
@@ -2025,7 +2059,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
 
       if (error) {
         cell = /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-error",
+          className: "aio-table-error",
           onClick: function onClick() {
             _this16.setState({
               value: _this16.props.value,
@@ -2035,7 +2069,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         }, error);
       } else {
         cell = /*#__PURE__*/_react.default.createElement(_react.Fragment, null, column.treeMode && /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-indent",
+          className: "aio-table-indent",
           style: {
             width: row._level * indent
           }
@@ -2097,9 +2131,10 @@ var RTableFilter = /*#__PURE__*/function (_Component5) {
         size: 0.7
       });
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-filter-icon"
+        className: "aio-table-filter-icon"
       }, /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, {
         rtl: rtl,
+        openRelatedTo: ".aio-table",
         text: icon,
         items: function items() {
           return /*#__PURE__*/_react.default.createElement(RTableFilterPopup, {
@@ -2163,7 +2198,7 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
           column: column,
           index: i
         }), i < filters.length - 1 && /*#__PURE__*/_react.default.createElement("div", {
-          className: "r-table-boolean",
+          className: "aio-table-boolean",
           onClick: function onClick() {
             var newBooleanType = booleanType === 'or' ? 'and' : 'or';
             filterDictionary[column._index].booleanType = newBooleanType;
@@ -2174,11 +2209,14 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
         }, translate(booleanType)));
       });
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-filter-popup"
+        className: "aio-table-filter-popup",
+        style: {
+          minWidth: 250
+        }
       }, filterItems, /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-filter-footer"
+        className: "aio-table-filter-footer"
       }, /*#__PURE__*/_react.default.createElement("button", {
-        className: "r-table-filter-add",
+        className: "aio-table-filter-add",
         onClick: function onClick() {
           return _this17.add();
         }
@@ -2271,7 +2309,7 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
       var value = this.state.value;
       var type = column.filter.type;
       return /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-filter-item"
+        className: "aio-table-filter-item"
       }, /*#__PURE__*/_react.default.createElement("select", {
         value: filter.operator,
         onChange: function onChange(e) {
@@ -2307,7 +2345,7 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
           width: '6px'
         }
       }), /*#__PURE__*/_react.default.createElement("div", {
-        className: "r-table-filter-remove",
+        className: "aio-table-filter-remove",
         onClick: function onClick() {
           return _this20.remove(index);
         }
