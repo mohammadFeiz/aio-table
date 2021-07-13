@@ -83,6 +83,38 @@ default value is 'auto'
 />
 ```
 
+# Set column titleJustify
+
+set columm title align to center. default value is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {title:'Name',field:'name',width:'auto',titleJustify:true},
+    ...
+  ]}
+  ...
+/>
+```
+
+# Set column justify
+
+set columm cells align to center. default value is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {title:'Name',field:'name',width:'auto',justify:true},
+    ...
+  ]}
+  ...
+/>
+```
+
 
 # Set column template
 
@@ -106,6 +138,27 @@ default value is 'auto'
   ...
 />
 ```
+# Set column resizable
+
+default is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Population',
+      field:'population',
+      resizable:true
+    }
+    ...
+  ]}
+  ...
+/>
+```
+
+
 #### numberWuidthCommas function
 
 ```javascript
@@ -128,10 +181,21 @@ default value is 36
 ```javascript
 <Table
   ...
-  rowHeught={48}
+  rowHeight={48}
   ...
 />
 ```
+# Set headerHeight
+
+default value is 36
+```javascript
+<Table
+  ...
+  headerHeight={48}
+  ...
+/>
+```
+
 
 # set rowGap
 
