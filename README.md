@@ -257,6 +257,7 @@ set gap between columns. default is 0
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
 ##### for this action , onChange props is needed.
+##### for prevent move column set movable property false on column object
 
 ```javascript
 import React,{Component} from "react";
@@ -285,6 +286,58 @@ export default class App extends Component {
             this.setState({columns:obj.columns})
           }
          }}
+      />
+    );
+  }
+}
+```
+
+# set paging (object)
+##### paging rows.
+##### properties:
+
+property | Type  | Default | Description
+-------- | ----- | ------- | -----------
+sizes | Array | [1,5,10,20,30] | all page sizes
+size | number | first index of sizes property | rows count per page
+number | number | 1 | page number
+onChange | function | required | send changes pf paging to parent
+outSise | boolean | false | if true , you must chage model in parent component and aio table will not change rows automatically
+
+
+```javascript
+import React,{Component} from "react";
+import Table from 'aio-table';
+import countries from './countries';
+import "./style.css";
+
+export default class App extends Component {
+  state = {
+    model:countries,
+    columns:[
+      {title:'Name',field:'name'},
+      {title:'Population',field:'population'},
+      {title:'Percent',field:'percent'},
+      {title:'Continent',field:'continent'}
+    ],
+    paging:{
+      number:1,
+      sizes:[5,10,15,20],
+      size:10,
+      onChange:({number,size})=>{
+        let {paging} = this.state;
+        paging.number = number;
+        paging.size = size;
+        this.setState({paging})
+      }
+    }
+  }
+  render(){
+    var {model,columns} = this.state;
+    return (
+      <Table
+        model={model}
+        columns={columns}
       />
     );
   }
