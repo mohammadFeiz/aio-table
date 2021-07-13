@@ -240,3 +240,53 @@ set gap between columns. default is 0
   ...
 />
 ```
+
+# set onChange
+
+##### onChange function return changes of props to parent
+##### other props need onChage prop to send changes to parent 
+```javascript
+<Table
+  ...
+  onChange={(obj)=>this.setState(obj)}
+  ...
+/>
+```
+
+# set column movable
+##### drag and drop movable columns to swap and reorder.
+##### default is true
+##### for this action , onChange props is needed.
+
+```javascript
+import React,{Component} from "react";
+import Table from 'aio-table';
+import countries from './countries';
+import "./style.css";
+
+export default class App extends Component {
+  state = {
+    model:countries,
+    columns:[
+      {title:'Name',field:'name'},
+      {title:'Population',field:'population'},
+      {title:'Percent',field:'percent'},
+      {title:'Continent',field:'continent'}
+    ]
+  }
+  render(){
+    var {model,columns} = this.state;
+    return (
+      <Table
+        model={model}
+        columns={columns}
+        onChange={(obj)=>{
+          if(obj.columns){
+            this.setState({columns:obj.columns})
+          }
+         }}
+      />
+    );
+  }
+}
+```
