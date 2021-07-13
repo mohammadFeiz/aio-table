@@ -138,6 +138,23 @@ set columm cells align to center. default value is false
   ...
 />
 ```
+#### numberWuidthCommas function
+
+```javascript
+function numberWithCommas(number){
+  let value = number.toString();
+  let result = '';
+  let index = 1;
+  for(let i = value.length - 1; i >= 0; i--){
+    result = value[i] + result;
+    if(index % 3 === 0 && i !== 0){result = ',' + result;}
+    index++;
+  }
+  return result;
+}
+```
+
+
 # Set column resizable
 
 default is false
@@ -157,22 +174,25 @@ default is false
   ...
 />
 ```
+# Set column search
 
-
-#### numberWuidthCommas function
+default is false
 
 ```javascript
-function numberWithCommas(number){
-  let value = number.toString();
-  let result = '';
-  let index = 1;
-  for(let i = value.length - 1; i >= 0; i--){
-    result = value[i] + result;
-    if(index % 3 === 0 && i !== 0){result = ',' + result;}
-    index++;
-  }
-  return result;
-}
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Population',
+      field:'population',
+      search:true
+    }
+    ...
+  ]}
+  ...
+/>
+
 ```
 
 # Set rowHeight
@@ -205,6 +225,18 @@ set gap between rows. default is 6
 <Table
   ...
   rowGap={1}
+  ...
+/>
+```
+
+# set columnGap
+
+set gap between columns. default is 0
+
+```javascript
+<Table
+  ...
+  columnGap={6}
   ...
 />
 ```
