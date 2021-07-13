@@ -292,6 +292,44 @@ export default class App extends Component {
 }
 ```
 
+# set column filter (object)
+##### filter rows by column value.
+##### for this action , onChange props is needed.
+
+```javascript
+import React,{Component} from "react";
+import Table from 'aio-table';
+import countries from './countries';
+import "./style.css";
+
+export default class App extends Component {
+  state = {
+    model:countries,
+    columns:[
+      {title:'Name',field:'name',filter:{type:'text'}},
+      {title:'Population',field:'population',filter:{type:'number'}},
+      {title:'Percent',field:'percent'},
+      {title:'Continent',field:'continent'}
+    ]
+  }
+  render(){
+    var {model,columns} = this.state;
+    return (
+      <Table
+        model={model}
+        columns={columns}
+        onChange={(obj)=>{
+          if(obj.columns){
+            this.setState({columns:obj.columns})
+          }
+         }}
+      />
+    );
+  }
+}
+```
+
+
 # set paging (object)
 ##### paging rows.
 ##### properties:
@@ -333,11 +371,12 @@ export default class App extends Component {
     }
   }
   render(){
-    var {model,columns} = this.state;
+    var {model,columns,paging} = this.state;
     return (
       <Table
         model={model}
         columns={columns}
+        paging={paging}
       />
     );
   }
