@@ -293,9 +293,8 @@ export default class App extends Component {
 ```
 
 # set column filter (object)
-##### filter rows by column value.
-##### for this action , onChange props is needed.
-
+##### filter rows by column value automatically.
+ 
 ```javascript
 import React,{Component} from "react";
 import Table from 'aio-table';
@@ -318,17 +317,20 @@ export default class App extends Component {
       <Table
         model={model}
         columns={columns}
-        onChange={(obj)=>{
-          if(obj.columns){
-            this.setState({columns:obj.columns})
-          }
-         }}
       />
     );
   }
 }
 ```
-
+##### if you want to filter rows outside of aio table , you can set onChangeFilter props (for example server side filtering)
+```javbascript
+<Table
+  onChangeFilter={(filters)=>{
+    ....
+  }}
+/>
+```
+##### filters is an array of objects . each object has 3 property (booleanType,items,column)
 
 # set paging (object)
 ##### paging rows.
