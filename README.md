@@ -99,9 +99,9 @@ set columm title align to center. default value is false
 />
 ```
 
-# Set column justify
+# Set column justify (boolean)
 
-set columm cells align to center. default value is false
+set column cells align to center. default value is false
 
 ```javascript
 <Table
@@ -117,6 +117,8 @@ set columm cells align to center. default value is false
 
 
 # Set column template
+
+##### Set content of column cells by template function.
 
 ```javascript
 <Table
@@ -342,7 +344,7 @@ sizes | Array | [1,5,10,20,30] | all page sizes
 size | number | first index of sizes property | rows count per page
 number | number | 1 | page number
 onChange | function | required | send changes pf paging to parent
-outSise | boolean | false | if true , you must chage model in parent component and aio table will not change rows automatically
+outSise | boolean | false | if true , you must paging rows of model in parent component and aio table will not paging rows automatically
 
 
 ```javascript
@@ -383,4 +385,41 @@ export default class App extends Component {
     );
   }
 }
+```
+
+# Set column prev (function)
+
+##### set html before cells content.
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+        title:'Name',
+        field:'name',
+        width:'auto',
+        prev:(row)=>{
+          return (
+            <div 
+              style={{
+                background:'#000',
+                color:'#fff',
+                width:'24px',
+                height:'24px',
+                lineHeight:'24px',
+                textAlign:'center',
+                borderRadius:'100%'
+              }}
+            >
+                {row._index + 1}
+            </div>
+          )
+        }
+      }
+    ...
+  ]}
+  ...
+/>
 ```
