@@ -387,7 +387,7 @@ export default class App extends Component {
 }
 ```
 
-# Set column prev (function)
+# Set column before (function)
 
 ##### set html before cells content.
 
@@ -400,7 +400,7 @@ export default class App extends Component {
         title:'Name',
         field:'name',
         width:'auto',
-        prev:(row)=>{
+        before:(row)=>{
           return (
             <div 
               style={{
