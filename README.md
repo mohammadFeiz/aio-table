@@ -423,3 +423,39 @@ export default class App extends Component {
   ...
 />
 ```
+
+# Set column after (function)
+
+##### set html after cells content.
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    after:(row)=>{
+          var colors = {
+            'Asia':'orange','North America':'blue','South America':'lightblue','Africa':'black','Europe':'green'
+          }
+          return (
+            <div 
+              style={{
+                background:colors[row.continent],
+                color:'#fff',
+                padding:'0 6px',
+                height:'16px',
+                fontSize:'10px',
+                lineHeight:'16px',
+                textAlign:'center',
+                borderRadius:'3px'
+              }}
+            >
+                {row.continent}
+            </div>
+          )
+        }
+    ...
+  ]}
+  ...
+/>
+```
