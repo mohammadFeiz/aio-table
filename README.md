@@ -397,27 +397,27 @@ export default class App extends Component {
   columns={[
     ...
     {
-        title:'Name',
-        field:'name',
-        width:'auto',
-        before:(row)=>{
-          return (
-            <div 
-              style={{
-                background:'#000',
-                color:'#fff',
-                width:'24px',
-                height:'24px',
-                lineHeight:'24px',
-                textAlign:'center',
-                borderRadius:'100%'
-              }}
-            >
-                {row._index + 1}
-            </div>
-          )
-        }
+      title:'Name',
+      field:'name',
+      width:'auto',
+      before:(row)=>{
+        return (
+          <div 
+            style={{
+              background:'#000',
+              color:'#fff',
+              width:'24px',
+              height:'24px',
+              lineHeight:'24px',
+              textAlign:'center',
+              borderRadius:'100%'
+            }}
+          >
+              {row._index + 1}
+          </div>
+        )
       }
+    }
     ...
   ]}
   ...
@@ -433,27 +433,32 @@ export default class App extends Component {
   ...
   columns={[
     ...
-    after:(row)=>{
-          var colors = {
-            'Asia':'orange','North America':'blue','South America':'lightblue','Africa':'black','Europe':'green'
-          }
-          return (
-            <div 
-              style={{
-                background:colors[row.continent],
-                color:'#fff',
-                padding:'0 6px',
-                height:'16px',
-                fontSize:'10px',
-                lineHeight:'16px',
-                textAlign:'center',
-                borderRadius:'3px'
-              }}
-            >
-                {row.continent}
-            </div>
-          )
+    {
+      title:'Name',
+      field:'name',
+      width:'auto',
+      after:(row)=>{
+        var colors = {
+          'Asia':'orange','North America':'blue','South America':'lightblue','Africa':'black','Europe':'green'
         }
+        return (
+          <div 
+            style={{
+              background:colors[row.continent],
+              color:'#fff',
+              padding:'0 6px',
+              height:'16px',
+              fontSize:'10px',
+              lineHeight:'16px',
+              textAlign:'center',
+              borderRadius:'3px'
+            }}
+          >
+              {row.continent}
+          </div>
+        )
+      }
+    }
     ...
   ]}
   ...
