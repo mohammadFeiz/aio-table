@@ -340,7 +340,7 @@ export default class App extends Component {
 
 property | Type  | Default | Description
 -------- | ----- | ------- | -----------
-sizes | Array | [1,5,10,20,30] | all page sizes
+sizes | Array | [1,5,10,20,30] | page sizes (dropdown)
 size | number | first index of sizes property | rows count per page
 number | number | 1 | page number
 onChange | function | required | send changes pf paging to parent
@@ -389,7 +389,7 @@ export default class App extends Component {
 
 # Set column before (function)
 
-##### set html before cells content.
+##### set html before cells of column content.
 
 ```javascript
 <Table
@@ -426,7 +426,7 @@ export default class App extends Component {
 
 # Set column after (function)
 
-##### set html after cells content.
+##### set html after cells of column content.
 
 ```javascript
 <Table
