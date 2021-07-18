@@ -521,3 +521,28 @@ toggle | boolean | true | if true, user can toggle activity of group item from t
   ...
 />
 ```
+
+# Set sorts (Array Of Objects)
+
+##### sort rows.
+##### each sort properties:
+Property | Type | Default | Description
+-------- | ---- | ------- | -----------
+title | string | Required | uniqe title of sort item
+getValue | function | Required | this function get (row) as parameter and return a value for sort rows.
+active | boolean | true | active or deactive sort item.
+toggle | boolean | true | if true, user can toggle activity of sort item from toolbar
+
+```javascript
+<Table
+  ...
+  sorts:[
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      type:'inc'
+    }
+  ]
+  ...
+/>
+```
