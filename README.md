@@ -464,3 +464,30 @@ export default class App extends Component {
   ...
 />
 ```
+
+# Set groups (Array Of Objects)
+
+##### group by rows.
+##### each group properties:
+Property | Type | Default | Description
+-------- | ---- | ------- | -----------
+title | string | Required | uniqe title of group item
+getValue | function | Required | this function get (row) as parameter and return a value category for group by rows.
+active | boolean | true | active or deactive group item.
+toggle | boolean | true | if true, user can toggle activity of group item 
+
+```javascript
+<Table
+  ...
+  groups:[
+     {
+        title:'Continent',
+        getValue:(row)=>{
+          return row.continent;
+        }
+     }
+  }
+  ...
+/>
+```
+
