@@ -328,7 +328,7 @@ onChange function get paging changed paging object as parameters
     ...
     {
       title:'Name',
-      field:'name',
+      getValue:(row)=>row.name,
       width:'auto',
       before:(row)=>{
         return (
@@ -365,7 +365,7 @@ onChange function get paging changed paging object as parameters
     ...
     {
       title:'Name',
-      field:'name',
+      getValue:(row)=>row.name,
       width:'auto',
       after:(row)=>{
         var colors = {
