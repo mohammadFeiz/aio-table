@@ -25,21 +25,17 @@ import countries from './../countries';
 import "./../style.css";
 
 export default class App extends Component {
-  state = {
-    model:countries,
-    columns:[
-      {title:'Name',field:'name'},
-      {title:'Population',field:'population'},
-      {title:'Percent',field:'percent'},
-      {title:'Continent',field:'continent'}
-    ]
-  }
   render(){
     var {model,columns} = this.state;
     return (
       <Table
-        model={model}
-        columns={columns}
+        model={countries}
+        columns={[
+          {title:'Name',getValue:(row)=>row.name},
+          {title:'Population',getValue:(row)=>row.population},
+          {title:'Percent',getValue:()=>row.percent},
+          {title:'Continent',getValue:()=>row.continent}
+        ]}
       />
     );
   }
@@ -74,10 +70,10 @@ default value is 'auto'
 <Table
   ...
   columns={[
-    {title:'Name',field:'name',width:'auto'},
-    {title:'Population',field:'population',width:'100px'},
-    {title:'Percent',field:'percent',width:'70px'},
-    {title:'Continent',field:'continent',width:'120px'}
+    {title:'Name',getValue:(row)=>row.name,width:'auto'},
+    {title:'Population',getValue:(row)=>row.population,width:'100px'},
+    {title:'Percent',getValue:(row)=>row.percent,width:'70px'},
+    {title:'Continent',getValue:(row)=>row.continent,width:'120px'}
   ]}
   ...
 />
@@ -92,7 +88,7 @@ set columm title align to center. default value is false
   ...
   columns={[
     ...
-    {title:'Name',field:'name',width:'auto',titleJustify:true},
+    {title:'Name',getValue:(row)=>row.name,width:'auto',titleJustify:true},
     ...
   ]}
   ...
@@ -108,7 +104,7 @@ set column cells align to center. default value is false
   ...
   columns={[
     ...
-    {title:'Name',field:'name',width:'auto',justify:true},
+    {title:'Name',getValue:(row)=>row.name,width:'auto',justify:true},
     ...
   ]}
   ...
@@ -124,18 +120,18 @@ set column cells align to center. default value is false
 <Table
   ...
   columns={[
-    {title:'Name',field:'name'},
+    {title:'Name',getValue:(row)=>row.name},
     {
       title:'Population',
-      field:'population',
+      getValue:(row)=>row.population,
       template:(row)=>numberWithCommas(row.population)
     },
     {
       title:'Percent',
-      field:'percent',
+      getValue:(row)=>row.percent,
       template:(row)=>row.percent + '%'
     },
-    {title:'Continent',field:'continent'}
+    {title:'Continent',getValue:(row)=>row.continent}
   ]}
   ...
 />
@@ -168,7 +164,7 @@ default is false
     ...
     {
       title:'Population',
-      field:'population',
+      getValue:(row)=>row.population,
       resizable:true
     }
     ...
@@ -187,7 +183,7 @@ default is false
     ...
     {
       title:'Population',
-      field:'population',
+      getValue:(row)=>row.population,
       search:true
     }
     ...
@@ -243,93 +239,51 @@ set gap between columns. default is 0
 />
 ```
 
-# set onChange
-
-##### onChange function return changes of props to parent
-##### other props need onChage prop to send changes to parent 
-```javascript
-<Table
-  ...
-  onChange={(obj)=>this.setState(obj)}
-  ...
-/>
-```
-
 # set column movable
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
-##### for this action , onChange props is needed.
 ##### for prevent move column set movable property false on column object
 
 ```javascript
-import React,{Component} from "react";
-import Table from 'aio-table';
-import countries from './countries';
-import "./style.css";
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Population',
+      getValue:(row)=>row.population,
+      movable:false
+    }
+    ...
+  ]}
+  ...
+/>
 
-export default class App extends Component {
-  state = {
-    model:countries,
-    columns:[
-      {title:'Name',field:'name'},
-      {title:'Population',field:'population'},
-      {title:'Percent',field:'percent'},
-      {title:'Continent',field:'continent'}
-    ]
-  }
-  render(){
-    var {model,columns} = this.state;
-    return (
-      <Table
-        model={model}
-        columns={columns}
-        onChange={(obj)=>{
-          if(obj.columns){
-            this.setState({columns:obj.columns})
-          }
-         }}
-      />
-    );
-  }
-}
 ```
-
 # set column filter (object)
 ##### filter rows by column value automatically.
  
 ```javascript
-import React,{Component} from "react";
-import Table from 'aio-table';
-import countries from './countries';
-import "./style.css";
-
-export default class App extends Component {
-  state = {
-    model:countries,
-    columns:[
-      {title:'Name',field:'name',filter:{type:'text'}},
-      {title:'Population',field:'population',filter:{type:'number'}},
-      {title:'Percent',field:'percent'},
-      {title:'Continent',field:'continent'}
-    ]
-  }
-  render(){
-    var {model,columns} = this.state;
-    return (
-      <Table
-        model={model}
-        columns={columns}
-      />
-    );
-  }
-}
+<Table
+  ...
+  columns={[
+    {title:'Name',field:'name',filter:{type:'text'}},
+    {title:'Population',field:'population',filter:{type:'number'}},
+    {title:'Percent',field:'percent'},
+    {title:'Continent',field:'continent'}
+  ]}
+  ...
+/>
+    
 ```
 ##### if you want to filter rows outside of aio table , you can set onChangeFilter props (for example server side filtering)
 ```javbascript
 <Table
+  ...
   onChangeFilter={(filters)=>{
     ....
   }}
+  ...
 />
 ```
 ##### filters is an array of objects . each object has 3 property (booleanType,items,column)
@@ -343,48 +297,24 @@ property | Type  | Default | Description
 sizes | Array | [1,5,10,20,30] | page sizes (dropdown)
 size | number | first index of sizes property | rows count per page
 number | number | 1 | page number
-onChange | function | required | send changes pf paging to parent
-outSise | boolean | false | if true , you must paging rows of model in parent component and aio table will not paging rows automatically
+onChange | function | Optional | if you set onChange , you must paging rows of model in parent component and aio table will not paging rows automatically
 
+onChange function get paging changed paging object as parameters
 
 ```javascript
-import React,{Component} from "react";
-import Table from 'aio-table';
-import countries from './countries';
-import "./style.css";
-
-export default class App extends Component {
-  state = {
-    model:countries,
-    columns:[
-      {title:'Name',field:'name'},
-      {title:'Population',field:'population'},
-      {title:'Percent',field:'percent'},
-      {title:'Continent',field:'continent'}
-    ],
-    paging:{
-      number:1,
-      sizes:[5,10,15,20],
-      size:10,
-      onChange:({number,size})=>{
-        let {paging} = this.state;
-        paging.number = number;
-        paging.size = size;
-        this.setState({paging})
-      }
+<Table
+  ...
+  paging={{
+    number:1,
+    sizes:[5,10,15,20],
+    size:10,
+    onChange:(paging)=>{
+      //change model props
+      //if not set onChange , paging will be automatically on model
     }
-  }
-  render(){
-    var {model,columns,paging} = this.state;
-    return (
-      <Table
-        model={model}
-        columns={columns}
-        paging={paging}
-      />
-    );
-  }
-}
+  }}
+  ...
+/>
 ```
 
 # Set column before (function)
