@@ -193,6 +193,52 @@ default is false
 
 ```
 
+# Set column show (boolean)
+
+##### show or hide column.
+##### default is true
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Population',
+      getValue:(row)=>row.population,
+      show:false
+    }
+    ...
+  ]}
+  ...
+/>
+
+```
+
+# Set column toggleShow (boolean)
+
+##### set visibility of column by user from toolbar.
+##### default is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Population',
+      getValue:(row)=>row.population,
+      show:false,
+      toggleShow:true
+    }
+    ...
+  ]}
+  ...
+/>
+
+```
+
+
 # Set rowHeight
 
 default value is 36
