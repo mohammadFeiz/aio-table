@@ -20,7 +20,7 @@
 
 ```javascript
 import React,{Component} from "react";
-import Table from './../aio-table';
+import Table from 'aio-table';
 import countries from './../countries';
 import "./../style.css";
 
