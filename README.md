@@ -504,3 +504,72 @@ getText | function | optional | this function get (row) as parameter and return 
   ...
 />
 ```
+
+# Set column inlineEdit (Objects)
+
+##### inline editing cells.
+##### inlineEdit properties:
+Property | Type | Default | Description
+-------- | ---- | ------- | -----------
+type | 'text' or 'number' or 'select'  | 'text' | type of inline edit input.
+options | array of objects  | required if type is 'select' | options of inline edit input by select type (each option have 2 property(text,value)).
+onChange | function | required | get row and value as parameters. if return an string means there is an error and cell will show this string as error message. 
+
+```javascript
+<Table
+  ...
+  columns={[
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      width:'auto',
+      inlineEdit:{ 
+        type:'text',
+        onChange:(row,value)=>{
+          row.name = value;
+          this.setState({model:this.state.model})
+        } 
+      }
+    },
+    {
+      title:'Population',resizable:true,
+      getValue:(row)=>row.population,
+      template:(row)=>numberWithCommas(row.population),
+      width:'100px',
+      inlineEdit:{ 
+        type:'number',
+        onChange:(row,value)=>{
+          row.population = value;
+          this.setState({model:this.state.model})
+        } 
+      }
+    },
+    {
+      title:'Percent',
+      getValue:(row)=>row.percent,
+      template:(row)=>row.percent + '%',
+      width:'70px'
+    },
+    {
+      title:'Continent',
+      getValue:(row)=>row.continent,
+      width:'120px',
+      inlineEdit:{
+        type:'select',
+        options:[
+          {text:'Asia',value:'Asia'},
+          {text:'Africa',value:'Africa'},
+          {text:'Europa',value:'Europa'},
+          {text:'North America',value:'North America'},
+          {text:'South America',value:'South America'}
+        ],
+        onChange:(row,value)=>{
+          row.continent = value;
+          this.setState({model:this.state.model})
+        }
+      }
+    }
+  ]}
+  ...
+/>
+```
