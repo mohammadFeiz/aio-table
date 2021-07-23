@@ -42,7 +42,7 @@ export default class App extends Component {
 }
 ```
 
-# Set className
+# Set className (string)
 
 ```javascript
 <Table
@@ -52,7 +52,7 @@ export default class App extends Component {
 />
 ```
 
-# Set style
+# Set style (object)
 
 ```javascript
 <Table
@@ -62,9 +62,9 @@ export default class App extends Component {
 />
 ```
 
-# Set column width
+# Set column width (string)
 
-default value is 'auto'
+##### default value is 'auto'.
 
 ```javascript
 <Table
@@ -79,7 +79,7 @@ default value is 'auto'
 />
 ```
 
-# Set column titleJustify
+# Set column titleJustify (boolean)
 
 set columm title align to center. default value is false
 
@@ -112,7 +112,7 @@ set column cells align to center. default value is false
 ```
 
 
-# Set column template
+# Set column template (function)
 
 ##### Set content of column cells by template function.
 
@@ -153,7 +153,7 @@ function numberWithCommas(number){
 ```
 
 
-# Set column resizable
+# Set column resizable (boolean)
 
 default is false
 
@@ -172,9 +172,10 @@ default is false
   ...
 />
 ```
-# Set column search
+# Set column search (boolean)
 
-default is false
+##### default is false.
+##### only one column can be searchable.
 
 ```javascript
 <Table
@@ -239,9 +240,9 @@ default is false
 ```
 
 
-# Set rowHeight
-
-default value is 36
+# Set rowHeight (number)
+##### set height of aio table rows. 
+default value is 36.
 ```javascript
 <Table
   ...
@@ -249,7 +250,7 @@ default value is 36
   ...
 />
 ```
-# Set headerHeight
+# Set headerHeight (number)
 
 default value is 36
 ```javascript
@@ -261,7 +262,7 @@ default value is 36
 ```
 
 
-# set rowGap
+# set rowGap (number)
 
 set gap between rows. default is 6
 
@@ -273,7 +274,7 @@ set gap between rows. default is 6
 />
 ```
 
-# set columnGap
+# set columnGap (number)
 
 set gap between columns. default is 0
 
@@ -285,7 +286,7 @@ set gap between columns. default is 0
 />
 ```
 
-# set column movable
+# set column movable (boolean)
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
 ##### for prevent move column set movable property false on column object
