@@ -79,6 +79,23 @@ export default class App extends Component {
 />
 ```
 
+# Set column minWidth (string)
+
+##### if column width is auto , column width cannot be smaller than minWidth.
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {title:'Name',getValue:(row)=>row.name,width:'auto',minWidth:'200px'},
+    ...
+  ]}
+  ...
+/>
+```
+
+
 # Set column titleJustify (boolean)
 
 set columm title align to center. default value is false
