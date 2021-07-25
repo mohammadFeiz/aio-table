@@ -256,6 +256,59 @@ default is false
 
 ```
 
+# Set column freeze (boolean)
+
+##### default is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      width:'auto',
+      freeze:true
+    },
+    ...
+  ]}
+  ...
+/>
+
+```
+
+# Set column toggleFreeze (boolean)
+
+##### if true user can set column freeze from toolbar.
+##### default is false
+
+```javascript
+<Table
+  ...
+  columns={[
+    ...
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      width:'auto',
+      toggleFreeze:true
+    },
+    {
+      title:'Population',resizable:true,
+      getValue:(row)=>row.population,
+      template:(row)=>numberWithCommas(row.population),
+      width:'160px',
+      toggleFreeze:true
+    }
+    ...
+  ]}
+  ...
+/>
+
+```
+
+
 
 # Set rowHeight (number)
 ##### set height of aio table rows. 
