@@ -629,6 +629,7 @@ getText | function | optional | this function get (row) as parameter and return 
 Property | Type | Default | Description
 -------- | ---- | ------- | -----------
 type | 'text' or 'number' or 'select'  | 'text' | type of inline edit input.
+disabled | function  | Optional | get row as parameter and return boolean. if return true this cell input will be disabled.
 options | array of objects  | required if type is 'select' | options of inline edit input by select type (each option have 2 property(text,value)).
 onChange | function | required | get row and value as parameters. if return an string means there is an error and cell will show this string as error message. 
 
