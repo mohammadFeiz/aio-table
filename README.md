@@ -735,6 +735,7 @@ export default class App extends Component {
             width:'80px',
           },
           {
+            title:'My Gantt',
             minWidth:'400px',
             toggleShow:true,
             
