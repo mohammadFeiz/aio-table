@@ -735,6 +735,9 @@ export default class App extends Component {
             width:'80px',
           },
           {
+            minWidth:'400px',
+            toggleShow:true,
+            
             template:'gantt',
             getStart:(row)=>row.startDate,
             getEnd:(row)=>row.endDate,
