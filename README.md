@@ -691,3 +691,68 @@ onChange | function | required | get row and value as parameters. if return an s
   ...
 />
 ```
+
+# Gantt chrt example
+
+##### for set column as gantt chart , you can set a column by template:'gantt'.
+##### gantt column can have all column properties and must have this properties:
+Property | Type | Default | Description
+-------- | ---- | ------- | -----------
+template |  string('gantt') | Required | define column as gantt.
+getKeys | function  | Required | return gantt keys array.
+getStart | function  | required | get row a parameter and return an string as start of row bar(one of keys).
+getEnd | function  | required | get row a parameter and return an string as end of row bar(one of keys).
+getProgress | function | Optional | get row as parameter and return a number between 0 and 100 to show row percentage graphically. 
+getText | function | Optional | get row as parameter and return an string to show on row gantt bar. 
+padding | string(px) | '36px' | gantt horizontal padding.
+getBackgroundColor | function | a function that return '#69bedb' | get row as parameter and return an string as gant bar background color. 
+getColor | function | a function that return '#fff' | get row as parameter and return an string as gant bar text color. 
+getFlags | function | Optional | return an array of objects (Examplae [{color:'red',value:'2022/6'}]) as gantt flags. 
+```javascript
+export default class App extends Component {
+  state = {
+    model:[
+      {name:'a',startDate:'2022/1',endDate:'2022/6',progress:10},
+      {name:'b',startDate:'2022/1',endDate:'2022/3',progress:20},
+      {name:'c',startDate:'2022/3',endDate:'2022/6',progress:50},
+      {name:'d',startDate:'2022/6',endDate:'2022/9',progress:30},
+      {name:'e',startDate:'2022/9',endDate:'2022/12',progress:100},
+      {name:'f',startDate:'2022/1',endDate:'2022/9',progress:80},
+      {name:'g',startDate:'2022/3',endDate:'2022/9',progress:70},
+      {name:'h',startDate:'2022/6',endDate:'2022/12',progress:60},
+      {name:'i',startDate:'2022/9',endDate:'2022/12',progress:50},
+    ]
+  }
+  render(){
+    var {columns,model,groups,sorts} = this.state;
+    return (
+      <Table
+        model={model}
+        columns={[
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            width:'80px',
+          },
+          {
+            template:'gantt',
+            getStart:(row)=>row.startDate,
+            getEnd:(row)=>row.endDate,
+            getKeys:()=>['2022/1','2022/2','2022/3','2022/4','2022/5','2022/6','2022/7','2022/8','2022/9','2022/10','2022/11','2022/12'],
+            getProgress:(row)=>row.progress,
+            getText:(row)=>row.name + ' ' + row.progress + '%',
+            padding:'24px',
+            getBackgroundColor:(row)=>'lightblue',
+            getColor:(row)=>'#fff',
+            getFlags:()=>[
+              {color:'red',value:'2022/6'},
+              {color:'red',value:'2022/9'},
+            ]
+          }
+        ]}
+      />
+    );
+  }
+}
+
+```
