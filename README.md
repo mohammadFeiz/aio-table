@@ -41,7 +41,7 @@ export default class App extends Component {
   }
 }
 ```
-
+![alt text](/images/basic.jpg)
 # Set className (string)
 
 ```javascript
@@ -78,7 +78,7 @@ export default class App extends Component {
   ...
 />
 ```
-
+![alt text](/images/width.jpg)
 # Set column minWidth (string)
 
 ##### if column width is auto , column width cannot be smaller than minWidth.
@@ -111,7 +111,7 @@ set columm title align to center. default value is false
   ...
 />
 ```
-
+![alt text](/images/titlejustify.jpg)
 # Set column justify (boolean)
 
 set column cells align to center. default value is false
@@ -127,7 +127,7 @@ set column cells align to center. default value is false
   ...
 />
 ```
-
+![alt text](/images/justify.jpg)
 
 # Set column template (function)
 
@@ -153,6 +153,7 @@ set column cells align to center. default value is false
   ...
 />
 ```
+![alt text](/images/template.jpg)
 #### numberWuidthCommas function
 
 ```javascript
@@ -322,6 +323,7 @@ default value is 36.
   ...
 />
 ```
+![alt text](/images/rowheight.jpg)
 # Set headerHeight (number)
 
 default value is 36
@@ -332,7 +334,7 @@ default value is 36
   ...
 />
 ```
-
+![alt text](/images/headerheight.jpg)
 
 # set rowGap (number)
 
@@ -345,7 +347,7 @@ set gap between rows. default is 6
   ...
 />
 ```
-
+![alt text](/images/rowgap.jpg)
 # set columnGap (number)
 
 set gap between columns. default is 0
@@ -357,7 +359,7 @@ set gap between columns. default is 0
   ...
 />
 ```
-
+![alt text](/images/columngap.jpg)
 # set column movable (boolean)
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
@@ -473,7 +475,7 @@ onChange function get paging changed paging object as parameters
   ...
 />
 ```
-
+![alt text](/images/before.jpg)
 # Set column after (function)
 
 ##### set html after cells of column content.
@@ -514,7 +516,7 @@ onChange function get paging changed paging object as parameters
   ...
 />
 ```
-
+![alt text](/images/after.jpg)
 # Set groups (Array Of Objects)
 
 ##### group by rows.
