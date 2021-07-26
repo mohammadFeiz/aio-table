@@ -277,6 +277,7 @@ default is false
 />
 
 ```
+![alt text](/images/freeze.gif)
 
 # Set column toggleFreeze (boolean)
 
