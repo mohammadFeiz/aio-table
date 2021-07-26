@@ -189,6 +189,7 @@ default is false
   ...
 />
 ```
+![alt text](/images/resizable.gif)
 # Set column search (boolean)
 
 ##### default is false.
@@ -210,7 +211,7 @@ default is false
 />
 
 ```
-
+![alt text](/images/search.gif)
 # Set column show (boolean)
 
 ##### show or hide column.
@@ -255,7 +256,7 @@ default is false
 />
 
 ```
-
+![alt text](/images/toggleshow.gif)
 # Set column freeze (boolean)
 
 ##### default is false
@@ -308,7 +309,7 @@ default is false
 />
 
 ```
-
+![alt text](/images/togglefreeze.gif)
 
 
 # Set rowHeight (number)
@@ -378,6 +379,7 @@ set gap between columns. default is 0
 />
 
 ```
+![alt text](/images/movable.gif)
 # set column filter (object)
 ##### filter rows by column value automatically.
  
@@ -692,7 +694,7 @@ onChange | function | required | get row and value as parameters. if return an s
   ...
 />
 ```
-
+![alt text](/images/inlineedit.gif)
 # Gantt chrt example
 
 ##### for set column as gantt chart , you can set a column by template:'gantt'.
