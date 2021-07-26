@@ -724,7 +724,7 @@ export default class App extends Component {
     ]
   }
   render(){
-    var {columns,model,groups,sorts} = this.state;
+    var {model} = this.state;
     return (
       <Table
         model={model}
