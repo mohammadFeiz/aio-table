@@ -765,4 +765,4 @@ export default class App extends Component {
 }
 
 ```
-![alt text](/images/gantt.jpg)
+![alt text](/images/ganttchaart.jpg)
