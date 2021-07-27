@@ -772,7 +772,7 @@ export default class App extends Component {
 ##### data as nested json.
 ##### set getRowChilds function for get rows childs.
 ##### set column treeMode for collapse and indent rows.
-```jabvascript
+```javascript
 export default class App extends Component {
   state = {
     model:[
@@ -856,7 +856,7 @@ export default class App extends Component {
 ##### set getRowParentId function for get rows parent id.
 ##### set getRowId function for get rows id.
 ##### set column treeMode for collapse and indent rows.
-```jabvascript
+```javascript
 export default class App extends Component {
   state = {
     model:[
