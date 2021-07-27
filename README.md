@@ -766,3 +766,85 @@ export default class App extends Component {
 
 ```
 ![alt text](/images/ganttchart.jpg)
+
+# Tree data
+
+##### data as nested json.
+##### set getRowChilds function for get rows childs.
+##### set column treeMode for collapse and indent rows.
+```jabvascript
+export default class App extends Component {
+  state = {
+    model:[
+      {
+        name:'a',
+        value:10,
+        childs:[
+          {
+            name:'a-0',
+            value:4,
+            childs:[
+              {name:'a-0-0',value:3},
+              {name:'a-0-1',value:1},
+            ]
+          },
+          {
+            name:'a-1',
+            value:6,
+            childs:[
+              {name:'a-1-0',value:2},
+              {name:'a-1-1',value:4},
+            ]
+          },
+        ]
+      },
+      {
+        name:'b',
+        value:20,
+        childs:[
+          {
+            name:'b-0',
+            value:16,
+            childs:[
+              {name:'b-0-0',value:8},
+              {name:'b-0-1',value:8},
+            ]
+          },
+          {
+            name:'b-1',
+            value:4,
+            childs:[
+              {name:'b-1-0',value:2},
+              {name:'b-1-1',value:2},
+            ]
+          },
+        ]
+      }
+    ],
+  }
+  render(){
+    var {model} = this.state;
+    return (
+      <Table
+        className='table'
+        model={model}
+        columns={[
+          {
+            title:'Name',
+            treeMode:true,
+            getValue:(row)=>row.name,
+            width:'auto',
+          },
+          {
+            title:'Value',
+            getValue:(row)=>row.value,
+            width:'100px',  
+          }
+        ]}
+        getRowChilds={(row)=>row.childs}
+      />
+    );
+  }
+}
+```
+![alt text](/images/tree.jpg)
