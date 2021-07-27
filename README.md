@@ -848,3 +848,58 @@ export default class App extends Component {
 }
 ```
 ![alt text](/images/tree.jpg)
+
+# Tree data (flat)
+
+##### data as array with id and parent id.
+##### set flat props true.
+##### set getRowParentId function for get rows parent id.
+##### set getRowId function for get rows id.
+##### set column treeMode for collapse and indent rows.
+```jabvascript
+export default class App extends Component {
+  state = {
+    model:[
+      {name:'a',id:'a',value:10},
+      {name:'a-0',id:'a-0',value:4,parentId:'a'},
+      {name:'a-0-0',id:'a-0-0',value:3,parentId:'a-0'},
+      {name:'a-0-1',id:'a-0-1',value:1,parentId:'a-0'},
+      {name:'a-1',id:'a-1',value:6,parentId:'a'},
+      {name:'a-1-0',id:'a-1-0',value:2,parentId:'a-1'},
+      {name:'a-1-1',id:'a-1-1',value:4,parentId:'a-1'},
+      {name:'b',id:'b',value:20},
+      {name:'b-0',id:'b-0',value:16,parentId:'b'},
+      {name:'b-0-0',id:'b-0-0',value:8,parentId:'b-0'},
+      {name:'b-0-1',id:'b-0-1',value:8,parentId:'b-0'},
+      {name:'b-1',id:'b-1',value:4,parentId:'b'},
+      {name:'b-1-0',id:'b-1-0',value:2,parentId:'b-1'},
+      {name:'b-1-1',id:'b-1-1',value:2,parentId:'b-1'}
+    ]
+  }
+  render(){
+    var {model} = this.state;
+    return (
+      <Table
+        flat={true}
+        getRowId={(row)=>row.id}
+        getRowParentId={(row)=>row.parentId}
+        model={model}
+        columns={[
+          {
+            title:'Name',
+            treeMode:true,
+            getValue:(row)=>row.name,
+            width:'auto',
+          },
+          {
+            title:'Value',
+            getValue:(row)=>row.value,
+            width:'100px',  
+          }
+        ]}
+      />
+    );
+  }
+}
+```
+![alt text](/images/tree.jpg)
