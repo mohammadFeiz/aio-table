@@ -15,13 +15,13 @@ var _rDropdownButton = _interopRequireDefault(require("r-dropdown-button"));
 
 var _react2 = require("@mdi/react");
 
+var _jquery = _interopRequireDefault(require("jquery"));
+
 var _js = require("@mdi/js");
 
 var _rRangeSlider = _interopRequireDefault(require("r-range-slider"));
 
 require("./index.css");
-
-var _jquery = _interopRequireDefault(require("jquery"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -65,7 +65,7 @@ function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Re
 
 function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
 
-var RTableContext = /*#__PURE__*/(0, _react.createContext)();
+var AioTableContext = /*#__PURE__*/(0, _react.createContext)();
 
 var RTable = /*#__PURE__*/function (_Component) {
   _inherits(RTable, _Component);
@@ -82,9 +82,11 @@ var RTable = /*#__PURE__*/function (_Component) {
     _this.dom = /*#__PURE__*/(0, _react.createRef)();
     var _this$props = _this.props,
         id = _this$props.id,
-        dataset = _this$props.dataset,
-        freezeSize = _this$props.freezeSize;
-    _this.dataset = dataset;
+        freezeSize = _this$props.freezeSize,
+        sorts = _this$props.sorts,
+        selectives = _this$props.selectives,
+        paging = _this$props.paging,
+        columns = _this$props.columns;
     var openDictionary = {};
 
     if (id !== undefined) {
@@ -98,12 +100,36 @@ var RTable = /*#__PURE__*/function (_Component) {
       }
     }
 
+    (0, _jquery.default)(window).bind('click', function (e) {
+      var focused = _this.state.focused;
+
+      if (focused === false) {
+        return;
+      }
+
+      var target = (0, _jquery.default)(e.target);
+
+      if (target.parents('.aio-table-cell').length !== 0 || target.hasClass('aio-table-cell')) {
+        return;
+      }
+
+      _this.setState({
+        focused: false
+      });
+    });
     _this.activeTableIndex = 0;
     _this.state = {
       openDictionary: openDictionary,
       filterDictionary: {},
       groupsOpen: {},
-      freezeSize: freezeSize
+      freezeSize: freezeSize,
+      groupDictionary: {},
+      sorts: sorts,
+      selectives: selectives,
+      selectivesDictionary: [],
+      paging: paging,
+      columns: columns,
+      focused: false
     };
     return _this;
   }
@@ -130,48 +156,19 @@ var RTable = /*#__PURE__*/function (_Component) {
       this.deactiveTableIndex = index === 0 ? 1 : 0;
     }
   }, {
-    key: "getValueByField",
-    value: function getValueByField(obj, field) {
-      var fieldString = typeof field === 'function' ? field(obj) : field;
-
-      if (!fieldString || typeof fieldString !== 'string') {
-        console.error('Grid.getValueByField() receive invalid field');
-        return undefined;
-      }
-
-      var fields = fieldString.split('.');
-      var value = obj[fields[0]];
-
-      if (value === undefined) {
-        return;
-      }
-
-      for (var i = 1; i < fields.length; i++) {
-        value = value[fields[i]];
-
-        if (value === undefined || value === null) {
-          return;
-        }
-      }
-
-      return value;
-    }
-  }, {
     key: "getGap",
     value: function getGap() {
-      var cellGap = this.props.cellGap;
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-gap",
         style: {
-          width: cellGap
+          width: this.props.cellGap
         }
       });
     }
   }, {
     key: "getClient",
     value: function getClient(e) {
-      var touch = this.context.touch;
-      return touch ? [e.changedTouches[0].clientX, e.changedTouches[0].clientY] : [e.clientX, e.clientY];
+      return this.context.touch ? [e.changedTouches[0].clientX, e.changedTouches[0].clientY] : [e.clientX, e.clientY];
     }
   }, {
     key: "resizeDown",
@@ -263,23 +260,20 @@ var RTable = /*#__PURE__*/function (_Component) {
   }, {
     key: "convertFlat",
     value: function convertFlat(model) {
-      var _this3 = this;
+      var _this$props2 = this.props,
+          getRowId = _this$props2.getRowId,
+          getRowParentId = _this$props2.getRowParentId;
 
       var convertModelRecursive = function convertModelRecursive(array, parentId, parentObject) {
         for (var i = 0; i < array.length; i++) {
           var row = array[i];
-
-          if (row._parentId === undefined) {
-            row._parentId = _this3.getValueByField(row, _this3.dataset.parentId);
-            _this3.perf++;
-          }
+          row._parentId = getRowParentId(row);
 
           if (row._parentId !== parentId) {
             continue;
           }
 
-          var rowId = _this3.getValueByField(row, _this3.dataset.id);
-
+          var rowId = getRowId(row);
           row._childs = [];
           parentObject.push(row);
 
@@ -292,18 +286,100 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
       };
 
-      this.dataset.childs = '_childs';
       var result = [];
       convertModelRecursive(_toConsumableArray(model), undefined, result);
       return result;
     }
   }, {
+    key: "sort",
+    value: function sort(model) {
+      var _this3 = this;
+
+      var newModel = model.sort(function (a, b) {
+        for (var i = 0; i < _this3.sorts.length; i++) {
+          var _this3$sorts$i = _this3.sorts[i],
+              getValue = _this3$sorts$i.getValue,
+              type = _this3$sorts$i.type;
+          var aValue = getValue(a),
+              bValue = getValue(b);
+
+          if (aValue < bValue) {
+            return -1 * (type === 'dec' ? -1 : 1);
+          }
+
+          if (aValue > bValue) {
+            return 1 * (type === 'dec' ? -1 : 1);
+          }
+
+          if (i !== _this3.sorts.length - 1) {
+            continue;
+          }
+
+          return 0;
+        }
+      });
+      return newModel;
+    }
+  }, {
+    key: "getRowBySelectives",
+    value: function getRowBySelectives(row, index) {
+      var _this4 = this;
+
+      var selectives = this.state.selectives;
+
+      if (row.show === false || row.row._level !== 0 || selectives.length === 0) {
+        return;
+      }
+
+      var _loop = function _loop(j) {
+        var selective = selectives[j];
+        var value = selective.getValue(row.row);
+
+        if (index === 0) {
+          selective.items = [];
+          selective.repeat = {};
+          selective.dictionary = selective.dictionary || {};
+        }
+
+        if (selective.dictionary[value] === false) {
+          row.show = false;
+        }
+
+        if (selective.repeat[value]) {
+          return "continue";
+        }
+
+        selective.dictionary[value] = selective.dictionary[value] === undefined ? true : selective.dictionary[value];
+        selective.repeat[value] = true;
+        var text = selective.getText(row.row);
+        selective.items.push({
+          text: text,
+          value: value,
+          checked: selective.dictionary[value],
+          onClick: function onClick() {
+            selective.dictionary[value] = !selective.dictionary[value];
+
+            _this4.setState({
+              selectives: selectives
+            });
+          }
+        });
+      };
+
+      for (var j = 0; j < selectives.length; j++) {
+        var _ret = _loop(j);
+
+        if (_ret === "continue") continue;
+      }
+    }
+  }, {
     key: "getRows",
     value: function getRows() {
-      var _this$props2 = this.props,
-          model = _this$props2.model,
-          flat = _this$props2.flat,
-          paging = _this$props2.paging;
+      var _this$props3 = this.props,
+          model = _this$props3.model,
+          flat = _this$props3.flat,
+          onChangeSort = _this$props3.onChangeSort;
+      var paging = this.state.paging;
 
       if (!model) {
         return false;
@@ -314,18 +390,17 @@ var RTable = /*#__PURE__*/function (_Component) {
       this.rowRealIndex = 0;
       this.perf = 0;
       var convertedModel = flat ? this.convertFlat(_toConsumableArray(model)) : _toConsumableArray(model);
-      var groupedModel = this.getModelByGroup(convertedModel);
-      this.getRowsReq(groupedModel, rows, 0, []);
-      this.roots = [];
 
-      if (!paging || paging.outSide) {
-        return rows;
+      if (this.sorts.length && !onChangeSort) {
+        convertedModel = this.sort(convertedModel);
       }
 
+      this.getRowsReq(convertedModel, rows, 0, []);
       var roots = [];
 
-      for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
+      for (var _i = 0; _i < rows.length; _i++) {
+        var row = rows[_i];
+        this.getRowBySelectives(row, _i);
 
         if (row.show === false) {
           continue;
@@ -338,16 +413,28 @@ var RTable = /*#__PURE__*/function (_Component) {
         roots[roots.length - 1].push(row);
       }
 
-      return this.getRowsByPaging(roots);
+      if (paging) {
+        roots = this.getRowsByPaging(roots);
+      }
+
+      if (this.groups.length) {
+        roots = this.getModelByGroup(roots);
+      }
+
+      var Rows = [];
+
+      for (var i = 0; i < roots.length; i++) {
+        Rows = Rows.concat(roots[i]);
+      }
+
+      return Rows;
     }
   }, {
     key: "getRowsByPaging",
     value: function getRowsByPaging(roots) {
-      var paging = this.props.paging;
-      var length = roots.length;
+      var paging = this.state.paging;
+      var length = paging.onChange ? paging.count : roots.length;
       paging.pages = Math.ceil(length / paging.size);
-      var start = 0;
-      var end = length;
 
       if (paging.number > Math.ceil(length / paging.size)) {
         paging.number = Math.ceil(length / paging.size);
@@ -357,32 +444,28 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
       }
 
-      start = (paging.number - 1) * paging.size;
-      end = start + paging.size;
-      this.rowRealIndex = start;
-      var Rows = [];
-
-      for (var i = start; i <= end; i++) {
-        var root = roots[i];
-
-        if (!root) {
-          continue;
-        }
-
-        Rows = Rows.concat(root);
+      if (!paging.sizes) {
+        paging.sizes = [5, 10, 20, 30, 40, 50, 60, 70, 80];
       }
 
-      return Rows;
+      if (paging.onChange) {
+        return roots;
+      } //اگر پیجینگ آنچنج داشت تغییری در ردیف ها نده و اجازه بده تغییرات در آنچنج روی مدل ورودی انجام شود
+
+
+      var start = (paging.number - 1) * paging.size;
+      var end = start + paging.size;
+
+      if (end > length) {
+        end = length;
+      }
+
+      this.rowRealIndex = start;
+      return roots.slice(start, end);
     }
   }, {
     key: "getModelByGroup",
-    value: function getModelByGroup(model) {
-      var _this4 = this;
-
-      if (!this.groupByMode) {
-        return model;
-      }
-
+    value: function getModelByGroup(roots) {
       var groupsOpen = this.state.groupsOpen;
       var groups = this.groups;
 
@@ -411,15 +494,11 @@ var RTable = /*#__PURE__*/function (_Component) {
 
       var newModel = {};
 
-      var _loop = function _loop(i) {
-        var row = model[i];
+      var _loop2 = function _loop2(i) {
+        var root = roots[i];
         obj = newModel;
         var values = groups.map(function (group) {
-          if (typeof group.field === 'function') {
-            return group.field(row);
-          } else {
-            return _this4.getValueByField(row, group.field);
-          }
+          return group.getValue(root[0].row);
         });
 
         for (var j = 0; j < values.length; j++) {
@@ -427,7 +506,7 @@ var RTable = /*#__PURE__*/function (_Component) {
 
           if (j === values.length - 1) {
             obj[value] = obj[value] || [];
-            obj[value].push(row);
+            obj[value].push(root);
           } else {
             obj[value] = obj[value] || {};
             obj = obj[value];
@@ -435,10 +514,10 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
       };
 
-      for (var i = 0; i < model.length; i++) {
+      for (var i = 0; i < roots.length; i++) {
         var obj;
 
-        _loop(i);
+        _loop2(i);
       }
 
       var groupedRows = [];
@@ -450,6 +529,16 @@ var RTable = /*#__PURE__*/function (_Component) {
     key: "getRowsReq",
     value: function getRowsReq(model, rows, _level, parents) {
       var openDictionary = this.state.openDictionary;
+      var _this$props4 = this.props,
+          getRowId = _this$props4.getRowId,
+          getRowChilds = _this$props4.getRowChilds,
+          flat = _this$props4.flat;
+
+      if (flat) {
+        getRowChilds = function getRowChilds(row) {
+          return row._childs;
+        };
+      }
 
       for (var i = 0; i < model.length; i++) {
         var row = model[i];
@@ -472,11 +561,11 @@ var RTable = /*#__PURE__*/function (_Component) {
           return parents;
         };
 
-        if (this.dataset && this.dataset.id) {
-          var id = this.getValueByField(row, this.dataset.id);
+        if (getRowId) {
+          var id = getRowId(row);
 
           if (id === undefined) {
-            console.error('RTable => id of row is not defined, please check getId props of RTable');
+            console.error('RTable => id of row is not defined, please check getRowId props of RTable');
           }
 
           openDictionary[id] = openDictionary[id] === false ? false : true;
@@ -489,8 +578,8 @@ var RTable = /*#__PURE__*/function (_Component) {
         row._childsLength = 0;
         var childs = [];
 
-        if (this.dataset && this.dataset.childs) {
-          childs = this.getValueByField(row, this.dataset.childs) || [];
+        if (getRowChilds) {
+          childs = getRowChilds(row) || [];
           row._childsLength = childs.length;
         }
 
@@ -518,19 +607,19 @@ var RTable = /*#__PURE__*/function (_Component) {
           continue;
         }
 
-        if (filterItem.operator === 'contain' && value.indexOf(filterItem.value) === -1) {
+        if (filterItem.operator === 'contain' && value.toString().toLowerCase().indexOf(filterItem.value.toString().toLowerCase()) === -1) {
           return false;
         }
 
-        if (filterItem.operator === 'notContain' && value.indexOf(filterItem.value) !== -1) {
+        if (filterItem.operator === 'notContain' && value.toString().toLowerCase().indexOf(filterItem.value.toString().toLowerCase()) !== -1) {
           return false;
         }
 
-        if (filterItem.operator === 'equal' && value !== filterItem.value) {
+        if (filterItem.operator === 'equal' && value.toString().toLowerCase() !== filterItem.value.toString().toLowerCase()) {
           return false;
         }
 
-        if (filterItem.operator === 'notEqual' && value === filterItem.value) {
+        if (filterItem.operator === 'notEqual' && value.toString().toLowerCase() === filterItem.value.toString().toLowerCase()) {
           return false;
         }
 
@@ -555,27 +644,27 @@ var RTable = /*#__PURE__*/function (_Component) {
           return true;
         }
 
-        if (filterItem.operator === 'contain' && value.indexOf(filterItem.value) !== -1) {
+        if (filterItem.operator === 'contain' && value.toString().toLowerCase().indexOf(filterItem.value.toString().toLowerCase()) !== -1) {
           return true;
         }
 
-        if (filterItem.operator === 'notContain' && value.indexOf(filterItem.value) === -1) {
+        if (filterItem.operator === 'notContain' && value.toString().toLowerCase().indexOf(filterItem.value.toString().toLowerCase()) === -1) {
           return true;
         }
 
-        if (filterItem.operator === 'equal' && value === filterItem.value) {
+        if (filterItem.operator === 'equal' && value.toString().toLowerCase() === filterItem.value.toString().toLowerCase()) {
           return true;
         }
 
-        if (filterItem.operator === 'notEqual' && value !== filterItem.value) {
+        if (filterItem.operator === 'notEqual' && value.toString().toLowerCase() !== filterItem.value.toString().toLowerCase()) {
           return true;
         }
 
-        if (filterItem.operator === 'greater' && value > filterItem.value) {
+        if (filterItem.operator === 'greater' && parseFloat(value) > parseFloat(filterItem.value)) {
           return true;
         }
 
-        if (filterItem.operator === 'less' && value < filterItem.value) {
+        if (filterItem.operator === 'less' && parseFloat(value) < parseFloat(filterItem.value)) {
           return true;
         }
       }
@@ -586,10 +675,6 @@ var RTable = /*#__PURE__*/function (_Component) {
     key: "getFilterResult",
     value: function getFilterResult(column, value) {
       var filterDictionary = this.state.filterDictionary;
-      filterDictionary[column._index] = filterDictionary[column._index] || {
-        items: [],
-        booleanType: 'or'
-      };
       var filters = filterDictionary[column._index].items;
 
       if (filters.length) {
@@ -602,28 +687,33 @@ var RTable = /*#__PURE__*/function (_Component) {
   }, {
     key: "getRow",
     value: function getRow(row) {
+      var onChangeFilter = this.props.onChangeFilter;
+      var filterDictionary = this.state.filterDictionary;
       row._values = {};
-      var show = true;
-      var lastFreezedColumn;
-      var lastColumn;
-      var isThereAutoColumn = false;
-      var cells = [];
-      var freezeCells = [];
-      var unFreezeCells = [];
+      var show = true,
+          lastColumn,
+          isThereAutoColumn = false,
+          cells = [],
+          freezeCells = [],
+          unFreezeCells = [];
 
       for (var i = 0; i < this.visibleColumns.length; i++) {
         var column = this.visibleColumns[i],
             value = void 0;
 
-        if (typeof column.field === 'function') {
-          value = column.field(row);
-        } else {
-          value = column.field ? this.getValueByField(row, column.field) : undefined;
+        try {
+          value = typeof column.getValue === 'function' ? column.getValue(row) : undefined;
+        } catch {
+          value = undefined;
         }
 
         row._values[column._index] = value;
+        filterDictionary[column._index] = filterDictionary[column._index] || {
+          items: [],
+          booleanType: 'or'
+        };
 
-        if (show) {
+        if (show && !onChangeFilter) {
           show = show && this.getFilterResult(column, value);
         }
 
@@ -639,7 +729,6 @@ var RTable = /*#__PURE__*/function (_Component) {
           if (column.freeze) {
             column._renderIndex = freezeCells.length;
             freezeCells.push(obj);
-            lastFreezedColumn = column;
           } else {
             column._renderIndex = unFreezeCells.length;
             lastColumn = column;
@@ -663,15 +752,11 @@ var RTable = /*#__PURE__*/function (_Component) {
       if (show) {
         var parents = row._getParents();
 
-        for (var _i = 0; _i < parents.length; _i++) {
-          if (parents[_i].show === false) {
-            parents[_i].show = 'relativeFilter';
+        for (var _i2 = 0; _i2 < parents.length; _i2++) {
+          if (parents[_i2].show === false) {
+            parents[_i2].show = 'relativeFilter';
           }
         }
-      }
-
-      if (lastFreezedColumn) {
-        lastFreezedColumn.width = 'auto';
       }
 
       if (!isThereAutoColumn && lastColumn) {
@@ -688,10 +773,6 @@ var RTable = /*#__PURE__*/function (_Component) {
   }, {
     key: "setColumnWidth",
     value: function setColumnWidth(column) {
-      if (column.template === 'checkbox' && !column.width) {
-        column.width = '48px';
-      }
-
       if (typeof column.width !== 'string') {
         column.width = 'auto';
       }
@@ -705,62 +786,183 @@ var RTable = /*#__PURE__*/function (_Component) {
     value: function updateColumns() {
       var _this5 = this;
 
-      var _this$props3 = this.props,
-          columns = _this$props3.columns,
-          onChange = _this$props3.onChange,
-          _this$props3$freezeMo = _this$props3.freezeMode,
-          freezeMode = _this$props3$freezeMo === void 0 ? true : _this$props3$freezeMo,
-          _this$props3$groupByM = _this$props3.groupByMode,
-          groupByMode = _this$props3$groupByM === void 0 ? true : _this$props3$groupByM;
+      var _this$props5 = this.props,
+          _this$props5$freezeMo = _this$props5.freezeMode,
+          freezeMode = _this$props5$freezeMo === void 0 ? true : _this$props5$freezeMo,
+          translate = _this$props5.translate,
+          groups = _this$props5.groups,
+          cardTemplate = _this$props5.cardTemplate,
+          onChangeSort = _this$props5.onChangeSort;
+      var _this$state = this.state,
+          groupDictionary = _this$state.groupDictionary,
+          sorts = _this$state.sorts,
+          selectives = _this$state.selectives,
+          columns = _this$state.columns;
       this.groups = [];
+      this.sorts = [];
+      this.selectives = [];
       this.freezeMode = false;
-      this.groupByMode = false;
       this.visibleColumns = [];
       this.freezeColumns = [];
       this.unFreezeColumns = [];
       this.toolbar = {
-        show: false,
-        toggle: [],
-        freeze: [],
-        groupBy: [],
+        show: selectives.length !== 0,
+        toggle: [{
+          text: translate('Show')
+        }],
+        freeze: [{
+          text: translate('Freeze')
+        }],
+        groupBy: [{
+          text: translate('Group By')
+        }],
+        sort: [{
+          text: translate('Sort')
+        }],
+        selectives: selectives,
         searchColumnIndex: false
       };
 
-      var _loop2 = function _loop2(i) {
-        var column = columns[i];
+      var _loop3 = function _loop3(i) {
+        var sort = sorts[i];
+        var getValue = sort.getValue,
+            _sort$type = sort.type,
+            type = _sort$type === void 0 ? 'inc' : _sort$type,
+            title = sort.title,
+            _sort$active = sort.active,
+            active = _sort$active === void 0 ? true : _sort$active,
+            _sort$toggle = sort.toggle,
+            toggle = _sort$toggle === void 0 ? true : _sort$toggle;
+
+        if (!title) {
+          console.error('aio table => missing sort title property');
+          return "continue";
+        }
+
+        if (typeof getValue !== 'function') {
+          console.error('aio table => sort getValue property is not a function');
+          return "continue";
+        }
+
+        if (active === true) {
+          _this5.sorts.push({
+            getValue: getValue,
+            type: type
+          });
+        }
+
+        if (toggle) {
+          _this5.toolbar.show = true;
+
+          _this5.toolbar.sort.push({
+            text: title,
+            checked: active === true,
+            after: /*#__PURE__*/_react.default.createElement("div", {
+              style: {
+                width: '30px',
+                display: 'flex',
+                justifyContent: 'flex-end'
+              }
+            }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+              path: type === 'dec' ? _js.mdiArrowDown : _js.mdiArrowUp,
+              size: 0.8,
+              onClick: function onClick() {
+                sort.type = sort.type === 'dec' ? 'inc' : 'dec';
+
+                _this5.setState({
+                  sorts: sorts
+                });
+
+                if (onChangeSort) {
+                  onChangeSort(sorts.filter(function (o) {
+                    return o.active !== false;
+                  }));
+                }
+              }
+            })),
+            onClick: function onClick() {
+              sort.active = !active;
+
+              _this5.setState({
+                sorts: sorts
+              });
+
+              if (onChangeSort) {
+                onChangeSort(sorts.filter(function (o) {
+                  return o.active !== false;
+                }));
+              }
+            }
+          });
+        }
+      };
+
+      for (var i = 0; i < sorts.length; i++) {
+        var _ret2 = _loop3(i);
+
+        if (_ret2 === "continue") continue;
+      }
+
+      var _loop4 = function _loop4(_i3) {
+        var group = groups[_i3];
+        var title = group.title,
+            _group$active = group.active,
+            active = _group$active === void 0 ? true : _group$active,
+            _group$toggle = group.toggle,
+            toggle = _group$toggle === void 0 ? true : _group$toggle,
+            getValue = group.getValue;
+
+        if (!title) {
+          console.error('aio table => missing group title property');
+          return "continue";
+        }
+
+        if (typeof getValue !== 'function') {
+          console.error('aio table => group getValue property is not a function');
+          return "continue";
+        }
+
+        groupDictionary[title] = groupDictionary[title] === undefined ? active : groupDictionary[title];
+
+        if (groupDictionary[title]) {
+          _this5.groups.push(group);
+        }
+
+        if (toggle) {
+          _this5.toolbar.show = true;
+
+          _this5.toolbar.groupBy.push({
+            text: title,
+            checked: groupDictionary[title],
+            onClick: function onClick() {
+              groupDictionary[title] = !groupDictionary[title];
+
+              _this5.setState({
+                groupDictionary: groupDictionary
+              });
+            }
+          });
+        }
+      };
+
+      for (var _i3 = 0; _i3 < groups.length; _i3++) {
+        var _ret3 = _loop4(_i3);
+
+        if (_ret3 === "continue") continue;
+      }
+
+      if (cardTemplate) {
+        return;
+      }
+
+      var _loop5 = function _loop5(_i4) {
+        var column = columns[_i4];
 
         _this5.setColumnWidth(column);
 
-        column._index = i;
+        column._index = _i4;
 
-        if (groupByMode) {
-          if (column.groupBy) {
-            _this5.groups.push({
-              field: column.field,
-              text: column.title
-            });
-
-            _this5.groupByMode = true;
-          }
-
-          if (column.toggleGroupBy) {
-            _this5.toolbar.show = true;
-
-            _this5.toolbar.groupBy.push({
-              field: column.field,
-              text: column.title,
-              checked: column.groupBy === true,
-              onClick: function onClick() {
-                column.groupBy = !column.groupBy;
-                onChange({
-                  columns: columns
-                });
-              }
-            });
-          }
-        }
-
-        if (column.show !== false && column.groupBy !== true) {
+        if (column.show !== false) {
           _this5.visibleColumns.push(column);
 
           if (freezeMode) {
@@ -781,7 +983,8 @@ var RTable = /*#__PURE__*/function (_Component) {
                 onClick: function onClick() {
                   column.freeze = column.freeze === true ? true : false;
                   column.freeze = !column.freeze;
-                  onChange({
+
+                  _this5.setState({
                     columns: columns
                   });
                 }
@@ -799,7 +1002,8 @@ var RTable = /*#__PURE__*/function (_Component) {
             onClick: function onClick() {
               column.show = column.show === false ? false : true;
               column.show = !column.show;
-              onChange({
+
+              _this5.setState({
                 columns: columns
               });
             }
@@ -807,12 +1011,13 @@ var RTable = /*#__PURE__*/function (_Component) {
         }
 
         if (column.search) {
+          _this5.toolbar.show = true;
           _this5.toolbar.searchColumnIndex = column._index;
         }
       };
 
-      for (var i = 0; i < columns.length; i++) {
-        _loop2(i);
+      for (var _i4 = 0; _i4 < columns.length; _i4++) {
+        _loop5(_i4);
       }
 
       if (this.freezeColumns.length === 0 || this.unFreezeColumns.length === 0) {
@@ -822,21 +1027,20 @@ var RTable = /*#__PURE__*/function (_Component) {
   }, {
     key: "getPaging",
     value: function getPaging() {
-      var _this$props4 = this.props,
-          paging = _this$props4.paging,
-          rtl = _this$props4.rtl,
-          translate = _this$props4.translate;
+      var _this6 = this;
+
+      var paging = this.props.paging;
 
       if (!paging) {
         return null;
       }
 
+      var _this$props6 = this.props,
+          rtl = _this$props6.rtl,
+          translate = _this$props6.translate;
       var number = paging.number,
-          _paging$sizes = paging.sizes,
-          sizes = _paging$sizes === void 0 ? [1, 5, 10, 20, 30] : _paging$sizes,
+          sizes = paging.sizes,
           size = paging.size,
-          _paging$onChange = paging.onChange,
-          _onChange = _paging$onChange === void 0 ? function () {} : _paging$onChange,
           pages = paging.pages;
 
       var changePage = function changePage(type) {
@@ -864,10 +1068,15 @@ var RTable = /*#__PURE__*/function (_Component) {
           return;
         }
 
-        _onChange({
-          number: newNumber,
-          size: size
+        paging.number = newNumber;
+
+        _this6.setState({
+          paging: paging
         });
+
+        if (paging.onChange) {
+          paging.onChange(paging);
+        }
       };
 
       return /*#__PURE__*/_react.default.createElement("div", {
@@ -917,10 +1126,15 @@ var RTable = /*#__PURE__*/function (_Component) {
         className: "aio-table-paging-button",
         value: size,
         onChange: function onChange(e) {
-          return _onChange({
-            number: number,
-            size: parseInt(e.target.value)
+          paging.size = parseInt(e.target.value);
+
+          _this6.setState({
+            paging: paging
           });
+
+          if (paging.onChange) {
+            paging.onChange(paging);
+          }
         },
         title: translate('Rows Count Per Page')
       }, sizes.map(function (s, i) {
@@ -991,22 +1205,42 @@ var RTable = /*#__PURE__*/function (_Component) {
       }));
     }
   }, {
+    key: "onChangeFilter",
+    value: function onChangeFilter(obj) {
+      var onChangeFilter = this.props.onChangeFilter;
+      var columns = this.state.columns;
+      var filters = [];
+
+      for (var prop in obj) {
+        if (obj[prop].items.length) {
+          filters.push({
+            column: columns[prop],
+            ...obj[prop]
+          });
+        }
+      }
+
+      onChangeFilter(filters);
+    }
+  }, {
     key: "render",
     value: function render() {
-      var _this6 = this;
+      var _this7 = this;
 
-      var _this$props5 = this.props,
-          columns = _this$props5.columns,
-          rowHeight = _this$props5.rowHeight,
-          headerHeight = _this$props5.headerHeight,
-          toolbarHeight = _this$props5.toolbarHeight,
-          rowGap = _this$props5.rowGap,
-          className = _this$props5.className,
-          columnGap = _this$props5.columnGap,
-          rtl = _this$props5.rtl,
-          style = _this$props5.style,
-          _this$props5$attrs = _this$props5.attrs,
-          attrs = _this$props5$attrs === void 0 ? {} : _this$props5$attrs;
+      var _this$props7 = this.props,
+          rowHeight = _this$props7.rowHeight,
+          headerHeight = _this$props7.headerHeight,
+          toolbarHeight = _this$props7.toolbarHeight,
+          rowGap = _this$props7.rowGap,
+          className = _this$props7.className,
+          columnGap = _this$props7.columnGap,
+          rtl = _this$props7.rtl,
+          style = _this$props7.style,
+          _this$props7$attrs = _this$props7.attrs,
+          attrs = _this$props7$attrs === void 0 ? {} : _this$props7$attrs,
+          cardTemplate = _this$props7.cardTemplate,
+          onChangeFilter = _this$props7.onChangeFilter;
+      var columns = this.state.columns;
       this.rh = rowHeight;
       this.hh = headerHeight;
       this.th = toolbarHeight;
@@ -1017,26 +1251,26 @@ var RTable = /*#__PURE__*/function (_Component) {
       var context = { ...this.props,
         ...this.state,
         touch: this.touch,
+        onChangeFilter: onChangeFilter ? this.onChangeFilter.bind(this) : undefined,
         SetState: function SetState(obj) {
-          return _this6.setState(obj);
+          return _this7.setState(obj);
         },
         cubes2: this.cubes2.bind(this),
         getGap: this.getGap.bind(this),
-        getValueByField: this.getValueByField.bind(this),
         onScroll: this.onScroll.bind(this),
         onMouseEnter: this.onMouseEnter.bind(this),
         getClient: this.getClient.bind(this),
         getLoading: this.getLoading.bind(this),
         groups: this.groups
       };
-      return /*#__PURE__*/_react.default.createElement(RTableContext.Provider, {
+      return /*#__PURE__*/_react.default.createElement(AioTableContext.Provider, {
         value: context
       }, /*#__PURE__*/_react.default.createElement("div", _extends({
         className: 'aio-table' + (className ? ' ' + className : '') + (rtl ? ' rtl' : ''),
         tabIndex: 0,
         ref: this.dom,
         style: style
-      }, attrs), /*#__PURE__*/_react.default.createElement(RTableToolbar, this.toolbar), this.visibleColumns.length === 0 && this.getLoading(), table, /*#__PURE__*/_react.default.createElement("div", {
+      }, attrs), /*#__PURE__*/_react.default.createElement(RTableToolbar, this.toolbar), !cardTemplate && this.visibleColumns.length === 0 && this.getLoading(), table, /*#__PURE__*/_react.default.createElement("div", {
         style: {
           height: rowGap
         }
@@ -1063,7 +1297,10 @@ RTable.defaultProps = {
   translate: function translate(text) {
     return text;
   },
-  freezeSize: 300
+  freezeSize: 300,
+  sorts: [],
+  groups: [],
+  selectives: []
 };
 
 var RTableToolbar = /*#__PURE__*/function (_Component2) {
@@ -1072,7 +1309,7 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
   var _super2 = _createSuper(RTableToolbar);
 
   function RTableToolbar() {
-    var _this7;
+    var _this8;
 
     _classCallCheck(this, RTableToolbar);
 
@@ -1080,29 +1317,29 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
       args[_key] = arguments[_key];
     }
 
-    _this7 = _super2.call.apply(_super2, [this].concat(args));
+    _this8 = _super2.call.apply(_super2, [this].concat(args));
 
-    _defineProperty(_assertThisInitialized(_this7), "state", {
+    _defineProperty(_assertThisInitialized(_this8), "state", {
       searchText: ''
     });
 
-    return _this7;
+    return _this8;
   }
 
   _createClass(RTableToolbar, [{
     key: "changeSearch",
     value: function changeSearch(value) {
-      var _this8 = this;
+      var _this9 = this;
 
       clearTimeout(this.searchTimeout);
       this.setState({
         searchText: value
       });
       this.searchTimeout = setTimeout(function () {
-        var _this8$context = _this8.context,
-            filterDictionary = _this8$context.filterDictionary,
-            SetState = _this8$context.SetState;
-        var searchColumnIndex = _this8.props.searchColumnIndex;
+        var _this9$context = _this9.context,
+            filterDictionary = _this9$context.filterDictionary,
+            SetState = _this9$context.SetState;
+        var searchColumnIndex = _this9.props.searchColumnIndex;
         filterDictionary[searchColumnIndex] = {
           items: value ? [{
             operator: 'contain',
@@ -1118,18 +1355,20 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
   }, {
     key: "render",
     value: function render() {
-      var _this9 = this;
+      var _this10 = this;
 
       var _this$context = this.context,
           translate = _this$context.translate,
           rtl = _this$context.rtl;
       var searchText = this.state.searchText;
-      var _this$props6 = this.props,
-          show = _this$props6.show,
-          toggle = _this$props6.toggle,
-          freeze = _this$props6.freeze,
-          groupBy = _this$props6.groupBy,
-          searchColumnIndex = _this$props6.searchColumnIndex;
+      var _this$props8 = this.props,
+          show = _this$props8.show,
+          toggle = _this$props8.toggle,
+          freeze = _this$props8.freeze,
+          groupBy = _this$props8.groupBy,
+          sort = _this$props8.sort,
+          searchColumnIndex = _this$props8.searchColumnIndex,
+          selectives = _this$props8.selectives;
 
       if (!show) {
         return null;
@@ -1140,9 +1379,39 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
         className: 'aio-table-toolbar-dropdown',
         animate: true
       };
+      var Selectives = selectives.map(function (selective, i) {
+        return /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
+          key: 'selectives' + i
+        }, buttonProps, {
+          items: selective.items,
+          style: {
+            width: 'auto'
+          },
+          text: selective.title,
+          icon: selective.icon
+        }));
+      });
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-toolbar"
-      }, groupBy.length !== 0 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
+      }, Selectives, searchColumnIndex !== false && /*#__PURE__*/_react.default.createElement("div", {
+        key: 3,
+        className: "aio-table-search"
+      }, /*#__PURE__*/_react.default.createElement("input", {
+        className: "aio-table-search-input",
+        type: "text",
+        value: searchText,
+        onChange: function onChange(e) {
+          return _this10.changeSearch(e.target.value);
+        }
+      }), /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        className: "aio-table-search-icon",
+        path: _js.mdiMagnify,
+        size: 0.8
+      })), searchColumnIndex === false && /*#__PURE__*/_react.default.createElement("div", {
+        style: {
+          flex: 1
+        }
+      }), groupBy.length > 1 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
         key: 0
       }, buttonProps, {
         items: groupBy,
@@ -1152,8 +1421,17 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
           size: 0.7,
           horizontal: rtl === true
         })
-      })), toggle.length !== 0 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
+      })), sort.length > 1 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
         key: 1
+      }, buttonProps, {
+        items: sort,
+        title: translate('Sort'),
+        icon: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: _js.mdiSort,
+          size: 0.7
+        })
+      })), toggle.length > 1 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
+        key: 2
       }, buttonProps, {
         icon: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
           path: _js.mdiEye,
@@ -1161,8 +1439,8 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
         }),
         items: toggle,
         title: translate('Show Columns')
-      })), freeze.length !== 0 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
-        key: 2
+      })), freeze.length > 1 && /*#__PURE__*/_react.default.createElement(_rDropdownButton.default, _extends({
+        key: 3
       }, buttonProps, {
         icon: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
           path: _js.mdiAlignHorizontalLeft,
@@ -1171,20 +1449,6 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
         }),
         items: freeze,
         title: translate('Freeze Columns')
-      })), searchColumnIndex !== false && /*#__PURE__*/_react.default.createElement("div", {
-        key: 3,
-        className: "aio-table-search"
-      }, /*#__PURE__*/_react.default.createElement("input", {
-        className: "aio-table-search-input",
-        type: "text",
-        value: searchText,
-        onChange: function onChange(e) {
-          return _this9.changeSearch(e.target.value);
-        }
-      }), /*#__PURE__*/_react.default.createElement(_react2.Icon, {
-        className: "aio-table-search-icon",
-        path: _js.mdiMagnify,
-        size: 0.8
       })));
     }
   }]);
@@ -1192,7 +1456,7 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
   return RTableToolbar;
 }(_react.Component);
 
-_defineProperty(RTableToolbar, "contextType", RTableContext);
+_defineProperty(RTableToolbar, "contextType", AioTableContext);
 
 var RTableUnit = /*#__PURE__*/function (_Component3) {
   _inherits(RTableUnit, _Component3);
@@ -1200,13 +1464,13 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   var _super3 = _createSuper(RTableUnit);
 
   function RTableUnit(props) {
-    var _this10;
+    var _this11;
 
     _classCallCheck(this, RTableUnit);
 
-    _this10 = _super3.call(this, props);
-    _this10.dom = /*#__PURE__*/(0, _react.createRef)();
-    return _this10;
+    _this11 = _super3.call(this, props);
+    _this11.dom = /*#__PURE__*/(0, _react.createRef)();
+    return _this11;
   }
 
   _createClass(RTableUnit, [{
@@ -1270,10 +1534,9 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       var _this$context3 = this.context,
           rowGap = _this$context3.rowGap,
           columnGap = _this$context3.columnGap;
-      var _this$props7 = this.props,
-          columns = _this$props7.columns,
-          index = _this$props7.index,
-          style = _this$props7.style;
+      var _this$props9 = this.props,
+          columns = _this$props9.columns,
+          style = _this$props9.style;
       var gridTemplateColumns = '';
       this.gridTemplateColumns = [];
 
@@ -1294,11 +1557,11 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   }, {
     key: "getTitles",
     value: function getTitles() {
-      var _this11 = this;
+      var _this12 = this;
 
       var columns = this.props.columns;
       return columns.map(function (column) {
-        return _this11.getTitle(column);
+        return _this12.getTitle(column);
       });
     }
   }, {
@@ -1307,8 +1570,10 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       var _this$context4 = this.context,
           headerHeight = _this$context4.headerHeight,
           columnGap = _this$context4.columnGap;
-      var keys = column.keys,
-          padding = column.padding;
+      var getKeys = column.getKeys,
+          _column$padding = column.padding,
+          padding = _column$padding === void 0 ? '36px' : _column$padding;
+      var keys = getKeys();
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-title aio-table-title-gantt",
         style: {
@@ -1342,30 +1607,18 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   }, {
     key: "getTitle",
     value: function getTitle(column) {
-      var _this12 = this;
+      var _this13 = this;
 
       if (column.template === 'gantt') {
         return this.getGanttTitle(column);
       }
 
       var _this$context5 = this.context,
-          onChange = _this$context5.onChange,
+          SetState = _this$context5.SetState,
           columns = _this$context5.columns,
           headerHeight = _this$context5.headerHeight,
           columnGap = _this$context5.columnGap,
           touch = _this$context5.touch;
-
-      if (column.template === 'checkbox') {
-        if (column.checkAll) {
-          column.title = /*#__PURE__*/_react.default.createElement(_react2.Icon, {
-            path: _js.mdiCheckboxMarkedOutline,
-            size: 1
-          });
-        }
-
-        column.center = true;
-      }
-
       var props = {
         style: {
           height: headerHeight,
@@ -1380,43 +1633,43 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
 
       var resizeProps = _defineProperty({
         className: 'aio-table-resize',
+        style: {
+          cursor: column.resizable ? 'col-resize' : 'default'
+        },
         draggable: false
       }, touch ? 'onTouchStart' : 'onMouseDown', function (e) {
-        return _this12.resizeDown(e, column);
+        return column.resizable ? _this13.resizeDown(e, column) : undefined;
       });
 
       var titleProps = {
         className: 'aio-table-title-text',
         style: {
-          justifyContent: column.center ? 'center' : undefined,
+          justifyContent: column.titleJustify ? 'center' : undefined,
           cursor: column.movable === false ? undefined : 'move'
         },
         draggable: column.movable !== false,
         onDragStart: function onDragStart(e) {
-          _this12.startColumnSwap = column._index;
+          _this13.startColumnSwap = column._index;
         },
         onDragOver: function onDragOver(e) {
           e.preventDefault();
-          _this12.endColumnSwap = column._index;
+          _this13.endColumnSwap = column._index;
         },
         onDrop: function onDrop(e) {
           if (column.movable === false) {
             return;
           }
 
-          if (_this12.startColumnSwap === _this12.endColumnSwap) {
+          if (_this13.startColumnSwap === _this13.endColumnSwap) {
             return;
           }
 
-          var temp = columns[_this12.startColumnSwap];
-          columns[_this12.startColumnSwap] = columns[_this12.endColumnSwap];
-          columns[_this12.endColumnSwap] = temp;
-
-          if (onChange) {
-            onChange({
-              columns: columns
-            });
-          }
+          var temp = columns[_this13.startColumnSwap];
+          columns[_this13.startColumnSwap] = columns[_this13.endColumnSwap];
+          columns[_this13.endColumnSwap] = temp;
+          SetState({
+            columns: columns
+          });
         }
       };
       return /*#__PURE__*/_react.default.createElement("div", props, /*#__PURE__*/_react.default.createElement(RTableFilter, {
@@ -1473,25 +1726,37 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       (0, _jquery.default)(window).unbind(touch ? 'touchend' : 'mouseup', this.resizeUp);
       var _this$context8 = this.context,
           columns = _this$context8.columns,
-          _this$context8$onChan = _this$context8.onChange,
-          onChange = _this$context8$onChan === void 0 ? function () {} : _this$context8$onChan;
+          SetState = _this$context8.SetState;
       var _this$resizeDetails3 = this.resizeDetails,
           index = _this$resizeDetails3.index,
           newWidth = _this$resizeDetails3.newWidth;
       columns[index].width = newWidth;
-      onChange({
+      SetState({
         columns: columns
       });
     }
   }, {
     key: "keyDown",
     value: function keyDown(e) {
-      if ([37, 38, 39, 40].indexOf(e.keyCode) === -1) {
-        return;
-      }
+      var SetState = this.context.SetState;
 
+      if (e.keyCode === 27) {
+        (0, _jquery.default)('.aio-table-input').blur();
+        SetState({
+          focused: false
+        });
+      } else if ([37, 38, 39, 40].indexOf(e.keyCode) !== -1) {
+        this.arrow(e);
+      }
+    }
+  }, {
+    key: "arrow",
+    value: function arrow(e) {
       var container = (0, _jquery.default)(this.dom.current);
-      var rtl = this.context.rtl;
+      var _this$context9 = this.context,
+          rtl = _this$context9.rtl,
+          focused = _this$context9.focused,
+          SetState = _this$context9.SetState;
       var columns = this.props.columns;
       var inputs = container.find('.aio-table-input');
 
@@ -1501,8 +1766,20 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
 
       var focusedInput = inputs.filter(':focus');
 
-      if (focusedInput.length === 0) {
-        inputs.eq(0).focus().select();
+      if (focused === false) {
+        var inputCells = (0, _jquery.default)('.aio-table-cell-input');
+
+        if (inputCells.length) {
+          var cell = inputCells.eq(0);
+          var cellId = cell.attr('cellid');
+          SetState({
+            focused: cellId
+          });
+          setTimeout(function () {
+            (0, _jquery.default)('.aio-table-cell-input[cellid=' + cellId + '] .aio-table-input').focus().select();
+          }, 10);
+        }
+
         return;
       }
 
@@ -1561,29 +1838,51 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
       };
     }
   }, {
-    key: "render",
-    value: function render() {
-      var _this13 = this;
+    key: "card",
+    value: function card() {
+      var _this14 = this;
 
-      var _this$context9 = this.context,
-          indent = _this$context9.indent,
-          _onMouseEnter = _this$context9.onMouseEnter,
-          _onScroll = _this$context9.onScroll,
-          rowHeight = _this$context9.rowHeight,
-          groups = _this$context9.groups,
-          getLoading = _this$context9.getLoading;
-      var _this$props8 = this.props,
-          rows = _this$props8.rows,
-          id = _this$props8.id,
-          index = _this$props8.index,
-          type = _this$props8.type;
+      var _this$context10 = this.context,
+          indent = _this$context10.indent,
+          _onMouseEnter = _this$context10.onMouseEnter,
+          _onScroll = _this$context10.onScroll,
+          rowHeight = _this$context10.rowHeight,
+          _this$context10$cardG = _this$context10.cardGap,
+          cardGap = _this$context10$cardG === void 0 ? 0 : _this$context10$cardG,
+          getLoading = _this$context10.getLoading,
+          cardTemplate = _this$context10.cardTemplate,
+          _this$context10$cardR = _this$context10.cardRowCount,
+          cardRowCount = _this$context10$cardR === void 0 ? 1 : _this$context10$cardR,
+          rowGap = _this$context10.rowGap,
+          _this$context10$cardT = _this$context10.cardType,
+          cardType = _this$context10$cardT === void 0 ? 'html' : _this$context10$cardT,
+          columnGap = _this$context10.columnGap;
+      var _this$props10 = this.props,
+          rows = _this$props10.rows,
+          id = _this$props10.id,
+          index = _this$props10.index;
+      var groupStyle = {
+        gridColumnStart: 1,
+        gridColumnEnd: cardRowCount + 1,
+        height: rowHeight
+      };
+
+      if (cardRowCount === 'auto') {
+        groupStyle.gridColumnStart = undefined;
+        groupStyle.gridColumnEnd = undefined;
+      }
+
       return /*#__PURE__*/_react.default.createElement("div", {
         id: id,
         tabIndex: 0,
         className: "aio-table-unit",
         onKeyDown: this.keyDown.bind(this),
-        style: this.getStyle(),
         ref: this.dom,
+        style: {
+          gridRowGap: rowGap,
+          gridColumnGap: columnGap,
+          gridTemplateColumns: cardRowCount === 'auto' ? undefined : "repeat(".concat(cardRowCount, ",auto)")
+        },
         onMouseEnter: function onMouseEnter() {
           return _onMouseEnter(index);
         },
@@ -1593,26 +1892,93 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         onScroll: function onScroll(e) {
           return _onScroll(e, index);
         }
+      }, rows && rows.length !== 0 && rows.map(function (row, i) {
+        if (row._groupField) {
+          var width = indent * row._level;
+          return /*#__PURE__*/_react.default.createElement("div", {
+            className: "aio-table-group",
+            key: 'group' + i + '-' + index,
+            style: groupStyle
+          }, index !== 1 && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+            style: {
+              width: width
+            }
+          }), _this14.getGroupToggleIcon(row), row._groupText));
+        }
+
+        if (cardType === 'layout') {
+          return /*#__PURE__*/_react.default.createElement("div", {
+            className: "aio-table-card"
+          }, /*#__PURE__*/_react.default.createElement(RLayout, {
+            gap: cardGap,
+            layout: cardTemplate(row.row)
+          }));
+        }
+
+        return /*#__PURE__*/_react.default.createElement("div", {
+          className: "aio-table-card"
+        }, cardTemplate(row.row));
+      }), rows && rows.length === 0 && this.getNoData(), !rows && getLoading());
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this15 = this;
+
+      if (this.context.cardTemplate) {
+        return this.card();
+      }
+
+      var _this$context11 = this.context,
+          indent = _this$context11.indent,
+          _onMouseEnter2 = _this$context11.onMouseEnter,
+          _onScroll2 = _this$context11.onScroll,
+          rowHeight = _this$context11.rowHeight,
+          groups = _this$context11.groups,
+          getLoading = _this$context11.getLoading,
+          cardTemplate = _this$context11.cardTemplate;
+      var _this$props11 = this.props,
+          rows = _this$props11.rows,
+          id = _this$props11.id,
+          index = _this$props11.index,
+          type = _this$props11.type;
+      return /*#__PURE__*/_react.default.createElement("div", {
+        id: id,
+        tabIndex: 0,
+        className: "aio-table-unit",
+        onKeyDown: this.keyDown.bind(this),
+        style: this.getStyle(),
+        ref: this.dom,
+        onMouseEnter: function onMouseEnter() {
+          return _onMouseEnter2(index);
+        },
+        onMouseDown: function onMouseDown() {
+          return _onMouseEnter2(index);
+        },
+        onScroll: function onScroll(e) {
+          return _onScroll2(e, index);
+        }
       }, this.getTitles(), rows && rows.length !== 0 && rows.map(function (row, i) {
         if (row._groupField) {
           var width = indent * row._level;
           return /*#__PURE__*/_react.default.createElement("div", {
             className: "aio-table-group",
             key: 'group' + i + '-' + index,
-            style: { ..._this13.getFullCellStyle(),
+            style: { ..._this15.getFullCellStyle(),
               height: rowHeight
             }
           }, index !== 1 && /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
             style: {
               width: width
             }
-          }), _this13.getGroupToggleIcon(row), row._groupText));
+          }), _this15.getGroupToggleIcon(row), row._groupText));
         }
 
         if (type === 'freeze') {
           return row.freezeCells.map(function (r, j) {
             return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-              key: i + '-' + j + '-' + index
+              key: i + '-' + j + '-' + index,
+              cellId: i + '-' + j + '-' + index
             }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
@@ -1622,7 +1988,8 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
         if (type === 'unFreeze') {
           return row.unFreezeCells.map(function (r, j) {
             return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-              key: i + '-' + j + '-' + index
+              key: i + '-' + j + '-' + index,
+              cellId: i + '-' + j + '-' + index
             }, r, {
               relativeFilter: row.show === 'relativeFilter'
             }));
@@ -1631,7 +1998,8 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
 
         return row.cells.map(function (r, j) {
           return /*#__PURE__*/_react.default.createElement(RTableCell, _extends({
-            key: i + '-' + j + '-' + index
+            key: i + '-' + j + '-' + index,
+            cellId: i + '-' + j + '-' + index
           }, r, {
             relativeFilter: row.show === 'relativeFilter'
           }));
@@ -1643,7 +2011,7 @@ var RTableUnit = /*#__PURE__*/function (_Component3) {
   return RTableUnit;
 }(_react.Component);
 
-_defineProperty(RTableUnit, "contextType", RTableContext);
+_defineProperty(RTableUnit, "contextType", AioTableContext);
 
 var RTableCell = /*#__PURE__*/function (_Component4) {
   _inherits(RTableCell, _Component4);
@@ -1651,65 +2019,68 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
   var _super4 = _createSuper(RTableCell);
 
   function RTableCell(props) {
-    var _this14;
+    var _this16;
 
     _classCallCheck(this, RTableCell);
 
-    _this14 = _super4.call(this, props);
-    _this14.dom = /*#__PURE__*/(0, _react.createRef)();
-    var value = _this14.props.value;
-    _this14.state = {
+    _this16 = _super4.call(this, props);
+    _this16.dom = /*#__PURE__*/(0, _react.createRef)();
+    var value = _this16.props.value;
+    _this16.state = {
       value: value,
       error: false,
       prevValue: value
     };
-    return _this14;
+    return _this16;
   }
 
   _createClass(RTableCell, [{
-    key: "getPrev",
-    value: function getPrev(row, column) {
-      if (!column.prev) {
+    key: "getBefore",
+    value: function getBefore(row, column) {
+      if (!column.before) {
         return '';
       }
 
-      var prev = typeof column.prev === 'function' ? column.prev(row, column) : column.prev;
+      var before = typeof column.before === 'function' ? column.before(row, column) : column.before;
       return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-icon"
-      }, prev), this.context.getGap());
+      }, before), this.context.getGap());
     }
   }, {
-    key: "getNext",
-    value: function getNext(row, column) {
-      if (!column.next) {
+    key: "getAfter",
+    value: function getAfter(row, column) {
+      if (!column.after) {
         return '';
       }
 
-      var next = typeof column.next === 'function' ? column.next(row, column) : column.next;
+      var after = typeof column.after === 'function' ? column.after(row, column) : column.after;
       return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
         style: {
           flex: 1
         }
       }), /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-icon"
-      }, next));
+      }, after));
     }
   }, {
     key: "getStyle",
     value: function getStyle(column) {
-      var rowHeight = this.context.rowHeight;
-      var _column$minWidth = column.minWidth,
+      var _column$padding2 = column.padding,
+          padding = _column$padding2 === void 0 ? '36px' : _column$padding2,
+          template = column.template,
+          _column$minWidth = column.minWidth,
           minWidth = _column$minWidth === void 0 ? '30px' : _column$minWidth,
           justify = column.justify;
+      var rowHeight = this.context.rowHeight;
       var style = {
         height: rowHeight,
-        overflow: column.template ? undefined : 'hidden',
+        overflow: template ? undefined : 'hidden',
         minWidth: minWidth,
         justifyContent: justify ? 'center' : undefined
       };
 
       if (column.template === 'gantt') {
-        style.padding = "0 ".concat(column.padding || '36px');
+        style.padding = "0 ".concat(padding);
       }
 
       return style;
@@ -1720,6 +2091,10 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       var relativeFilter = this.props.relativeFilter;
       var className = 'aio-table-cell';
 
+      if (column.template) {
+        className += ' aio-table-cell-template';
+      }
+
       if (column.template === 'gantt') {
         className += ' aio-table-cell-gantt';
       }
@@ -1728,7 +2103,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         className += ' ' + column.className;
       }
 
-      if (column.input) {
+      if (column.inlineEdit) {
         className += ' aio-table-cell-input';
       }
 
@@ -1741,13 +2116,11 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
   }, {
     key: "getToggleIcon",
     value: function getToggleIcon(row) {
-      var _this$context10 = this.context,
-          rtl = _this$context10.rtl,
-          onChange = _this$context10.onChange,
-          model = _this$context10.model,
-          id = _this$context10.id,
-          openDictionary = _this$context10.openDictionary,
-          SetState = _this$context10.SetState;
+      var _this$context12 = this.context,
+          rtl = _this$context12.rtl,
+          id = _this$context12.id,
+          openDictionary = _this$context12.openDictionary,
+          SetState = _this$context12.SetState;
       var icon;
 
       if (!row._childsLength) {
@@ -1783,56 +2156,37 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
             });
           } else {
             row._opened = !row._opened;
-            onChange({
-              model: model
-            });
+            SetState({});
           }
         }
       }, icon), this.context.getGap());
     }
   }, {
-    key: "getCheckbox",
-    value: function getCheckbox(row, column) {
-      var _index = column._index,
-          _column$onChange = column.onChange,
-          onChange = _column$onChange === void 0 ? function () {} : _column$onChange,
-          _column$disabled = column.disabled,
-          disabled = _column$disabled === void 0 ? function () {
-        return false;
-      } : _column$disabled;
-      row._values[_index] = row._values[_index] === true ? true : false;
-      var value = row._values[_index];
-      var isDisabled = disabled(row);
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: 'aio-table-checkbox' + (isDisabled ? ' disabled' : ''),
-        onClick: function onClick() {
-          if (!isDisabled) {
-            onChange(row, !value);
-          }
-        }
-      }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
-        path: value ? _js.mdiCheckboxMarkedOutline : _js.mdiCheckboxBlankOutline,
-        size: 1
-      }));
-    }
-  }, {
     key: "getContent",
     value: function getContent(row, column, value) {
+      var focused = this.context.focused;
       var content = '';
 
-      if (column.template === 'checkbox') {
-        content = this.getCheckbox(row, column);
+      if (column.template === 'slider') {
+        content = /*#__PURE__*/_react.default.createElement(AIOSlider, {
+          row: row,
+          column: column
+        });
       } else if (column.template === 'gantt') {
-        var _this$context11 = this.context,
-            getValueByField = _this$context11.getValueByField,
-            rtl = _this$context11.rtl;
-        var keys = column.keys,
-            _column$color = column.color,
-            color = _column$color === void 0 ? '#69bedb' : _column$color,
-            _column$progressColor = column.progressColor,
-            progressColor = _column$progressColor === void 0 ? '#1891be' : _column$progressColor,
-            _column$flags = column.flags,
-            flags = _column$flags === void 0 ? [] : _column$flags,
+        var rtl = this.context.rtl;
+        var getKeys = column.getKeys,
+            _column$getColor = column.getColor,
+            getColor = _column$getColor === void 0 ? function () {
+          return '#fff';
+        } : _column$getColor,
+            _column$getBackground = column.getBackgroundColor,
+            getBackgroundColor = _column$getBackground === void 0 ? function () {
+          return '#69bedb';
+        } : _column$getBackground,
+            _column$getFlags = column.getFlags,
+            getFlags = _column$getFlags === void 0 ? function () {
+          return [];
+        } : _column$getFlags,
             _column$getProgress = column.getProgress,
             getProgress = _column$getProgress === void 0 ? function () {
           return false;
@@ -1840,12 +2194,40 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
             _column$getText = column.getText,
             getText = _column$getText === void 0 ? function () {
           return false;
-        } : _column$getText;
+        } : _column$getText,
+            getStart = column.getStart,
+            getEnd = column.getEnd;
+
+        if (typeof getStart !== 'function') {
+          console.error('aio table => gantt column => column getStart property is not a function');
+          return '';
+        }
+
+        if (typeof getEnd !== 'function') {
+          console.error('aio table => gantt column => column getEnd property is not a function');
+          return '';
+        }
+
+        if (typeof getKeys !== 'function') {
+          console.error('aio table => gantt column => column getKeys property is not a function');
+          return '';
+        }
+
+        var keys = getKeys();
+
+        if (!Array.isArray(keys)) {
+          console.error('aio table => gantt column => column getKeys property must return an array of strings');
+          return '';
+        }
+
+        var color = getColor(row);
+        var backgroundColor = getBackgroundColor(row);
         var progress = getProgress(row);
         var text = getText(row);
-        var startIndex = keys.indexOf(getValueByField(row, column.startField));
-        var endIndex = keys.indexOf(getValueByField(row, column.endField));
-        var background = progress === false ? color : "linear-gradient(to ".concat(rtl ? 'left' : 'right', ",").concat(progressColor, " 0%,").concat(progressColor, " ").concat(progress, "% ,").concat(color, " ").concat(progress, "%,").concat(color, " 100%)");
+        var startIndex = keys.indexOf(getStart(row));
+        var endIndex = keys.indexOf(getEnd(row));
+        var background = progress === false ? color : "linear-gradient(to ".concat(rtl ? 'left' : 'right', ",rgba(0,0,0,.1) 0%,rgba(0,0,0,.1) ").concat(progress, "% ,transparent ").concat(progress, "%,transparent 100%)");
+        var flags = getFlags();
         content = /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
           start: 0,
           editValue: function editValue(_ref) {
@@ -1858,9 +2240,14 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
           }, {
             value: endIndex,
             fillStyle: {
-              background: background
+              background: backgroundColor,
+              backgroundImage: background
             },
-            text: text === false ? undefined : text
+            text: text === false ? undefined : /*#__PURE__*/_react.default.createElement("div", {
+              style: {
+                color: color
+              }
+            }, text)
           }],
           pin: {
             step: 1,
@@ -1889,11 +2276,17 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
             opacity: .4
           }
         });
+      } else if (column.template && column.inlineEdit) {
+        if (!focused) {
+          content = column.template(row, column);
+        } else {
+          content = this.getInput(row, column);
+        }
       } else if (column.template) {
         content = column.template(row, column);
-      } else if (column.input) {
+      } else if (column.inlineEdit) {
         content = this.getInput(row, column);
-      } else if (column.field) {
+      } else if (column.getValue) {
         content = value;
       }
 
@@ -1931,39 +2324,44 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
   }, {
     key: "getInput",
     value: function getInput(row, column) {
-      var _this15 = this;
+      var _this17 = this;
 
-      var type = column.input.type;
+      var type = column.inlineEdit.type;
       var value = this.state.value;
-      var props = { ...column.input,
+      var _column$inlineEdit$di = column.inlineEdit.disabled,
+          disabled = _column$inlineEdit$di === void 0 ? function () {
+        return false;
+      } : _column$inlineEdit$di;
+      var props = { ...column.inlineEdit,
         className: 'aio-table-input',
         rowindex: row._renderIndex,
         colindex: column._renderIndex,
-        value: value
+        value: value,
+        disabled: disabled(row)
       };
 
       if (type === 'text' || type === 'number') {
         return /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-input-container"
+          className: 'aio-table-input-container'
         }, /*#__PURE__*/_react.default.createElement("input", _extends({}, props, {
           onChange: function onChange(e) {
-            return _this15.setState({
+            return _this17.setState({
               value: e.target.value
             });
           },
           onBlur: async function onBlur(e) {
-            _this15.setState({
+            _this17.setState({
               loading: true
             });
 
-            var error = await column.input.onChange(value, row);
+            var error = await column.inlineEdit.onChange(row, value);
 
-            _this15.setState({
+            _this17.setState({
               loading: false
             });
 
             if (typeof error === 'string') {
-              _this15.setState({
+              _this17.setState({
                 error: error
               });
             }
@@ -1974,37 +2372,48 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
       }
 
       if (type === 'select') {
+        if (!column.inlineEdit.options) {
+          console.error('aio table => missing options property of column inlineEdit with type="select"');
+          return '';
+        }
+
+        if (!Array.isArray(column.inlineEdit.options)) {
+          console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!');
+          return '';
+        }
+
         return /*#__PURE__*/_react.default.createElement("div", {
           className: "aio-table-input-container"
         }, /*#__PURE__*/_react.default.createElement("select", _extends({}, props, {
           onFocus: function onFocus() {
-            return _this15.focus = true;
+            return _this17.focus = true;
           },
           onBlur: function onBlur() {
-            return _this15.focus = false;
+            return _this17.focus = false;
           },
           onChange: async function onChange(e) {
             var value = e.target.value;
 
-            _this15.setState({
+            _this17.setState({
               loading: true,
               value: value
             });
 
-            var error = await column.input.onChange(e.target.value, row);
+            var error = await column.inlineEdit.onChange(row, e.target.value);
 
-            _this15.setState({
+            _this17.setState({
               loading: false
             });
 
             if (typeof error === 'string') {
-              _this15.setState({
+              _this17.setState({
                 error: error
               });
             }
           }
-        }), column.input.options.map(function (o) {
+        }), column.inlineEdit.options.map(function (o, i) {
           return /*#__PURE__*/_react.default.createElement("option", {
+            key: i,
             value: o.value
           }, o.text);
         })), /*#__PURE__*/_react.default.createElement("div", {
@@ -2012,6 +2421,7 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         }));
       }
 
+      console.error('aio table => missing type property of column input');
       return '';
     }
   }, {
@@ -2019,23 +2429,25 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
     value: function componentDidUpdate() {
       var column = this.props.column;
 
-      if (column.input && column.input.type === 'select' && this.focus) {
+      if (column.inlineEdit && column.inlineEdit.type === 'select' && this.focus) {
         (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
       }
     }
   }, {
     key: "render",
     value: function render() {
-      var _this16 = this;
+      var _this18 = this;
 
-      var _this$context12 = this.context,
-          indent = _this$context12.indent,
-          onChange = _this$context12.onChange,
-          cubes2 = _this$context12.cubes2;
-      var _this$props9 = this.props,
-          row = _this$props9.row,
-          column = _this$props9.column,
-          value = _this$props9.value;
+      var _this$context13 = this.context,
+          indent = _this$context13.indent,
+          cubes2 = _this$context13.cubes2,
+          focused = _this$context13.focused,
+          SetState = _this$context13.SetState;
+      var _this$props12 = this.props,
+          row = _this$props12.row,
+          column = _this$props12.column,
+          value = _this$props12.value,
+          cellId = _this$props12.cellId;
 
       if (this.state.prevValue !== value) {
         this.setState({
@@ -2044,13 +2456,13 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         });
       }
 
-      var _this$state = this.state,
-          error = _this$state.error,
-          loading = _this$state.loading;
+      var _this$state2 = this.state,
+          error = _this$state2.error,
+          loading = _this$state2.loading;
       var content = this.getContent(row, column, value);
-      var prev = this.getPrev(row, column);
-      var next = this.getNext(row, column);
-      var showToggleIcon = column.treeMode && (row._id !== undefined || onChange);
+      var before = this.getBefore(row, column);
+      var after = this.getAfter(row, column);
+      var showToggleIcon = column.treeMode;
       var cell;
 
       if (loading) {
@@ -2061,8 +2473,8 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         cell = /*#__PURE__*/_react.default.createElement("div", {
           className: "aio-table-error",
           onClick: function onClick() {
-            _this16.setState({
-              value: _this16.props.value,
+            _this18.setState({
+              value: _this18.props.value,
               error: false
             });
           }
@@ -2073,13 +2485,14 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
           style: {
             width: row._level * indent
           }
-        }), showToggleIcon && this.getToggleIcon(row), prev, content, next);
+        }), showToggleIcon && this.getToggleIcon(row), before, content, after);
       }
 
       return /*#__PURE__*/_react.default.createElement("div", {
         key: row._index + '-' + column._index,
         tabIndex: 0,
         ref: this.dom,
+        cellid: cellId,
         rowindex: row._renderIndex,
         colindex: column._renderIndex,
         childindex: row._childIndex,
@@ -2089,7 +2502,18 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
         childslength: row._childsLength,
         style: this.getStyle(column),
         className: this.getClassName(row, column),
-        onClick: function onClick(e) {}
+        onClick: function onClick(e) {
+          if (column.inlineEdit) {
+            if (focused !== cellId) {
+              SetState({
+                focused: cellId
+              });
+              setTimeout(function () {
+                return (0, _jquery.default)('.aio-table-input:focus').select();
+              }, 10);
+            }
+          }
+        }
       }, cell);
     }
   }]);
@@ -2097,25 +2521,213 @@ var RTableCell = /*#__PURE__*/function (_Component4) {
   return RTableCell;
 }(_react.Component);
 
-_defineProperty(RTableCell, "contextType", RTableContext);
+_defineProperty(RTableCell, "contextType", AioTableContext);
 
-var RTableFilter = /*#__PURE__*/function (_Component5) {
-  _inherits(RTableFilter, _Component5);
+var AIOSlider = /*#__PURE__*/function (_Component5) {
+  _inherits(AIOSlider, _Component5);
 
-  var _super5 = _createSuper(RTableFilter);
+  var _super5 = _createSuper(AIOSlider);
+
+  function AIOSlider(props) {
+    var _this19;
+
+    _classCallCheck(this, AIOSlider);
+
+    _this19 = _super5.call(this, props);
+    var _this19$props = _this19.props,
+        column = _this19$props.column,
+        row = _this19$props.row;
+    var getValue = column.getValue;
+    var value = getValue(row);
+
+    if (!Array.isArray(value)) {
+      value = [value];
+    }
+
+    _this19.state = {
+      value: value
+    };
+    _this19.updateMode = 'outside';
+    return _this19;
+  }
+
+  _createClass(AIOSlider, [{
+    key: "getBackground",
+    value: function getBackground(length, i, color) {
+      if (length === 1 && i === 0) {
+        return color;
+      }
+
+      if (length > 1 && i > 0 && i < length) {
+        return color;
+      }
+
+      return 'transparent';
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this20 = this;
+
+      var _this$props13 = this.props,
+          column = _this$props13.column,
+          row = _this$props13.row;
+      var getValue = column.getValue,
+          _column$getStart = column.getStart,
+          getStart = _column$getStart === void 0 ? function () {
+        return 0;
+      } : _column$getStart,
+          _column$getEnd = column.getEnd,
+          getEnd = _column$getEnd === void 0 ? function () {
+        return 100;
+      } : _column$getEnd,
+          _column$getColor2 = column.getColor,
+          getColor = _column$getColor2 === void 0 ? function () {
+        return 'dodgerblue';
+      } : _column$getColor2,
+          onChange = column.onChange,
+          _column$getMin = column.getMin,
+          getMin = _column$getMin === void 0 ? function () {} : _column$getMin,
+          _column$getMax = column.getMax,
+          getMax = _column$getMax === void 0 ? function () {} : _column$getMax,
+          _column$editValue = column.editValue,
+          editValue = _column$editValue === void 0 ? function (value) {
+        return value;
+      } : _column$editValue,
+          _column$getStep = column.getStep,
+          getStep = _column$getStep === void 0 ? function () {} : _column$getStep;
+      var value = this.state.value;
+      var Value = getValue(row);
+
+      if (Value === false) {
+        return null;
+      }
+
+      if (!Array.isArray(Value)) {
+        Value = [Value];
+      }
+
+      if (this.updateMode === 'onChange') {
+        this.updateMode = 'outside';
+        this.setState({
+          value: Value
+        });
+        return null;
+      } else if (this.updateMode === 'outside' && JSON.stringify(Value) !== JSON.stringify(value)) {
+        this.setState({
+          value: Value
+        });
+        return null;
+      }
+
+      var start = getStart(row);
+      var end = getEnd(row);
+      var color = getColor(row);
+      var min = getMin(row);
+      var max = getMax(row);
+      var step = getStep(row);
+      var pinItems = [];
+
+      if (min !== undefined) {
+        pinItems.push({
+          value: min,
+          style: {
+            height: 10
+          }
+        });
+      }
+
+      if (max !== undefined) {
+        pinItems.push({
+          value: max,
+          style: {
+            height: 10
+          }
+        });
+      }
+
+      return /*#__PURE__*/_react.default.createElement(_react.Fragment, null, value.length > 1 && /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-slider-value"
+      }, editValue(value[0])), /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
+        start: start,
+        end: end,
+        min: min,
+        max: max,
+        step: step,
+        showValue: false,
+        points: value.map(function (o, i) {
+          return {
+            value: o,
+            fillStyle: {
+              height: '6px',
+              borderRadius: '24px',
+              background: _this20.getBackground(value.length, i, color)
+            }
+          };
+        }),
+        pointStyle: {
+          opacity: 0,
+          height: 24,
+          width: 24
+        },
+        lineStyle: {
+          height: 6,
+          borderRadius: '24px',
+          boxShadow: 'inset 0px 1px 3px 0px rgba(0,0,0,.1)',
+          background: '#d5d5d5'
+        },
+        editable: typeof onChange === 'function',
+        onchange: function onchange(_ref3) {
+          var points = _ref3.points;
+
+          if (!onChange) {
+            return;
+          }
+
+          _this20.updateMode = 'onChange';
+          onChange(row, points.length > 1 ? points.map(function (p) {
+            return p.value;
+          }) : points[0].value);
+        },
+        pin: pinItems.length === 0 ? undefined : {
+          items: pinItems
+        },
+        ondrag: function ondrag(_ref4) {
+          var points = _ref4.points;
+          _this20.updateMode = 'onDrag';
+
+          _this20.setState({
+            value: points.map(function (p) {
+              return p.value;
+            })
+          });
+        }
+      }), /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-slider-value"
+      }, editValue(value.length > 1 ? value[1] : value[0])));
+    }
+  }]);
+
+  return AIOSlider;
+}(_react.Component);
+
+var RTableFilter = /*#__PURE__*/function (_Component6) {
+  _inherits(RTableFilter, _Component6);
+
+  var _super6 = _createSuper(RTableFilter);
 
   function RTableFilter() {
     _classCallCheck(this, RTableFilter);
 
-    return _super5.apply(this, arguments);
+    return _super6.apply(this, arguments);
   }
 
   _createClass(RTableFilter, [{
     key: "render",
     value: function render() {
-      var _this$context13 = this.context,
-          filterDictionary = _this$context13.filterDictionary,
-          rtl = _this$context13.rtl;
+      var _this$context14 = this.context,
+          filterDictionary = _this$context14.filterDictionary,
+          rtl = _this$context14.rtl;
       var column = this.props.column;
 
       if (!column.filter || column.search) {
@@ -2148,31 +2760,36 @@ var RTableFilter = /*#__PURE__*/function (_Component5) {
   return RTableFilter;
 }(_react.Component);
 
-_defineProperty(RTableFilter, "contextType", RTableContext);
+_defineProperty(RTableFilter, "contextType", AioTableContext);
 
-var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
-  _inherits(RTableFilterPopup, _Component6);
+var RTableFilterPopup = /*#__PURE__*/function (_Component7) {
+  _inherits(RTableFilterPopup, _Component7);
 
-  var _super6 = _createSuper(RTableFilterPopup);
+  var _super7 = _createSuper(RTableFilterPopup);
 
   function RTableFilterPopup() {
     _classCallCheck(this, RTableFilterPopup);
 
-    return _super6.apply(this, arguments);
+    return _super7.apply(this, arguments);
   }
 
   _createClass(RTableFilterPopup, [{
     key: "add",
     value: function add() {
-      var _this$context14 = this.context,
-          filterDictionary = _this$context14.filterDictionary,
-          SetState = _this$context14.SetState;
+      var _this$context15 = this.context,
+          filterDictionary = _this$context15.filterDictionary,
+          SetState = _this$context15.SetState,
+          onChangeFilter = _this$context15.onChangeFilter;
       var column = this.props.column;
 
       filterDictionary[column._index].items.push({
         operator: 'contain',
         value: ''
       });
+
+      if (onChangeFilter) {
+        onChangeFilter(filterDictionary);
+      }
 
       SetState({
         filterDictionary: filterDictionary
@@ -2181,13 +2798,13 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
   }, {
     key: "render",
     value: function render() {
-      var _this17 = this;
+      var _this21 = this;
 
       var column = this.props.column;
-      var _this$context15 = this.context,
-          filterDictionary = _this$context15.filterDictionary,
-          SetState = _this$context15.SetState,
-          translate = _this$context15.translate;
+      var _this$context16 = this.context,
+          filterDictionary = _this$context16.filterDictionary,
+          SetState = _this$context16.SetState,
+          translate = _this$context16.translate;
       var filters = filterDictionary[column._index].items;
       var booleanType = filterDictionary[column._index].booleanType;
       var filterItems = filters.map(function (filter, i) {
@@ -2218,7 +2835,7 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
       }, /*#__PURE__*/_react.default.createElement("button", {
         className: "aio-table-filter-add",
         onClick: function onClick() {
-          return _this17.add();
+          return _this21.add();
         }
       }, translate('Add'))));
     }
@@ -2227,36 +2844,41 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component6) {
   return RTableFilterPopup;
 }(_react.Component);
 
-_defineProperty(RTableFilterPopup, "contextType", RTableContext);
+_defineProperty(RTableFilterPopup, "contextType", AioTableContext);
 
-var RTableFilterItem = /*#__PURE__*/function (_Component7) {
-  _inherits(RTableFilterItem, _Component7);
+var RTableFilterItem = /*#__PURE__*/function (_Component8) {
+  _inherits(RTableFilterItem, _Component8);
 
-  var _super7 = _createSuper(RTableFilterItem);
+  var _super8 = _createSuper(RTableFilterItem);
 
   function RTableFilterItem(props) {
-    var _this18;
+    var _this22;
 
     _classCallCheck(this, RTableFilterItem);
 
-    _this18 = _super7.call(this, props);
-    var filter = _this18.props.filter;
-    _this18.state = {
+    _this22 = _super8.call(this, props);
+    var filter = _this22.props.filter;
+    _this22.state = {
       value: filter.value,
       prevValue: filter.value
     };
-    return _this18;
+    return _this22;
   }
 
   _createClass(RTableFilterItem, [{
     key: "remove",
     value: function remove(index) {
-      var _this$context16 = this.context,
-          filterDictionary = _this$context16.filterDictionary,
-          SetState = _this$context16.SetState;
+      var _this$context17 = this.context,
+          filterDictionary = _this$context17.filterDictionary,
+          SetState = _this$context17.SetState,
+          onChangeFilter = _this$context17.onChangeFilter;
       var column = this.props.column;
 
       filterDictionary[column._index].items.splice(index, 1);
+
+      if (onChangeFilter) {
+        onChangeFilter(filterDictionary);
+      }
 
       SetState({
         filterDictionary: filterDictionary
@@ -2265,20 +2887,26 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
   }, {
     key: "changeValue",
     value: function changeValue(value) {
-      var _this19 = this;
+      var _this23 = this;
 
+      var onChangeFilter = this.context.onChangeFilter;
       clearTimeout(this.timeout);
       this.setState({
         value: value
       });
       this.timeout = setTimeout(function () {
-        var _this19$context = _this19.context,
-            SetState = _this19$context.SetState,
-            filterDictionary = _this19$context.filterDictionary;
-        var _this19$props = _this19.props,
-            column = _this19$props.column,
-            index = _this19$props.index;
+        var _this23$context = _this23.context,
+            SetState = _this23$context.SetState,
+            filterDictionary = _this23$context.filterDictionary;
+        var _this23$props = _this23.props,
+            column = _this23$props.column,
+            index = _this23$props.index;
         filterDictionary[column._index].items[index].value = value;
+
+        if (onChangeFilter) {
+          onChangeFilter(filterDictionary);
+        }
+
         SetState({
           filterDictionary: filterDictionary
         });
@@ -2287,16 +2915,17 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
   }, {
     key: "render",
     value: function render() {
-      var _this20 = this;
+      var _this24 = this;
 
-      var _this$context17 = this.context,
-          filterDictionary = _this$context17.filterDictionary,
-          SetState = _this$context17.SetState,
-          translate = _this$context17.translate;
-      var _this$props10 = this.props,
-          filter = _this$props10.filter,
-          column = _this$props10.column,
-          index = _this$props10.index;
+      var _this$context18 = this.context,
+          filterDictionary = _this$context18.filterDictionary,
+          SetState = _this$context18.SetState,
+          translate = _this$context18.translate,
+          onChangeFilter = _this$context18.onChangeFilter;
+      var _this$props14 = this.props,
+          filter = _this$props14.filter,
+          column = _this$props14.column,
+          index = _this$props14.index;
 
       if (this.state.prevValue !== filter.value) {
         this.setState({
@@ -2307,13 +2936,19 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
       }
 
       var value = this.state.value;
-      var type = column.filter.type;
+      var _column$filter$type = column.filter.type,
+          type = _column$filter$type === void 0 ? 'text' : _column$filter$type;
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-filter-item"
       }, /*#__PURE__*/_react.default.createElement("select", {
         value: filter.operator,
         onChange: function onChange(e) {
           filterDictionary[column._index].items[index].operator = e.target.value;
+
+          if (onChangeFilter) {
+            onChangeFilter(filterDictionary);
+          }
+
           SetState({
             filterDictionary: filterDictionary
           });
@@ -2338,7 +2973,7 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
         type: type,
         value: value,
         onChange: function onChange(e) {
-          return _this20.changeValue(e.target.value);
+          return _this24.changeValue(e.target.value);
         }
       }), /*#__PURE__*/_react.default.createElement("div", {
         style: {
@@ -2347,7 +2982,7 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
       }), /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-filter-remove",
         onClick: function onClick() {
-          return _this20.remove(index);
+          return _this24.remove(index);
         }
       }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
         path: _js.mdiClose,
@@ -2359,4 +2994,238 @@ var RTableFilterItem = /*#__PURE__*/function (_Component7) {
   return RTableFilterItem;
 }(_react.Component);
 
-_defineProperty(RTableFilterItem, "contextType", RTableContext);
+_defineProperty(RTableFilterItem, "contextType", AioTableContext);
+
+var RLayout = /*#__PURE__*/function (_Component9) {
+  _inherits(RLayout, _Component9);
+
+  var _super9 = _createSuper(RLayout);
+
+  function RLayout() {
+    var _this25;
+
+    _classCallCheck(this, RLayout);
+
+    for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+      args[_key2] = arguments[_key2];
+    }
+
+    _this25 = _super9.call.apply(_super9, [this].concat(args));
+
+    _defineProperty(_assertThisInitialized(_this25), "touch", 'ontouchstart' in document.documentElement);
+
+    return _this25;
+  }
+
+  _createClass(RLayout, [{
+    key: "eventHandler",
+    value: function eventHandler(event, action) {
+      var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'bind';
+      event = this.touch ? {
+        mousemove: "touchmove",
+        mouseup: "touchend"
+      }[event] : event;
+      (0, _jquery.default)(window).unbind(event, action);
+
+      if (type === 'bind') {
+        (0, _jquery.default)(window).bind(event, action);
+      }
+    }
+  }, {
+    key: "getClient",
+    value: function getClient(e) {
+      return this.touch ? {
+        x: e.changedTouches[0].clientX,
+        y: e.changedTouches[0].clientY
+      } : {
+        x: e.clientX,
+        y: e.clientY
+      };
+    }
+  }, {
+    key: "getHtml",
+    value: function getHtml(obj, index, parentObj) {
+      var _this26 = this,
+          _ref6;
+
+      var parent = parentObj || {};
+      var show = typeof obj.show === 'function' ? obj.show() : obj.show;
+
+      if (show === false) {
+        return null;
+      }
+
+      var childsAttrs = (typeof parent.childsAttrs === 'function' ? parent.childsAttrs(obj, index) : parent.childsAttrs) || {};
+      var childsProps = (typeof parent.childsProps === 'function' ? parent.childsProps(obj, index) : parent.childsProps) || {};
+      var parentDir = parent.row ? 'row' : 'column';
+      var dir = obj.row ? 'row' : 'column';
+      var gap = parent.gap === undefined ? this.gap : parent.gap;
+      var Size = obj.size === undefined ? childsProps.size : obj.size;
+      var size = typeof Size === 'function' ? Size() : Size;
+      var flex = obj.flex === undefined ? childsProps.flex : obj.flex;
+
+      if (parentObj) {
+        flex = flex || 1;
+      }
+
+      var hideInSmall = obj.hideInSmall === undefined ? childsProps.hideInSmall : obj.hideInSmall;
+      var hideInLarge = obj.hideInLarge === undefined ? childsProps.hideInLarge : obj.hideInLarge;
+      var align = obj.align === undefined ? childsProps.align : obj.align;
+      var onResize = obj.onResize;
+      var Childs = obj[dir] || [];
+      var childs = typeof Childs === 'function' ? Childs() : Childs;
+      var html = typeof obj.html === 'function' ? obj.html() : obj.html;
+      var attrs = (typeof obj.attrs === 'function' ? obj.attrs() : obj.attrs) || {};
+      var className = childs.length ? 'r-layout-parent' : 'r-layout-item';
+      var gapClassName = 'r-layout-gap';
+
+      if (childsAttrs.className) {
+        className += ' ' + childsAttrs.className;
+      }
+
+      if (attrs.className) {
+        className += ' ' + attrs.className;
+      }
+
+      if (hideInLarge) {
+        className += ' r-layout-hide-in-large';
+        gapClassName += ' r-layout-hide-in-large';
+      }
+
+      if (hideInSmall) {
+        className += ' r-layout-hide-in-small';
+        gapClassName += ' r-layout-hide-in-small';
+      }
+
+      var style = { ...childsAttrs.style,
+        ...attrs.style
+      };
+
+      if (align === 'v') {
+        style.alignItems = 'center';
+      } else if (align === 'h') {
+        style.justifyContent = 'center';
+      } else if (align === 'vh' || align === 'hv') {
+        style.alignItems = 'center';
+        style.justifyContent = 'center';
+      }
+
+      var result;
+      var dataId = 'a' + Math.random();
+
+      if (!childs.length) {
+        var _ref5;
+
+        result = /*#__PURE__*/_react.default.createElement("div", _extends({}, childsAttrs, attrs, {
+          "data-id": dataId,
+          className: className,
+          style: (_ref5 = { ...style
+          }, _defineProperty(_ref5, parentDir === 'row' ? 'width' : 'height', size), _defineProperty(_ref5, "flex", !size ? flex : undefined), _ref5)
+        }), html);
+      } else {
+        var _Style;
+
+        var Style = (_Style = { ...style,
+          flexDirection: dir
+        }, _defineProperty(_Style, parentDir === 'row' ? 'width' : 'height', size), _defineProperty(_Style, "flex", !size ? flex || 1 : undefined), _Style);
+        result = /*#__PURE__*/_react.default.createElement("div", _extends({}, childsAttrs, attrs, {
+          "data-id": dataId,
+          className: className,
+          style: Style
+        }), childs.map(function (o, i) {
+          return /*#__PURE__*/_react.default.createElement(_react.Fragment, {
+            key: i
+          }, _this26.getHtml(o, i, obj));
+        }));
+      }
+
+      var event = {},
+          axis,
+          cursor = '';
+
+      if (size && onResize) {
+        if (parentDir === 'row') {
+          axis = 'x';
+          cursor = 'col-resize';
+        } else {
+          axis = 'y';
+          cursor = 'row-resize';
+        }
+
+        event[this.touch ? 'onTouchStart' : 'onMouseDown'] = function (e) {
+          var pos = _this26.getClient(e);
+
+          _this26.so = {
+            pos: pos,
+            onResize: onResize,
+            axis: axis,
+            size: size,
+            dataId: dataId
+          };
+
+          _this26.eventHandler('mousemove', _jquery.default.proxy(_this26.mouseMove, _this26));
+
+          _this26.eventHandler('mouseup', _jquery.default.proxy(_this26.mouseUp, _this26));
+        };
+      }
+
+      return /*#__PURE__*/_react.default.createElement(_react.Fragment, {
+        key: index
+      }, result, /*#__PURE__*/_react.default.createElement("div", _extends({
+        className: gapClassName,
+        draggable: false,
+        onDragStart: function onDragStart(e) {
+          return e.preventDefault();
+        },
+        style: (_ref6 = {}, _defineProperty(_ref6, {
+          'row': 'width',
+          'column': 'height'
+        }[parentDir], gap), _defineProperty(_ref6, "cursor", cursor), _ref6)
+      }, event)));
+    }
+  }, {
+    key: "mouseMove",
+    value: function mouseMove(e) {
+      var rtl = this.props.rtl;
+      var _this$so = this.so,
+          pos = _this$so.pos,
+          axis = _this$so.axis,
+          size = _this$so.size,
+          dataId = _this$so.dataId;
+      var client = this.getClient(e);
+      var offset = (client[axis] - pos[axis]) * (rtl ? -1 : 1);
+      this.so.newSize = offset + size;
+      var panel = (0, _jquery.default)('[data-id="' + dataId + '"]');
+      panel.css(_defineProperty({}, {
+        'x': 'width',
+        'y': 'height'
+      }[axis], this.so.newSize));
+    }
+  }, {
+    key: "mouseUp",
+    value: function mouseUp() {
+      this.eventHandler('mousemove', this.mouseMove, 'unbind');
+      this.eventHandler('mouseup', this.mouseUp, 'unbind');
+      var _this$so2 = this.so,
+          onResize = _this$so2.onResize,
+          newSize = _this$so2.newSize;
+      onResize(newSize);
+    }
+  }, {
+    key: "render",
+    value: function render() {
+      var _this$props15 = this.props,
+          gap = _this$props15.gap,
+          layout = _this$props15.layout;
+      this.gap = gap;
+      return this.getHtml(layout, 0);
+    }
+  }]);
+
+  return RLayout;
+}(_react.Component);
+
+RLayout.defaultProps = {
+  gap: 12,
+  layout: {}
+};
