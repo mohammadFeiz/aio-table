@@ -1,12 +1,12 @@
 import React,{Component,Fragment,createRef,createContext} from 'react';
 import RDropdownButton from 'r-dropdown-button';
 import {Icon} from '@mdi/react';
-import $ from 'jquery';
 import {
   mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,
-  mdiClose,mdiChevronDown,mdiEye,mdiFileTree,mdiSort,mdiArrowUp,mdiArrowDown,
+  mdiClose,mdiChevronDown,mdiEye,mdiFileTree,mdiSort,mdiArrowUp,mdiArrowDown,mdiCollapseAll,mdiExpandAll,
   mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
-import Slider from 'r-range-slider';
+import $ from 'jquery';
+  import Slider from 'r-range-slider';
 import './index.css';
 var AioTableContext = createContext();
 export default class RTable extends Component{
@@ -14,16 +14,24 @@ export default class RTable extends Component{
     super(props);
     this.touch = false;
     this.dom = createRef();
-    var {id,freezeSize,sorts,selectives,paging,columns} = this.props;
-    let openDictionary = {};
+    var {id,freezeSize,sorts,paging,columns} = this.props;
+    let openDictionary = {},groupDictionary = {};
     if(id !== undefined){
-      openDictionary = localStorage.getItem('r table ' + id);
+      openDictionary = localStorage.getItem('aio table ' + id);
       if(openDictionary === null || openDictionary === undefined){
-        localStorage.setItem('r table ' + id,'{}');
+        localStorage.setItem('aio table ' + id,'{}');
         openDictionary = {}
       }
       else{
         openDictionary = JSON.parse(openDictionary);
+      }
+      groupDictionary = localStorage.getItem('aio table group' + id);
+      if(groupDictionary === null || groupDictionary === undefined){
+        localStorage.setItem('aio table group' + id,'{}');
+        groupDictionary = {}
+      }
+      else{
+        groupDictionary = JSON.parse(groupDictionary);
       }
     }
     $(window).bind('click',(e)=>{
@@ -33,11 +41,15 @@ export default class RTable extends Component{
       if(target.parents('.aio-table-cell').length !== 0 || target.hasClass('aio-table-cell')){return;}
       this.setState({focused:false})
     });
-    this.activeTableIndex = 0;
-    this.state = {openDictionary,filterDictionary:{},groupsOpen:{},freezeSize,groupDictionary:{},sorts,selectives,selectivesDictionary:[],paging,columns,focused:false};
+    this.state = {openDictionary,filterDictionary:{},groupsOpen:{},freezeSize,groupDictionary,sorts,paging,columns,focused:false,toggleAllState:true,searchText:''};
   }
   onScroll(e,index){
     if(!this.freezeMode){return;}
+    if(!this.firstScroll){
+      this.firstScroll = true;
+      this.activeTableIndex = 0;
+      this.deactiveTableIndex = 1;
+    }
     if(index !== this.activeTableIndex){return;}
     var units = $(this.dom.current).find('.aio-table-unit');
     var scrollTop = units.eq(this.activeTableIndex).scrollTop();
@@ -74,11 +86,18 @@ export default class RTable extends Component{
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     this.setState({freezeSize:this.resizeDetails.newWidth});
   }
-  getTable(){
+  getBodyStyle(Paging,Toolbar){
+    var def = 0,top = 0;
+    if(Paging !== null){def += 36}
+    if(Toolbar !== null){def += 36; top+=36;}
+    return {height:`calc(100% - ${def}px)`,top}
+  }
+  getTable(Paging,Toolbar){
     var rows = this.getRows();
+    this.rows = rows;
     if(!this.freezeMode){
       return (
-        <div className={'aio-table-body'}>
+        <div className={'aio-table-body'} style={this.getBodyStyle(Paging,Toolbar)}>
           <RTableUnit rows={rows} columns={this.visibleColumns}/>
         </div>
       )
@@ -86,7 +105,7 @@ export default class RTable extends Component{
     else{
       var {freezeSize} = this.state;
       return (
-        <div className={'aio-table-body'}>
+        <div className={'aio-table-body'} style={this.getBodyStyle(Paging,Toolbar)}>
           <RTableUnit key={0} id='aio-table-first-split' rows={rows} columns={this.freezeColumns} index={0} type='freeze' style={{width:freezeSize}}/>
           <div className='aio-table-splitter' onMouseDown={(e)=>this.resizeDown(e)} onTouchStart={(e)=>this.resizeDown(e)}></div>
           {true && <RTableUnit key={1} id='aio-table-second-split' rows={rows} columns={this.unFreezeColumns} index={1} type='unFreeze'/>}
@@ -125,32 +144,9 @@ export default class RTable extends Component{
         if(i !== this.sorts.length - 1){continue;}
         return 0;
       }
+      return 0;
     });
     return newModel
-  }
-  getRowBySelectives(row,index){
-    var {selectives} = this.state;
-    if(row.show === false || row.row._level !== 0 || selectives.length === 0){return;}
-    for(let j = 0; j < selectives.length; j++){
-        let selective = selectives[j];
-        let value = selective.getValue(row.row);
-        if(index === 0){
-          selective.items = [];
-          selective.repeat = {};
-          selective.dictionary = selective.dictionary || {};
-        }
-        if(selective.dictionary[value] === false){row.show = false;}
-        if(selective.repeat[value]){continue;}
-        selective.dictionary[value] = selective.dictionary[value] === undefined?true:selective.dictionary[value];
-        selective.repeat[value] = true;
-        let text = selective.getText(row.row);
-        selective.items.push({
-          text,value,checked:selective.dictionary[value],onClick:()=>{
-            selective.dictionary[value] = !selective.dictionary[value];
-            this.setState({selectives})
-          }
-        });
-      }
   }
   getRows(){
     var {model,flat,onChangeSort} = this.props;
@@ -166,8 +162,7 @@ export default class RTable extends Component{
     var roots = [];
     for(let i = 0; i < rows.length; i++){
       var row = rows[i];
-      this.getRowBySelectives(row,i);
-      if(row.show === false){continue;}
+      if(row.row._show === false){continue;}
       if(row.row._level === 0){roots.push([])}
       roots[roots.length - 1].push(row);
     }
@@ -187,7 +182,6 @@ export default class RTable extends Component{
       paging.number = Math.ceil(length / paging.size);
       if(paging.number < 1){paging.number = 1}
     }
-    if(!paging.sizes){paging.sizes = [5,10,20,30,40,50,60,70,80];}
     if(paging.onChange){return roots}//اگر پیجینگ آنچنج داشت تغییری در ردیف ها نده و اجازه بده تغییرات در آنچنج روی مدل ورودی انجام شود
     let start = (paging.number - 1) * paging.size;
     let end = start + paging.size;
@@ -208,7 +202,10 @@ export default class RTable extends Component{
           groupedRows.push({
             _groupField:prop,
             _groupText:prop,
-            _level,_opened:groupsOpen[_parentField + prop],_parentField});
+            _openField:_parentField + prop,
+            _level,_opened:groupsOpen[_parentField + prop],
+            _parentField
+          });
           if(groupsOpen[_parentField + prop]){
             msf(obj[prop],_level + 1,_parentField + prop);
           }
@@ -239,10 +236,11 @@ export default class RTable extends Component{
   }
   getRowsReq(model,rows,_level,parents){
     var {openDictionary} = this.state;
-    var {getRowId,getRowChilds,flat} = this.props;
+    var {getRowId,getRowChilds,flat,getRowVisible} = this.props;
     if(flat){getRowChilds = (row)=>row._childs}
     for(let i = 0; i < model.length; i++){
       let row = model[i];
+      if(getRowVisible && getRowVisible(row) === false){continue}
       if(row._groupField){
         rows.push(row);
         continue;
@@ -272,15 +270,14 @@ export default class RTable extends Component{
       }
       let Row = this.getRow(row);
       rows.push({...Row,row});
-      if(row._opened){
-        if(row._childsLength){
-          this.getRowsReq(childs,rows,_level + 1,parents.concat(row));
-        }
+      if(row._opened && row._childsLength){
+        this.getRowsReq(childs,rows,_level + 1,parents.concat(row));
       }
       else{this.rowRealIndex += row._childsLength;}
     }
   }
   getFilterResult_and(filters,value){
+    if(value === undefined){return false}
     for(let i = 0; i < filters.length; i++){
       let filterItem = filters[i];
       if(filterItem.value === '' || filterItem.value === undefined){continue;}
@@ -294,6 +291,7 @@ export default class RTable extends Component{
     return true;
   }
   getFilterResult_or(filters,value){
+    if(value === undefined){return false}
     for(let i = 0; i < filters.length; i++){
       let filterItem = filters[i];
       if(filterItem.value === '' || filterItem.value === undefined){return true;}
@@ -349,37 +347,72 @@ export default class RTable extends Component{
         if(column.width === 'auto'){isThereAutoColumn = true;}
       }
     }
+    row._show = show;
     if(show){
       let parents = row._getParents();
       for(let i = 0; i < parents.length; i++){
-        if(parents[i].show === false){parents[i].show = 'relativeFilter';}
+        if(parents[i]._show === false){parents[i]._show = 'relativeFilter';}
       }
     }
     if(!isThereAutoColumn && lastColumn){lastColumn.width = 'auto';}
-    return {cells,freezeCells,unFreezeCells,show};
+    return {cells,freezeCells,unFreezeCells};
   }
-  
-  setColumnWidth(column){
-    if(typeof column.width !== 'string'){column.width = 'auto';}
-    if(column.width !== 'auto' && column.width.indexOf('px') === -1){column.width = 'auto';} 
+  getRowById(id){
+    for(let i = 0; i < this.rows.length; i++){
+      let row = this.rows[i];
+      if(!row.row){continue;}
+      if(row.row._id === id){return row}
+    }
+  }
+  toggleAll(){
+    var {openDictionary,groupsOpen,toggleAllState} = this.state;
+    var {id,getRowId} = this.props;
+    if(getRowId){
+      for(let prop in openDictionary){
+        let row = this.getRowById(prop);
+        if(row && row.row && row.row._show === 'relativeFilter'){continue;}
+        openDictionary[prop] = toggleAllState;
+      }
+    }
+    else{
+      for(let i = 0; i < this.rows.length; i++){
+        let row = this.rows[i];
+        if(!row.row){continue;}
+        if(row.row._show === 'relativeFilter'){continue;}
+        row.row._opened = toggleAllState;
+      }
+    }
+    for(let prop in groupsOpen){
+      groupsOpen[prop] = toggleAllState;
+    }
+    localStorage.setItem('aio table ' + id,JSON.stringify(openDictionary))
+    let obj = {openDictionary,groupsOpen,toggleAllState:!toggleAllState};
+    this.setState(obj)
+  }
+  showColumnRelativeGroups(column){
+    var {groups} = this.props;
+    var {groupDictionary} = this.state;
+    if(!groups){return true}
+    if(!groups.length){return true}
+    if(!column.groupName){return true}
+    return groupDictionary[column.groupName] !== true;
   }
   updateColumns(){
-    var {freezeMode = true,translate,groups,cardTemplate,onChangeSort} = this.props;
-    var {groupDictionary,sorts,selectives,columns} = this.state;
+    var {freezeMode = true,translate,groups,cardTemplate,onChangeSort,toggleAll = false,id} = this.props;
+    var {groupDictionary,sorts,columns} = this.state;
     this.groups = [];
     this.sorts = [];
-    this.selectives = [];
     this.freezeMode = false;
     this.visibleColumns = [];
     this.freezeColumns = [];
     this.unFreezeColumns = [];
     this.toolbar = {
-      show:selectives.length !== 0,
-      toggle:[{text:translate('Show')}],
+      show:toggleAll,
+      toggle:[{text:translate('Show Columns')}],
+      toggleAll:toggleAll?this.toggleAll.bind(this):false,
       freeze:[{text:translate('Freeze')}],
       groupBy:[{text:translate('Group By')}],
       sort:[{text:translate('Sort')}],
-      selectives,
       searchColumnIndex:false
     }
     for(let i = 0; i < sorts.length; i++){
@@ -418,6 +451,9 @@ export default class RTable extends Component{
           text:title,checked:groupDictionary[title],
           onClick:()=>{
             groupDictionary[title] = !groupDictionary[title]; 
+            if(id){
+              localStorage.setItem('aio table group' + id,JSON.stringify(groupDictionary))
+            }
             this.setState({groupDictionary});
           }
         })
@@ -426,10 +462,27 @@ export default class RTable extends Component{
     if(cardTemplate){return}
     for(let i = 0; i < columns.length; i++){
       let column = columns[i];
-      this.setColumnWidth(column);
+      let show;
+      if(column.storageKey && column.toggleShow){
+        let storageStr = localStorage.getItem('aio-table-column-storage-' + column.storageKey);
+        if(!storageStr || storageStr === null){
+          column._storageObj = {};
+          localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
+        }
+        else{
+          column._storageObj = JSON.parse(storageStr);
+        }
+        if(column._storageObj.show !== undefined){show = column._storageObj.show;}
+        else{show = column.show}
+        if(column._storageObj.width !== undefined){column.width = column._storageObj.width;}
+        else{column.width = column.width || 'auto'}
+      }
+      else{
+        show = column.show;
+        column.width = column.width || 'auto';
+      }
       column._index = i;
-      
-      if(column.show !== false){
+      if(show !== false && this.showColumnRelativeGroups(column)){
         this.visibleColumns.push(column)
         if(freezeMode){
           if(column.freeze){this.freezeMode = true; this.freezeColumns.push(column)}
@@ -450,10 +503,18 @@ export default class RTable extends Component{
       if(column.toggleShow){
         this.toolbar.show = true;
         this.toolbar.toggle.push({
-          text:column.title,checked:column.show !== false,
+          text:column.title,checked:show !== false,
           onClick:()=>{
             column.show = column.show === false?false:true;
-            column.show = !column.show; 
+            if(column.storageKey){
+              column._storageObj.show = column._storageObj.show === false?false:column._storageObj.show;
+              column._storageObj.show = !column._storageObj.show;
+              column.show = column._storageObj.show;
+              localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
+            }
+            else{
+              column.show = !column.show; 
+            }
             this.setState({columns});
           }
         })
@@ -463,10 +524,10 @@ export default class RTable extends Component{
     if(this.freezeColumns.length === 0 || this.unFreezeColumns.length === 0){this.freezeMode = false}
   }
   getPaging(){
-    var {paging} = this.props;
+    var {paging} = this.state;
     if(!paging){return null}
     var {rtl,translate} = this.props;
-    var {number,sizes,size,pages} = paging;
+    var {number,sizes = [1,5,10,20,30,40,50,60,70,80],size,pages = 1} = paging;
     var changePage = (type)=>{
       let newNumber;
       if(type === 'prev'){newNumber = number - 1}
@@ -530,7 +591,7 @@ export default class RTable extends Component{
       items.push(<div key={i} style={getStyle1(i)}></div>)
     }
     return (
-      <div className="rect" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'#fff'}}>
+      <div className="rect" style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',background:'transparent'}}>
         {items}
       </div>
     )
@@ -549,18 +610,57 @@ export default class RTable extends Component{
     }
     onChangeFilter(filters);
   }
+  toggleRow(row){
+    var {openDictionary} = this.state;
+    var {id} = this.props;
+    if(row._show === 'relativeFilter'){return;}
+      if(row._id !== undefined){
+        openDictionary[row._id] = !openDictionary[row._id];
+        if(id !== undefined){localStorage.setItem('aio table ' + id,JSON.stringify(openDictionary))}
+        this.setState({openDictionary});
+      }
+      else{
+        row._opened = !row._opened;
+        this.setState({});
+      }
+  }
   render(){
-    var {rowHeight,headerHeight,toolbarHeight,rowGap,className,columnGap,rtl,style,attrs = {},cardTemplate,onChangeFilter} = this.props;
+    if(JSON.stringify(this.props.columns) !== JSON.stringify(this.state.columns)){
+      this.setState({columns:this.props.columns});
+      //return null;
+    }
+    if(JSON.stringify(this.props.paging) !== JSON.stringify(this.state.paging)){
+      this.setState({paging:this.props.paging});
+      //return null;
+    }
+    var {rowHeight,headerHeight,toolbarHeight,rowGap,className,columnGap,rtl,style,attrs = {},cardTemplate,onChangeFilter,onSwap} = this.props;
     var {columns} = this.state;
     this.rh = rowHeight; this.hh = headerHeight; this.th = toolbarHeight; this.rg = rowGap; this.cg = columnGap;
     this.updateColumns();
-    var table = columns?this.getTable():'';
+    var Paging = this.getPaging();
+    var Toolbar = this.toolbar.show?<RTableToolbar {...this.toolbar}/>:null;
+    var table = columns?this.getTable(Paging,Toolbar):'';
     var context = {
       ...this.props,...this.state,
       touch:this.touch,
+      onDrag:(obj)=>this.dragStart = obj,
+      onDrop:(obj)=>{
+        if(!this.dragStart){return}
+        if(this.dragStart._level !== obj._level){return}
+        if(this.dragStart._level === 0){
+          onSwap(this.dragStart,obj);
+        }
+        else{
+          let startParents = this.dragStart._getParents().map((o)=>o._index).toString();
+          let endParents = obj._getParents().map((o)=>o._index).toString();
+          if(startParents !== endParents){return;}
+          onSwap(this.dragStart,obj);
+        }
+      },
       onChangeFilter:onChangeFilter?this.onChangeFilter.bind(this):undefined,
       SetState:(obj)=>this.setState(obj),
       cubes2:this.cubes2.bind(this),
+      toggleRow:this.toggleRow.bind(this),
       getGap:this.getGap.bind(this),
       onScroll:this.onScroll.bind(this),
       onMouseEnter:this.onMouseEnter.bind(this),
@@ -571,24 +671,22 @@ export default class RTable extends Component{
     return (
       <AioTableContext.Provider value={context}>
         <div className={'aio-table' + (className?' ' + className:'') + (rtl?' rtl':'')} tabIndex={0} ref={this.dom} style={style} {...attrs}>
-          <RTableToolbar {...this.toolbar}/>
+          {Toolbar}
           {!cardTemplate && this.visibleColumns.length === 0 && this.getLoading()}
           {table}
-          <div style={{height:rowGap}}></div>
-          <div style={{flex:1,background:'#fff'}}></div>
-          {this.getPaging()}
+          {Paging}
         </div>
       </AioTableContext.Provider>
     )
   }
 }
-RTable.defaultProps = {columns:[],headerHeight:36,rowHeight:36,toolbarHeight:36,rowGap:6,indent:20,translate:(text)=>text,freezeSize:300,sorts:[],groups:[],selectives:[]}
+RTable.defaultProps = {columns:[],headerHeight:36,rowHeight:36,toolbarHeight:36,rowGap:6,indent:20,translate:(text)=>text,freezeSize:300,sorts:[],groups:[]}
 class RTableToolbar extends Component{
   static contextType = AioTableContext;
-  state = {searchText:''};
-  changeSearch(value){
+  changeSearch(value,time = 1000){
+    let {SetState} = this.context;
     clearTimeout(this.searchTimeout);
-    this.setState({searchText:value});
+    SetState({searchText:value});
     this.searchTimeout = setTimeout(()=>{
       let {filterDictionary,SetState} = this.context;
       let {searchColumnIndex} = this.props;
@@ -596,56 +694,50 @@ class RTableToolbar extends Component{
         items:value?[{operator:'contain',value}]:[],booleanType:'or'
       }
       SetState({filterDictionary});
-    },1000);
+    },time);
   }
   render(){
-    var {translate,rtl} = this.context;
-    var {searchText} = this.state;
-    var {show,toggle,freeze,groupBy,sort,searchColumnIndex,selectives} = this.props;
-    if(!show){return null}
-    var buttonProps = {rtl,className:'aio-table-toolbar-dropdown',animate:true};
-    var Selectives = selectives.map((selective,i)=>{
-      return (
-        <RDropdownButton 
-          key={'selectives' + i} 
-          {...buttonProps} 
-          items={selective.items} 
-          style={{width:'auto'}} 
-          text={selective.title}
-          icon={selective.icon} 
-        />
-      )
-    })
+    var {searchText,translate,rtl,toggleAllState} = this.context;
+    var {toggle,freeze,groupBy,sort,searchColumnIndex,toggleAll} = this.props;
+    var buttonProps = {rtl,className:'aio-table-toolbar-button',animate:true};
     return (
       <div className='aio-table-toolbar'>
-        {Selectives}
+        {
+          toggleAll !== false &&
+          <RDropdownButton key={0} {...buttonProps} title={translate('Toggle All')} onClick={()=>toggleAll()}
+            icon={<Icon path={!toggleAllState?mdiCollapseAll:mdiExpandAll } size={0.7}/>} 
+          />
+        } 
         {
           searchColumnIndex !== false &&
-          <div key={3} className='aio-table-search'>
-            <input className='aio-table-search-input' type='text' value={searchText} onChange={(e)=>this.changeSearch(e.target.value)}/>
-            <Icon className='aio-table-search-icon' path={mdiMagnify} size={0.8} />
+          <div key={1} className='aio-table-search'>
+            <input className='aio-table-search-input' type='text' value={searchText} placeholder={translate('Search')} onChange={(e)=>this.changeSearch(e.target.value)}/>
+            <Icon className='aio-table-search-icon' path={searchText?mdiClose:mdiMagnify} size={0.8} onClick={()=>{
+              if(!searchText){return}
+              this.changeSearch('',0)
+            }}/>
           </div>
         }
         {searchColumnIndex === false && <div style={{flex:1}}></div>}
         {
           groupBy.length > 1 &&
-          <RDropdownButton key={0} {...buttonProps} items={groupBy} title={translate('Group By')}
+          <RDropdownButton key={2} {...buttonProps} items={groupBy} title={translate('Group By')}
             icon={<Icon path={mdiFileTree} size={0.7} horizontal={rtl === true}/>} 
           />
         }
         {
           sort.length > 1 &&
-          <RDropdownButton key={1} {...buttonProps} items={sort} title={translate('Sort')}
+          <RDropdownButton key={3} {...buttonProps} items={sort} title={translate('Sort')}
             icon={<Icon path={mdiSort} size={0.7}/>} 
           />
         }
         {
           toggle.length > 1 && 
-          <RDropdownButton key={2} {...buttonProps} icon={<Icon path={mdiEye} size={0.7}/>} items={toggle} title={translate('Show Columns')}/>
+          <RDropdownButton key={4} {...buttonProps} icon={<Icon path={mdiEye} size={0.7}/>} items={toggle} title={translate('Show Columns')}/>
         }
         {
           freeze.length > 1 &&
-          <RDropdownButton key={3} {...buttonProps} icon={<Icon path={mdiAlignHorizontalLeft} size={0.7} horizontal={rtl === true}/>} items={freeze} title={translate('Freeze Columns')}/>
+          <RDropdownButton key={5} {...buttonProps} icon={<Icon path={mdiAlignHorizontalLeft} size={0.7} horizontal={rtl === true}/>} items={freeze} title={translate('Freeze Columns')}/>
         }
       </div>
     )
@@ -690,9 +782,12 @@ class RTableUnit extends Component{
     this.gridTemplateColumns = [];
     for(let i = 0; i < columns.length; i++){
         let {width = 'auto'} = columns[i];
+        width = width.toString();
+        if(width !== 'auto' && width.indexOf('px') === -1){width += 'px'}
         this.gridTemplateColumns.push(width);
         gridTemplateColumns += width + (i < columns.length - 1?' ':''); 
     }
+
     return {gridTemplateColumns,gridRowGap:rowGap,gridColumnGap:columnGap,...style}
   }
   getTitles(){
@@ -729,13 +824,13 @@ class RTableUnit extends Component{
     let resizeProps = {className:'aio-table-resize',style:{cursor:column.resizable?'col-resize':'default'},draggable:false,[touch?'onTouchStart':'onMouseDown']:(e)=>column.resizable?this.resizeDown(e,column):undefined}
     let titleProps = {
       className:'aio-table-title-text',
-      style:{justifyContent:column.titleJustify?'center':undefined,cursor:column.movable === false?undefined:'move'},
+      style:{justifyContent:column.titleJustify !== false?'center':undefined,cursor:column.movable === false?undefined:'move'},
       draggable:column.movable !== false,
       onDragStart:(e)=>{this.startColumnSwap = column._index;},
       onDragOver:(e)=>{e.preventDefault(); this.endColumnSwap = column._index;},
       onDrop:(e)=>{
         if(column.movable === false){return;}
-        if(this.startColumnSwap === this.endColumnSwap){return;}
+        if(this.startColumnSwap === undefined || this.startColumnSwap === this.endColumnSwap){return;}
         let temp = columns[this.startColumnSwap];
         columns[this.startColumnSwap] = columns[this.endColumnSwap];
         columns[this.endColumnSwap] = temp;
@@ -780,7 +875,12 @@ class RTableUnit extends Component{
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     var {columns,SetState} = this.context;
     var {index,newWidth} = this.resizeDetails;
-    columns[index].width = newWidth;
+    let column = columns[index];
+    column.width = newWidth;
+    if(column.storageKey){
+      column._storageObj.width = newWidth;
+      localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
+    }
     SetState({columns});
   }
   keyDown(e){
@@ -840,7 +940,7 @@ class RTableUnit extends Component{
     return {rowIndex,colIndex};
   }
   card(){
-    var {indent,onMouseEnter,onScroll,rowHeight,cardGap = 0,getLoading,cardTemplate,cardRowCount = 1,rowGap,cardType = 'html',columnGap} = this.context;
+    var {indent,onMouseEnter,onScroll,rowHeight,cardGap = 0,getLoading,cardTemplate,cardRowCount = 1,rowGap,cardType = 'html',columnGap,toggleRow} = this.context;
     var {rows,id,index} = this.props;
     var groupStyle = {gridColumnStart:1,gridColumnEnd:cardRowCount + 1,height:rowHeight};
     if(cardRowCount === 'auto'){groupStyle.gridColumnStart = undefined; groupStyle.gridColumnEnd = undefined;}
@@ -863,16 +963,20 @@ class RTableUnit extends Component{
                 {
                   index !== 1 &&
                   (
-                    <Fragment><div style={{width}}></div>{this.getGroupToggleIcon(row)}{row._groupText}</Fragment>
+                    <Fragment>
+                      <div style={{width,flexShrink:0}}></div>
+                      {this.getGroupToggleIcon(row)}
+                      <div className='aio-table-group-text'>{row._groupText}</div>
+                    </Fragment>
                   )
                 }
               </div>
             )
           }
           if(cardType === 'layout'){
-            return <div className='aio-table-card'><RLayout gap={cardGap} layout={cardTemplate(row.row)}/></div>   
+            return <div key={i + '-' + index} className='aio-table-card'><RLayout gap={cardGap} layout={cardTemplate(row.row)}/></div>   
           }
-          return <div className='aio-table-card'>{cardTemplate(row.row)}</div> 
+          return <div key={i + '-' + index} className='aio-table-card'>{cardTemplate(row.row,()=>toggleRow(row.row))}</div> 
         })}
         {rows && rows.length === 0 && this.getNoData()}
         {!rows && getLoading()}
@@ -904,19 +1008,19 @@ class RTableUnit extends Component{
                 {
                   index !== 1 &&
                   (
-                    <Fragment><div style={{width}}></div>{this.getGroupToggleIcon(row)}{row._groupText}</Fragment>
+                    <Fragment><div style={{width,flexShrink:0}}></div>{this.getGroupToggleIcon(row)}<div className='aio-table-group-text'>{row._groupText}</div></Fragment>
                   )
                 }
               </div>
             )
           }
           if(type === 'freeze'){
-            return row.freezeCells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.freezeCells.map((r,j)=><AIOTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.row._show === 'relativeFilter'}/>)  
           }
           if(type === 'unFreeze'){
-            return row.unFreezeCells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)  
+            return row.unFreezeCells.map((r,j)=><AIOTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.row._show === 'relativeFilter'}/>)  
           }
-          return row.cells.map((r,j)=><RTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.show === 'relativeFilter'}/>)
+          return row.cells.map((r,j)=><AIOTableCell key={i + '-' + j + '-' + index} cellId={i + '-' + j + '-' + index} {...r} relativeFilter={row.row._show === 'relativeFilter'}/>)
         })}
         {rows && rows.length === 0 && this.getNoData()}
         {!rows && getLoading()}
@@ -924,7 +1028,7 @@ class RTableUnit extends Component{
     )
   }
 }
-class RTableCell extends Component{
+class AIOTableCell extends Component{
   static contextType = AioTableContext;
   constructor(props){
     super(props);
@@ -944,9 +1048,9 @@ class RTableCell extends Component{
   }
   
   getStyle(column){
-    var {padding = '36px',template,minWidth = '30px',justify} = column;
+    var {padding = '36px',template,minWidth = '30px'} = column;
     var {rowHeight} = this.context;
-    var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth,justifyContent:justify?'center':undefined}
+    var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth}
     if(column.template === 'gantt'){
       style.padding = `0 ${padding}`
     }
@@ -963,24 +1067,14 @@ class RTableCell extends Component{
     return className;
   } 
   getToggleIcon(row){
-    let {rtl,id,openDictionary,SetState} = this.context;
+    let {rtl,toggleRow} = this.context;
     let icon;
     if(!row._childsLength){icon = <Icon path={''} size={1}/>}
     else if(row._opened){icon = <Icon path={mdiChevronDown} size={1}/>}
     else{icon = <Icon path={mdiChevronRight} size={1} horizontal={rtl === true}/>}
     return (
       <Fragment>
-        <div className='aio-table-toggle' onClick={()=>{
-          if(row._id !== undefined){
-            openDictionary[row._id] = !openDictionary[row._id];
-            if(id !== undefined){localStorage.setItem('r table ' + id,JSON.stringify(openDictionary))}
-            SetState({openDictionary});
-          }
-          else{
-            row._opened = !row._opened;
-            SetState({});
-          }
-        }}>{icon}</div>
+        <div className='aio-table-toggle' onClick={()=>toggleRow(row)}>{icon}</div>
         {this.context.getGap()}
       </Fragment>
     )
@@ -989,10 +1083,11 @@ class RTableCell extends Component{
   getContent(row,column,value){
     var {focused} = this.context;
     var content = '';
-    if(column.template === 'slider'){      
+    let template = typeof column.template === 'function'?column.template(row,column):column.template;
+    if(template === 'slider'){      
       content = <AIOSlider row={row} column={column}/>
     }
-    else if(column.template === 'gantt'){
+    else if(template === 'gantt'){
       let {rtl} = this.context;
       let {getKeys,getColor = ()=>'#fff',getBackgroundColor = ()=>'#69bedb',getFlags = ()=>[],getProgress = ()=>false,getText = ()=>false,getStart,getEnd} = column;
       if(typeof getStart !== 'function'){
@@ -1039,18 +1134,20 @@ class RTableCell extends Component{
         lineStyle={{opacity:.4}}
       />
     }
-    else if(column.template && column.inlineEdit){
-      if(!focused){content = column.template(row,column)}
+    else if(template && column.inlineEdit){
+      if(!focused){content = template}
       else{content = this.getInput(row,column)}
     }
-    else if(column.template){content = column.template(row,column)}
+    else if(template){content = template}
     else if(column.inlineEdit){content = this.getInput(row,column)}
     else if(column.getValue){content = value;}
     if(column.subText){
+      let subText;
+      try{subText = column.subText(row);} catch{subText = ''}
       return (
         <div style={{flex:1,height:'100%',display:'flex',flexDirection:'column'}}>
           <div className='aa' style={{display:'flex',alignItems:'center',flex:1,position:'relative',whiteSpace:'nowrap'}}>{content}</div>
-          <div style={{display:'flex',alignItems:'center',fontSize:'80%',opacity:0.7,flex:1,position:'relative'}}>{column.subText(row)}</div>
+          <div style={{display:'flex',alignItems:'center',fontSize:'80%',opacity:0.7,flex:1,position:'relative'}}>{subText}</div>
         </div>
       )
     }
@@ -1060,16 +1157,17 @@ class RTableCell extends Component{
     let {type} = column.inlineEdit;
     let {value} = this.state;
     let {disabled = ()=>false} = column.inlineEdit;
-    let props = {...column.inlineEdit,className:'aio-table-input',rowindex:row._renderIndex,colindex:column._renderIndex,value,disabled:disabled(row)};
+    let props = {...column.inlineEdit,className:'aio-table-input',rowindex:row._renderIndex,colindex:column._renderIndex,value:value === null?'':value,disabled:disabled(row)};
     if(type === 'text' || type === 'number'){
       return (
         <div className={'aio-table-input-container'}>
             <input 
               {...props}
+              style={{textAlign:column.justify?'center':undefined}}
               onChange={(e)=>this.setState({value:e.target.value})}
               onBlur={async (e)=>{
                 this.setState({loading:true})
-                let error = await column.inlineEdit.onChange(row,value);
+                let error = await column.inlineEdit.onChange(row,type === 'number'?parseFloat(value):value);
                 this.setState({loading:false})
                 if(typeof error === 'string'){
                   this.setState({error})
@@ -1116,7 +1214,7 @@ class RTableCell extends Component{
     }
   }
   render(){
-    let {indent,cubes2,focused,SetState} = this.context;
+    let {indent,cubes2,focused,SetState,onDrag,onDrop,onSwap} = this.context;
     let {row,column,value,cellId} = this.props;
     if(this.state.prevValue !== value){this.setState({value,prevValue:value});}
     let {error,loading} = this.state;
@@ -1132,20 +1230,27 @@ class RTableCell extends Component{
       }}>{error}</div>
     }
     else{
+      let style = {justifyContent:column.justify !== false && !column.treeMode?'center':undefined};
       cell = (
         <Fragment>
           {column.treeMode && <div className='aio-table-indent' style={{width:row._level * indent}}></div>}
           {showToggleIcon && this.getToggleIcon(row)}
-          {before}{content}{after}
+          {before}
+          <div className='aio-table-content' style={style}>{content}</div>
+          {after}
         </Fragment>
       )
     }
     return (
       <div 
-        key={row._index + '-' + column._index} tabIndex={0} ref={this.dom} cellid={cellId}
+        key={row._index + '-' + column._index} tabIndex={0} ref={this.dom} cellid={cellId} title={typeof content === 'string'?content:''}
         rowindex={row._renderIndex} colindex={column._renderIndex} childindex={row._childIndex} level={row._level}
         isfirstchild={row._isFirstChild?1:0} islastchild={row._isLastChild?1:0} childslength={row._childsLength}
         style={this.getStyle(column)} className={this.getClassName(row,column)}
+        draggable={typeof onSwap === 'function' && column.swap}
+        onDragOver={(e)=>e.preventDefault()}
+        onDragStart={()=>onDrag(row)}
+        onDrop={()=>onDrop(row)}
         onClick={(e)=>{
           if(column.inlineEdit){
             if(focused !== cellId){
@@ -1248,8 +1353,9 @@ class RTableFilter extends Component{
     var {filterDictionary,rtl} = this.context;
     var {column} = this.props;
     if(!column.filter || column.search){return null}
+    if(!filterDictionary[column._index]){return null;}
     let filters = filterDictionary[column._index].items;
-    let icon = filters.length?<Icon path={mdiFilterMenu} size={0.7}/>:<Icon path={mdiFilter} size={0.7}/>;
+    let icon = filters.length?<Icon className='has-filter' path={mdiFilterMenu} size={0.7}/>:<Icon path={mdiFilter} size={0.7}/>;
     return (
       <div className='aio-table-filter-icon'>
       <RDropdownButton
