@@ -95,6 +95,8 @@ minWidth        | number or string           | optional | set min width of colum
 template        | function                   | optional | get row as parameter and return cell html
 resizable       | boolean                    | false    | make column resizable
 movable         | boolean                    | false    | male column movable. (swaping columns)
+show            | boolean                    | true     | set column visibility
+toggleShow      | boolean                    | false    | set visibility of column by user from toolbar
 
 # Set column resizable
 
@@ -115,133 +117,8 @@ movable         | boolean                    | false    | male column movable. (
 />
 ```
 ![alt text](/images/resize-column.gif)
-# Set column justify (boolean)
 
-set column cells align to center. default value is false
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',justify:true},
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/justify.jpg)
-
-# Set column template (function)
-
-##### Set content of column cells by template function.
-
-```javascript
-<Table
-  ...
-  columns={[
-    {title:'Name',getValue:(row)=>row.name},
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      template:(row)=>numberWithCommas(row.population)
-    },
-    {
-      title:'Percent',
-      getValue:(row)=>row.percent,
-      template:(row)=>row.percent + '%'
-    },
-    {title:'Continent',getValue:(row)=>row.continent}
-  ]}
-  ...
-/>
-```
-![alt text](/images/template.jpg)
-#### numberWuidthCommas function
-
-```javascript
-function numberWithCommas(number){
-  let value = number.toString();
-  let result = '';
-  let index = 1;
-  for(let i = value.length - 1; i >= 0; i--){
-    result = value[i] + result;
-    if(index % 3 === 0 && i !== 0){result = ',' + result;}
-    index++;
-  }
-  return result;
-}
-```
-
-
-# Set column resizable (boolean)
-
-default is false
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      resizable:true
-    }
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/resizable.gif)
-# Set column search (boolean)
-
-##### default is false.
-##### only one column can be searchable.
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      search:true
-    }
-    ...
-  ]}
-  ...
-/>
-
-```
-![alt text](/images/search.gif)
-# Set column show (boolean)
-
-##### show or hide column.
-##### default is true
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      show:false
-    }
-    ...
-  ]}
-  ...
-/>
-
-```
-
-# Set column toggleShow (boolean)
-
-##### set visibility of column by user from toolbar.
-##### default is false
+# Set column toggleShow
 
 ```javascript
 <Table
