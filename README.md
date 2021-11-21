@@ -80,7 +80,11 @@ className       | string                     | optional | class name of table.
 id              | string                     | optional | id of table.
 style           | css object                 | optional | set table css style.
 template        | function                   | optional | get row as parameter and return cell html
-padding         | number or string           | 12       | set table padding using padding props.(for better styling dont set padding in style instead set padding props)
+padding         | number                     | 12       | set table padding using padding props.(for better styling dont set padding in style instead set padding props)
+headerHeight    | number                     | 36       | height of header.
+rowHeight       | number                     | 36       | height of cells.
+rowGap          | number                     | 6        | gap between rows.
+columnGap       | number                     | 0        | gap between columns.
 
 ### each column Object:
 column property | type                       | default  | description
@@ -97,6 +101,8 @@ resizable       | boolean                    | false    | make column resizable
 movable         | boolean                    | false    | male column movable. (swaping columns)
 show            | boolean                    | true     | set column visibility
 toggleShow      | boolean                    | false    | set visibility of column by user from toolbar
+before          | function                   | optional | get row as parameters and returns html as before cell content
+after           | function                   | optional | get row as parameters and returns html as after cell content
 
 # Set column resizable
 
