@@ -205,42 +205,23 @@ default value is 36.
 />
 ```
 ![alt text](/images/rowheight.jpg)
-# Set headerHeight (number)
+# sizing props (headerHeight,rowHeight,rowGap,columnGap,padding)
 
 default value is 36
 ```javascript
 <Table
   ...
-  headerHeight={48}
+  headerHeight={24}
+  rowHeight={36}
+  rowGap={8}
+  columnGap={1}
+  padding={12}
   ...
 />
 ```
-![alt text](/images/headerheight.jpg)
+![alt text](/images/sizing-props.jpg)
 
-# set rowGap (number)
 
-set gap between rows. default is 6
-
-```javascript
-<Table
-  ...
-  rowGap={1}
-  ...
-/>
-```
-![alt text](/images/rowgap.jpg)
-# set columnGap (number)
-
-set gap between columns. default is 0
-
-```javascript
-<Table
-  ...
-  columnGap={6}
-  ...
-/>
-```
-![alt text](/images/columngap.jpg)
 # set column movable (boolean)
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
