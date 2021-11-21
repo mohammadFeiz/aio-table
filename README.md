@@ -194,17 +194,6 @@ toggleShow      | boolean                    | false    | set visibility of colu
 ![alt text](/images/togglefreeze.gif)
 
 
-# Set rowHeight (number)
-##### set height of aio table rows. 
-default value is 36.
-```javascript
-<Table
-  ...
-  rowHeight={48}
-  ...
-/>
-```
-![alt text](/images/rowheight.jpg)
 # sizing props (headerHeight,rowHeight,rowGap,columnGap,padding)
 
 default value is 36
