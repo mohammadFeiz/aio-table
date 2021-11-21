@@ -91,59 +91,8 @@ titleJustify    | boolean                    | true     | justifying column titl
 justify         | boolean                    | true     | justifying cell content.
 search          | boolean                    | false    | put search input in toolbar for searching rows based on column values.
 width           | number or string or 'auto' | auto     | set width of column
+minWidth        | number or string           | optional | set min width of column(use in resizing column)
 template        | function                   | optional | get row as parameter and return cell html
-# Set className (string)
-
-```javascript
-<Table
-  ...
-  className='table'
-  ...
-/>
-```
-
-# Set style (object)
-
-```javascript
-<Table
-  ...
-  style={{height:600}}
-  ...
-/>
-```
-
-# Set column width (string)
-
-##### default value is 'auto'.
-
-```javascript
-<Table
-  ...
-  columns={[
-    {title:'Name',getValue:(row)=>row.name,width:'auto'},
-    {title:'Population',getValue:(row)=>row.population,width:'100px'},
-    {title:'Percent',getValue:(row)=>row.percent,width:'70px'},
-    {title:'Continent',getValue:(row)=>row.continent,width:'120px'}
-  ]}
-  ...
-/>
-```
-![alt text](/images/width.jpg)
-# Set column minWidth (string)
-
-##### if column width is auto , column width cannot be smaller than minWidth.
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',minWidth:'200px'},
-    ...
-  ]}
-  ...
-/>
-```
 
 
 # Set column titleJustify (boolean)
