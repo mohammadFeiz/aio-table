@@ -20,26 +20,51 @@
 
 ```javascript
 import React,{Component} from "react";
-import Table from 'aio-table';
-import countries from './../countries';
-import "./../style.css";
+import Table from './aio-table';
+import counteries from './countries';
+import "./style.css";
 
 export default class App extends Component {
   render(){
-    var {model,columns} = this.state;
     return (
       <Table
-        model={countries}
+        className='table'
+        model={counteries}
         columns={[
-          {title:'Name',getValue:(row)=>row.name},
-          {title:'Population',getValue:(row)=>row.population},
-          {title:'Percent',getValue:()=>row.percent},
-          {title:'Continent',getValue:()=>row.continent}
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            justify:false,
+            titleJustify:false,
+            search:true
+          },
+          {
+            title:'Continent',
+            getValue:(row)=>row.continent,
+            width:120,
+          },
+          {
+            title:'Population',
+            getValue:(row)=>row.population,
+            justify:false,
+            width:120,
+          },
+          {
+            title:'Percent',
+            getValue:(row)=>row.percent,
+            template:(row)=>row.percent + '%',
+            width:90,
+          }
         ]}
+        paging={{
+          number:1,
+          size:20,
+        }}
       />
     );
   }
 }
+
 ```
 ![alt text](/images/basic.jpg)
 # Set className (string)
