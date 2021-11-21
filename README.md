@@ -320,9 +320,9 @@ onChange function get paging changed paging object as parameters
 />
 ```
 
-# Set column before (function)
+# Set column before and after (function)
 
-##### set html before cells of column content.
+##### set html before and after cells of column content.
 
 ```javascript
 <Table
@@ -332,44 +332,23 @@ onChange function get paging changed paging object as parameters
     {
       title:'Name',
       getValue:(row)=>row.name,
-      width:'auto',
       before:(row)=>{
         return (
           <div 
             style={{
-              background:'#000',
+              background:'dodgerblue',
               color:'#fff',
-              width:'24px',
-              height:'24px',
-              lineHeight:'24px',
-              textAlign:'center',
-              borderRadius:'100%'
+              borderRadius:'100%',
+              width:20,
+              height:20,
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              fontSize:10
             }}
-          >
-              {row._index + 1}
-          </div>
+          >{row._index}</div>
         )
-      }
-    }
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/before.jpg)
-# Set column after (function)
-
-##### set html after cells of column content.
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Name',
-      getValue:(row)=>row.name,
-      width:'auto',
+      },
       after:(row)=>{
         var colors = {
           'Asia':'orange','North America':'blue','South America':'lightblue','Africa':'black','Europe':'green'
@@ -386,18 +365,16 @@ onChange function get paging changed paging object as parameters
               textAlign:'center',
               borderRadius:'3px'
             }}
-          >
-              {row.continent}
-          </div>
+          >{row.continent}</div>
         )
       }
-    }
+    },
     ...
   ]}
   ...
 />
 ```
-![alt text](/images/after.jpg)
+![alt text](/images/column-before-after.jpg)
 # Set groups (Array Of Objects)
 
 ##### group by rows.
