@@ -67,6 +67,19 @@ export default class App extends Component {
 
 ```
 ![alt text](/images/1-basic.jpg)
+
+### model(JSON):
+##### data model of table as rows.
+### columns(Array of Objecects):
+##### list of table columns.
+### paging(Object):
+##### configure table for paging.
+### each column Object:
+#### title(string):
+##### title of column.
+#### getValue(function):
+##### get row object as parameter and returns value of table cell based on row.
+
 # Set className (string)
 
 ```javascript
