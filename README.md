@@ -114,7 +114,7 @@ movable         | boolean                    | false    | male column movable. (
   ...
 />
 ```
-![alt text](/images/resize-column.jpg)
+![alt text](/images/resize-column.gif)
 # Set column justify (boolean)
 
 set column cells align to center. default value is false
