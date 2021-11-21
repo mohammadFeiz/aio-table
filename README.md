@@ -83,6 +83,7 @@ titleJustify    | boolean                    | true     | justifying column titl
 justify         | boolean                    | true     | justifying cell content.
 search          | boolean                    | false    | put search input in toolbar for searching rows based on column values.
 width           | number or string or 'auto' | auto     | set width of column
+template        | function                   | optional | get row as parameter and return cell html
 # Set className (string)
 
 ```javascript
