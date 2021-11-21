@@ -60,6 +60,8 @@ export default class App extends Component {
           number:1,
           size:20,
         }}
+        padding={12}
+        
       />
     );
   }
@@ -68,12 +70,18 @@ export default class App extends Component {
 ```
 ![alt text](/images/1-basic.jpg)
 
-### model(JSON):
-##### data model of table as rows.
-### columns(Array of Objeccts):
-##### list of table columns.
-### paging(Object):
-##### configure table for paging.
+### main props:
+props           | type                       | default  | description
+--------------- | -------------------------- | -------- | -----------
+model           | json                       | Required | data model of table as rows.
+columns         | array of objects           | Required | list of table columns.
+paging          | object                     | optional | configure table paging.
+className       | string                     | optional | class name of table.
+id              | string                     | optional | id of table.
+style           | css object                 | optional | set table css style.
+template        | function                   | optional | get row as parameter and return cell html
+padding         | number or string           | 12       | set table padding using padding props.(for better styling dont set padding in style instead set padding props)
+
 ### each column Object:
 column property | type                       | default  | description
 --------------- | -------------------------- | -------- | -----------
