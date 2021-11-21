@@ -128,16 +128,17 @@ toggleShow      | boolean                    | false    | set visibility of colu
     {
       title:'Population',
       getValue:(row)=>row.population,
-      show:false,
+      justify:false,
+      width:120,
       toggleShow:true
-    }
+    },
     ...
   ]}
   ...
 />
 
 ```
-![alt text](/images/toggleshow.gif)
+![alt text](/images/column-toggleShow.gif)
 # Set column freeze (boolean)
 
 ##### default is false
