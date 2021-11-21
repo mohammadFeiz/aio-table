@@ -66,7 +66,7 @@ export default class App extends Component {
 }
 
 ```
-![alt text](/images/basic.jpg)
+![alt text](/images/1-basic.jpg)
 # Set className (string)
 
 ```javascript
