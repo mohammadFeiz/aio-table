@@ -93,24 +93,28 @@ search          | boolean                    | false    | put search input in to
 width           | number or string or 'auto' | auto     | set width of column
 minWidth        | number or string           | optional | set min width of column(use in resizing column)
 template        | function                   | optional | get row as parameter and return cell html
+resizable       | boolean                    | false    | make column resizable
+movable         | boolean                    | false    | male column movable. (swaping columns)
 
-
-# Set column titleJustify (boolean)
-
-set columm title align to center. default value is false
+# Set column resizable
 
 ```javascript
 <Table
   ...
   columns={[
     ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',titleJustify:true},
+    {
+      title:'Continent',
+      getValue:(row)=>row.continent,
+      width:120,
+      resiable:true
+    },
     ...
   ]}
   ...
 />
 ```
-![alt text](/images/titlejustify.jpg)
+![alt text](/images/resize-column.jpg)
 # Set column justify (boolean)
 
 set column cells align to center. default value is false
