@@ -70,16 +70,19 @@ export default class App extends Component {
 
 ### model(JSON):
 ##### data model of table as rows.
-### columns(Array of Objecects):
+### columns(Array of Objeccts):
 ##### list of table columns.
 ### paging(Object):
 ##### configure table for paging.
 ### each column Object:
-#### title(string):
-##### title of column.
-#### getValue(function):
-##### get row object as parameter and returns value of table cell based on row.
-
+column property | type                       | default  | description
+--------------- | -------------------------- | -------- | -----------
+title           | string                     | ""       | title of column.
+getValue        | function                   | Required | get row object as parameter and returns value of table cell based on row.
+titleJustify    | boolean                    | true     | justifying column title.
+justify         | boolean                    | true     | justifying cell content.
+search          | boolean                    | false    | put search input in toolbar for searching rows based on column values.
+width           | number or string or 'auto' | auto     | set width of column
 # Set className (string)
 
 ```javascript
