@@ -10,6 +10,8 @@
 - group by
 - sortable
 - filterable
+- searchable
+- use html or jsx in cells
 - freeze mode
 - resize columns
 - swap columns position
