@@ -19,7 +19,7 @@ npm i aio-table
   ...
 ]
 ```
-
+##### also you can find contries json in repository (countries.js)
 
 ```javascript
 import React,{Component} from "react";
