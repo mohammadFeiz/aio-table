@@ -249,10 +249,32 @@ type     | string ('text' or 'number') | 'text'  | based on column values.
 <Table
   ...
   columns={[
-    {title:'Name',field:'name',filter:{type:'text'}},
-    {title:'Population',field:'population',filter:{type:'number'}},
-    {title:'Percent',field:'percent'},
-    {title:'Continent',field:'continent'}
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      justify:false,
+      titleJustify:false,
+      filter:{type:'text'}
+    },
+    {
+      title:'Continent',
+      getValue:(row)=>row.continent,
+      width:120,
+      resizable:true,
+    },
+    {
+      title:'Population',
+      getValue:(row)=>row.population,
+      justify:false,
+      width:120,
+      filter:{type:'number'}
+    },
+    {
+      title:'Percent',
+      getValue:(row)=>row.percent,
+      template:(row)=>row.percent + '%',
+      width:90,
+    }
   ]}
   ...
 />
