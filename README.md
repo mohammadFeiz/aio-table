@@ -1,5 +1,8 @@
 # aio-table
-
+# Installation
+```javascript
+npm i aio-table
+```
 # Basic
 
 #### countries JSON as aio table model:
@@ -20,7 +23,7 @@
 
 ```javascript
 import React,{Component} from "react";
-import Table from './aio-table';
+import Table from 'aio-table';
 import counteries from './countries';
 import "./style.css";
 
