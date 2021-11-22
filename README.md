@@ -305,7 +305,7 @@ size | number | first index of sizes property | rows count per page
 number | number | 1 | page number
 onChange | function | Optional | if you set onChange , you must paging rows of model in parent component and aio table will not paging rows automatically
 
-onChange function get paging changed paging object as parameters
+onChange function get changed paging object as parameters
 
 ```javascript
 <Table
@@ -457,33 +457,6 @@ toggle | boolean | true | if true, user can toggle activity of sort item from to
       type:'inc'
     }
   ]
-  ...
-/>
-```
-
-
-# Set selectives (Array Of Objects)
-
-##### filter rows by check or uncheck row property(dropdown).
-##### each selective properties:
-Property | Type | Default | Description
--------- | ---- | ------- | -----------
-title | string | optional | title of selective item button.
-icon | html/jsx | optional | icon of selective item button.
-getValue | function | Required | this function get (row) as parameter and return a value for filtering rows.
-getText | function | optional | this function get (row) as parameter and return an string as name of filter item.
-
-```javascript
-<Table
-  ...
-  selectives={[
-    {
-      getValue:(row)=>row.continent,
-      getText:(row)=>row.continent === '-'?'other':row.continent,
-      title:'Continents',
-      icon:<Icon path={mdiCheckboxMarkedOutline} size={0.7}/>,
-    }
-  ]}
   ...
 />
 ```
