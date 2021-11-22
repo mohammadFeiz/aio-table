@@ -115,7 +115,7 @@ after           | function                   | optional | get row as parameters 
       title:'Continent',
       getValue:(row)=>row.continent,
       width:120,
-      resiable:true
+      resizable:true
     },
     ...
   ]}
@@ -241,6 +241,9 @@ default value is 36
 ![alt text](/images/movable.gif)
 # set column filter (object)
 ##### filter rows by column value automatically.
+property | type                        | default | description
+-------- | --------------------------- | ------- | -----------
+type     | string ('text' or 'number') | 'text'  | based on column values.
  
 ```javascript
 <Table
@@ -255,6 +258,7 @@ default value is 36
 />
     
 ```
+![alt text](/images/column-filter.gif)
 ##### if you want to filter rows outside of aio table , you can set onChangeFilter props (for example server side filtering)
 ```javbascript
 <Table
