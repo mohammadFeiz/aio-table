@@ -87,13 +87,13 @@ rowGap          | number                     | 6        | gap between rows.
 columnGap       | number                     | 0        | gap between columns.
 
 ### each column Object:
-column property | type                       | default  | description
---------------- | -------------------------- | -------- | -----------
-title           | string                     | ""       | title of column.
-getValue        | function                   | Required | get row object as parameter and returns value of table cell based on row.
-titleJustify    | boolean                    | true     | justifying column title.
-justify         | boolean                    | true     | justifying cell content.
-search          | boolean                    | false    | put search input in toolbar for searching rows based on column values.
+column property | type                       | default                                         | description
+--------------- | -------------------------- | ----------------------------------------------- | -----------
+title           | string                     | ""                                              | title of column.
+getValue        | function                   | optional if you set template property on column | get row object as parameter and returns value of table cell based on row.
+titleJustify    | boolean                    | true                                            | justifying column title.
+justify         | boolean                    | true                                            | justifying cell content.
+search          | boolean                    | false                                           | put search input in toolbar for searching rows based on column values.
 width           | number or string or 'auto' | auto     | set width of column
 minWidth        | number or string           | optional | set min width of column(use in resizing column)
 template        | function                   | optional | get row as parameter and return cell html
@@ -241,6 +241,7 @@ default value is 36
 ![alt text](/images/movable.gif)
 # set column filter (object)
 ##### filter rows by column value automatically.
+##### for filter rows based on column , getValue property is required on column.
 property | type                        | default | description
 -------- | --------------------------- | ------- | -----------
 type     | string ('text' or 'number') | 'text'  | based on column values.
