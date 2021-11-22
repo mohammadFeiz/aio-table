@@ -3,14 +3,18 @@
 # aio table options
 - data table
 - tree table
-### support nested data
-### support flat data
-### keyboar navigation
-### inline edit
-### group by
-### sortable
-### filterable
-### freeze mode
+- support nested data
+- support flat data
+- keyboar navigation
+- inline edit
+- group by
+- sortable
+- filterable
+- freeze mode
+- resize columns
+- swap columns position
+- mobile support
+- paging
 # Installation
 ```javascript
 npm i aio-table
