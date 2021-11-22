@@ -1,13 +1,15 @@
 # aio-table (React js all in one table)
 
-### data table
-### tree table
+# aio table options
+- data table
+- tree table
 ### support nested data
 ### support flat data
 ### keyboar navigation
 ### inline edit
 ### group by
-### sort
+### sortable
+### filterable
 ### freeze mode
 # Installation
 ```javascript
