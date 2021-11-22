@@ -1,4 +1,14 @@
-# aio-table
+# aio-table (React js all in one table)
+
+### data table
+### tree table
+### support nested data
+### support flat data
+### keyboar navigation
+### inline edit
+### group by
+### sort
+### freeze mode
 # Installation
 ```javascript
 npm i aio-table
