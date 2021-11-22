@@ -24,15 +24,17 @@ npm i aio-table
 ```javascript
 import React,{Component} from "react";
 import Table from 'aio-table';
-import counteries from './countries';
+import countries from './countries';
 import "./style.css";
 
 export default class App extends Component {
+  state = {model:countries}
   render(){
+    let {model} = this.state;
     return (
       <Table
         className='table'
-        model={counteries}
+        model={model}
         columns={[
           {
             title:'Name',
