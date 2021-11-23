@@ -99,10 +99,11 @@ props           | type                       | default  | description
 model           | json                       | Required | data model of table as rows.
 columns         | array of objects           | Required | list of table columns.
 paging          | object                     | optional | configure table paging.
+groups          | array of objects           | optional | grouping rows.
+sorts           | array of objects           | optional | sorting rows
 className       | string                     | optional | class name of table.
 id              | string                     | optional | id of table.
 style           | css object                 | optional | set table css style.
-template        | function                   | optional | get row as parameter and return cell html
 padding         | number                     | 12       | set table padding using padding props.(for better styling dont set padding in style instead set padding props)
 headerHeight    | number                     | 36       | height of header.
 rowHeight       | number                     | 36       | height of cells.
