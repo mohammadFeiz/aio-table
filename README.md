@@ -432,29 +432,29 @@ toggle | boolean | true | if true, user can toggle activity of group item from t
  ```javascript
 <Table
   ...
-  groups:[
-     {
-        title:'Populatuion',
-        getValue:(row)=>{
-          if(row.population > 1000000000){
-            return 'More than 1,000,000,000'
-          }
-          if(row.population > 500000000){
-            return 'Between 500,000,000 and 1,000,000,000'
-          }
-          if(row.population > 100000000){
-            return 'Between 100,000,000 and 500,000,000'
-          }
-          if(row.population > 50000000){
-            return 'Between 50,000,000 and 100,000,000'
-          }
-          if(row.population > 25000000){
-            return 'Between 25,000,000 and 50,000,000'
-          }
-          return 'Less Than 25,000,000'
+  groups={[
+    {
+      title:'Populatuion',
+      getValue:(row)=>{
+        if(row.population > 1000000000){
+          return 'More than 1,000,000,000'
         }
-     }
-  }
+        if(row.population > 500000000){
+          return 'Between 500,000,000 and 1,000,000,000'
+        }
+        if(row.population > 100000000){
+          return 'Between 100,000,000 and 500,000,000'
+        }
+        if(row.population > 50000000){
+          return 'Between 50,000,000 and 100,000,000'
+        }
+        if(row.population > 25000000){
+          return 'Between 25,000,000 and 50,000,000'
+        }
+        return 'Less Than 25,000,000'
+      }
+    }
+  ]}
   ...
 />
 ```
