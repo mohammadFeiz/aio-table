@@ -426,6 +426,7 @@ toggle | boolean | true | if true, user can toggle activity of group item from t
   ...
 />
 ```
+![alt text](/images/groupby-1.jpg)
  ##### Other Example:
  
  ```javascript
@@ -457,6 +458,7 @@ toggle | boolean | true | if true, user can toggle activity of group item from t
   ...
 />
 ```
+![alt text](/images/groupby-2.jpg)
 
 # Set sorts (Array Of Objects)
 
