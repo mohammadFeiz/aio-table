@@ -476,17 +476,17 @@ toggle | boolean | true | if true, user can toggle activity of sort item from to
 ```javascript
 <Table
   ...
-  sorts:[
+  sorts={[
     {
       title:'Name',
       getValue:(row)=>row.name,
       type:'inc'
     }
-  ]
+  ]}
   ...
 />
 ```
-
+![alt text](/images/sorts.gif)
 # Set column inlineEdit (Objects)
 
 ##### inline editing cells.
