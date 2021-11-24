@@ -557,75 +557,6 @@ onChange | function | required | get row and value as parameters. if return an s
 />
 ```
 ![alt text](/images/inlineedit.gif)
-# Gantt chrt example
-
-##### for set column as gantt chart , you can set a column by template:'gantt'.
-##### gantt column can have all column properties and must have this properties:
-Property | Type | Default | Description
--------- | ---- | ------- | -----------
-template |  string('gantt') | Required | define column as gantt.
-getKeys | function  | Required | return gantt keys array.
-getStart | function  | required | get row a parameter and return an string as start of row bar(one of keys).
-getEnd | function  | required | get row a parameter and return an string as end of row bar(one of keys).
-getProgress | function | Optional | get row as parameter and return a number between 0 and 100 to show row percentage graphically. 
-getText | function | Optional | get row as parameter and return an string to show on row gantt bar. 
-padding | string(px) | '36px' | gantt horizontal padding.
-getBackgroundColor | function | a function that return '#69bedb' | get row as parameter and return an string as gant bar background color. 
-getColor | function | a function that return '#fff' | get row as parameter and return an string as gant bar text color. 
-getFlags | function | Optional | return an array of objects (Examplae [{color:'red',value:'2022/6'}]) as gantt flags. 
-```javascript
-export default class App extends Component {
-  state = {
-    model:[
-      {name:'a',startDate:'2022/1',endDate:'2022/6',progress:10},
-      {name:'b',startDate:'2022/1',endDate:'2022/3',progress:20},
-      {name:'c',startDate:'2022/3',endDate:'2022/6',progress:50},
-      {name:'d',startDate:'2022/6',endDate:'2022/9',progress:30},
-      {name:'e',startDate:'2022/9',endDate:'2022/12',progress:100},
-      {name:'f',startDate:'2022/1',endDate:'2022/9',progress:80},
-      {name:'g',startDate:'2022/3',endDate:'2022/9',progress:70},
-      {name:'h',startDate:'2022/6',endDate:'2022/12',progress:60},
-      {name:'i',startDate:'2022/9',endDate:'2022/12',progress:50},
-    ]
-  }
-  render(){
-    var {model} = this.state;
-    return (
-      <Table
-        model={model}
-        columns={[
-          {
-            title:'Name',
-            getValue:(row)=>row.name,
-            width:'80px',
-          },
-          {
-            title:'My Gantt',
-            minWidth:'400px',
-            toggleShow:true,
-            
-            template:'gantt',
-            getStart:(row)=>row.startDate,
-            getEnd:(row)=>row.endDate,
-            getKeys:()=>['2022/1','2022/2','2022/3','2022/4','2022/5','2022/6','2022/7','2022/8','2022/9','2022/10','2022/11','2022/12'],
-            getProgress:(row)=>row.progress,
-            getText:(row)=>row.name + ' ' + row.progress + '%',
-            padding:'24px',
-            getBackgroundColor:(row)=>'lightblue',
-            getColor:(row)=>'#fff',
-            getFlags:()=>[
-              {color:'red',value:'2022/6'},
-              {color:'red',value:'2022/9'},
-            ]
-          }
-        ]}
-      />
-    );
-  }
-}
-
-```
-![alt text](/images/ganttchart.jpg)
 
 # Tree data (nested json)
 
@@ -725,57 +656,137 @@ export default class App extends Component {
 ```
 ![alt text](/images/tree-nested.gif)
 
-# Tree data (flat)
+# Tree data (flat json)
 
 ##### data as array with id and parent id.
-##### set flat props true.
+##### flat json example:
+```javascript
+let flatData = [
+  {name:'Applications',id:'1'},
+  {name:'Calendar',id:'2',type:'app',parentId:'1'},
+  {name:'Chrome',id:'3',type:'app',parentId:'1'},
+  {name:'Webstorm',id:'4',type:'app',parentId:'1'},
+  {name:'Documents',id:'5'},
+  {name:'Angular',id:'6',parentId:'5'},
+  {name:'SRC',id:'7',parentId:'6'},
+  {name:'Compiler',id:'8',type:'ts',parentId:'7'},
+  {name:'Core',id:'9',type:'ts',parentId:'7'},
+  {name:'Material2',id:'10',parentId:'5'},
+  {name:'SRC',id:'11',parentId:'10'},
+  {name:'Button',id:'12',type:'ts',parentId:'11'},
+  {name:'Checkbox',id:'13',type:'ts',parentId:'11'},
+  {name:'Input',id:'14',type:'ts',parentId:'11'},
+  {name:'Downloads',id:'15'},
+  {name:'October',id:'16',type:'pdf',parentId:'15'},
+  {name:'November',id:'17',type:'pdf',parentId:'15'},
+  {name:'Tutorial',id:'18',type:'pdf',parentId:'15'},
+  {name:'Pictures',id:'19'},
+  {name:'Library',id:'20',parentId:'19'},
+  {name:'Contents',id:'21',type:'dir',parentId:'20'},
+  {name:'Pictures',id:'22',type:'dir',parentId:'20'},
+  {name:'Sun',id:'23',type:'png',parentId:'19'},
+  {name:'Woods',id:'24',type:'jpg',parentId:'19'}
+]
+```
 ##### set getRowParentId function for get rows parent id.
 ##### set getRowId function for get rows id.
 ##### set column treeMode for collapse and indent rows.
 ```javascript
 export default class App extends Component {
+  render(){
+    return (
+      <Table
+        className='table'
+        model={flatData}
+        columns={[
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            justify:false,
+            titleJustify:false,
+            treeMode:true
+          },
+          {
+            title:'Type',
+            getValue:(row)=>row.type
+          }
+        ]}
+        getRowId={(row)=>row.id}
+        getRowParentId={(row)=>row.parentId} 
+      />
+    );
+  }
+}
+```
+![alt text](/images/tree-nested.gif)
+
+# Gantt chrt example
+
+##### for set column as gantt chart , you can set a column by template:'gantt'.
+##### gantt column can have all column properties and must have this properties:
+Property | Type | Default | Description
+-------- | ---- | ------- | -----------
+template |  string('gantt') | Required | define column as gantt.
+getKeys | function  | Required | return gantt keys array.
+getStart | function  | required | get row a parameter and return an string as start of row bar(one of keys).
+getEnd | function  | required | get row a parameter and return an string as end of row bar(one of keys).
+getProgress | function | Optional | get row as parameter and return a number between 0 and 100 to show row percentage graphically. 
+getText | function | Optional | get row as parameter and return an string to show on row gantt bar. 
+padding | string(px) | '36px' | gantt horizontal padding.
+getBackgroundColor | function | a function that return '#69bedb' | get row as parameter and return an string as gant bar background color. 
+getColor | function | a function that return '#fff' | get row as parameter and return an string as gant bar text color. 
+getFlags | function | Optional | return an array of objects (Examplae [{color:'red',value:'2022/6'}]) as gantt flags. 
+```javascript
+export default class App extends Component {
   state = {
     model:[
-      {name:'a',id:'a',value:10},
-      {name:'a-0',id:'a-0',value:4,parentId:'a'},
-      {name:'a-0-0',id:'a-0-0',value:3,parentId:'a-0'},
-      {name:'a-0-1',id:'a-0-1',value:1,parentId:'a-0'},
-      {name:'a-1',id:'a-1',value:6,parentId:'a'},
-      {name:'a-1-0',id:'a-1-0',value:2,parentId:'a-1'},
-      {name:'a-1-1',id:'a-1-1',value:4,parentId:'a-1'},
-      {name:'b',id:'b',value:20},
-      {name:'b-0',id:'b-0',value:16,parentId:'b'},
-      {name:'b-0-0',id:'b-0-0',value:8,parentId:'b-0'},
-      {name:'b-0-1',id:'b-0-1',value:8,parentId:'b-0'},
-      {name:'b-1',id:'b-1',value:4,parentId:'b'},
-      {name:'b-1-0',id:'b-1-0',value:2,parentId:'b-1'},
-      {name:'b-1-1',id:'b-1-1',value:2,parentId:'b-1'}
+      {name:'a',startDate:'2022/1',endDate:'2022/6',progress:10},
+      {name:'b',startDate:'2022/1',endDate:'2022/3',progress:20},
+      {name:'c',startDate:'2022/3',endDate:'2022/6',progress:50},
+      {name:'d',startDate:'2022/6',endDate:'2022/9',progress:30},
+      {name:'e',startDate:'2022/9',endDate:'2022/12',progress:100},
+      {name:'f',startDate:'2022/1',endDate:'2022/9',progress:80},
+      {name:'g',startDate:'2022/3',endDate:'2022/9',progress:70},
+      {name:'h',startDate:'2022/6',endDate:'2022/12',progress:60},
+      {name:'i',startDate:'2022/9',endDate:'2022/12',progress:50},
     ]
   }
   render(){
     var {model} = this.state;
     return (
       <Table
-        flat={true}
-        getRowId={(row)=>row.id}
-        getRowParentId={(row)=>row.parentId}
         model={model}
         columns={[
           {
             title:'Name',
-            treeMode:true,
             getValue:(row)=>row.name,
-            width:'auto',
+            width:'80px',
           },
           {
-            title:'Value',
-            getValue:(row)=>row.value,
-            width:'100px',  
+            title:'My Gantt',
+            minWidth:'400px',
+            toggleShow:true,
+            
+            template:'gantt',
+            getStart:(row)=>row.startDate,
+            getEnd:(row)=>row.endDate,
+            getKeys:()=>['2022/1','2022/2','2022/3','2022/4','2022/5','2022/6','2022/7','2022/8','2022/9','2022/10','2022/11','2022/12'],
+            getProgress:(row)=>row.progress,
+            getText:(row)=>row.name + ' ' + row.progress + '%',
+            padding:'24px',
+            getBackgroundColor:(row)=>'lightblue',
+            getColor:(row)=>'#fff',
+            getFlags:()=>[
+              {color:'red',value:'2022/6'},
+              {color:'red',value:'2022/9'},
+            ]
           }
         ]}
       />
     );
   }
 }
+
 ```
-![alt text](/images/tree.jpg)
+![alt text](/images/ganttchart.jpg)
+
