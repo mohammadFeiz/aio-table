@@ -723,7 +723,7 @@ export default class App extends Component {
   }
 }
 ```
-![alt text](/images/tree-nested.jpg)
+![alt text](/images/tree-nested.gif)
 
 # Tree data (flat)
 
