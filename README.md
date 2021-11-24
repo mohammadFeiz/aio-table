@@ -627,78 +627,94 @@ export default class App extends Component {
 ```
 ![alt text](/images/ganttchart.jpg)
 
-# Tree data
+# Tree data (nested json)
 
-##### data as nested json.
-##### set getRowChilds function for get rows childs.
-##### set column treeMode for collapse and indent rows.
+##### nested json example:
 ```javascript
-export default class App extends Component {
-  state = {
-    model:[
+let nestedData = [
+  {
+    name:'Applications',id:'1',
+    childs:[
+      {name:'Calendar',id:'2',type:'app'},
+      {name:'Chrome',id:'3',type:'app'},
+      {name:'Webstorm',id:'4',type:'app'}    
+    ]
+  },
+  {
+    name:'Documents',id:'5',
+    childs:[
       {
-        name:'a',
-        value:10,
+        name:'Angular',id:'6',
         childs:[
           {
-            name:'a-0',
-            value:4,
+            name:'SRC',id:'7',
             childs:[
-              {name:'a-0-0',value:3},
-              {name:'a-0-1',value:1},
-            ]
-          },
-          {
-            name:'a-1',
-            value:6,
-            childs:[
-              {name:'a-1-0',value:2},
-              {name:'a-1-1',value:4},
+              {name:'Compiler',id:'8',type:'ts'},
+              {name:'Core',id:'9',type:'ts'},
             ]
           },
         ]
       },
       {
-        name:'b',
-        value:20,
+        name:'Material2',id:'10',
         childs:[
           {
-            name:'b-0',
-            value:16,
+            name:'SRC',id:'11',
             childs:[
-              {name:'b-0-0',value:8},
-              {name:'b-0-1',value:8},
+              {name:'Button',id:'12',type:'ts'},
+              {name:'Checkbox',id:'13',type:'ts'},
+              {name:'Input',id:'14',type:'ts'}
             ]
-          },
-          {
-            name:'b-1',
-            value:4,
-            childs:[
-              {name:'b-1-0',value:2},
-              {name:'b-1-1',value:2},
-            ]
-          },
+          }
         ]
-      }
-    ],
+      },
+    ]
+  },
+  {
+    name:'Downloads',id:'15',
+    childs:[
+      {name:'October',id:'16',type:'pdf'},
+      {name:'November',id:'17',type:'pdf'},
+      {name:'Tutorial',id:'18',type:'pdf'}
+    ]
+  },
+  {
+    name:'Pictures',id:'19',
+    childs:[
+      {
+        name:'Library',id:'20',
+        childs:[
+          {name:'Contents',id:'21',type:'dir'},
+          {name:'Pictures',id:'22',type:'dir'}
+        ]
+      },
+      {name:'Sun',id:'23',type:'png'},
+      {name:'Woods',id:'24',type:'jpg'}
+    ]
   }
+]
+```
+
+##### set getRowChilds function for get rows childs.
+##### set column treeMode for collapse and indent rows.
+```javascript
+export default class App extends Component {
   render(){
-    var {model} = this.state;
     return (
       <Table
         className='table'
-        model={model}
+        model={nestedData}
         columns={[
           {
             title:'Name',
-            treeMode:true,
             getValue:(row)=>row.name,
-            width:'auto',
+            justify:false,
+            titleJustify:false,
+            treeMode:true
           },
           {
-            title:'Value',
-            getValue:(row)=>row.value,
-            width:'100px',  
+            title:'Type',
+            getValue:(row)=>row.type
           }
         ]}
         getRowChilds={(row)=>row.childs}
@@ -707,7 +723,7 @@ export default class App extends Component {
   }
 }
 ```
-![alt text](/images/tree.jpg)
+![alt text](/images/tree-nested.jpg)
 
 # Tree data (flat)
 
