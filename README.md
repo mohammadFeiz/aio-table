@@ -1,5 +1,26 @@
-# aio-table
+# aio-table (React js all in one table)
 
+# aio table options
+- data table
+- tree table
+- support nested data
+- support flat data
+- keyboar navigation
+- inline edit
+- group by
+- sortable
+- filterable
+- searchable
+- use html or jsx in cells
+- freeze mode
+- resize columns
+- swap columns position
+- mobile support
+- paging
+# Installation
+```javascript
+npm i aio-table
+```
 # Basic
 
 #### countries JSON as aio table model:
@@ -16,164 +37,98 @@
   ...
 ]
 ```
-
+##### also you can find contries json in repository (countries.js)
 
 ```javascript
 import React,{Component} from "react";
 import Table from 'aio-table';
-import countries from './../countries';
-import "./../style.css";
+import countries from './countries';
+import "./style.css";
 
 export default class App extends Component {
+  state = {model:countries}
   render(){
-    var {model,columns} = this.state;
+    let {model} = this.state;
     return (
       <Table
-        model={countries}
+        className='table'
+        model={model}
         columns={[
-          {title:'Name',getValue:(row)=>row.name},
-          {title:'Population',getValue:(row)=>row.population},
-          {title:'Percent',getValue:()=>row.percent},
-          {title:'Continent',getValue:()=>row.continent}
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            justify:false,
+            titleJustify:false,
+            search:true
+          },
+          {
+            title:'Continent',
+            getValue:(row)=>row.continent,
+            width:120,
+          },
+          {
+            title:'Population',
+            getValue:(row)=>row.population,
+            justify:false,
+            width:120,
+          },
+          {
+            title:'Percent',
+            getValue:(row)=>row.percent,
+            template:(row)=>row.percent + '%',
+            width:90,
+          }
         ]}
+        paging={{
+          number:1,
+          size:20,
+        }}
+        padding={12}
+        
       />
     );
   }
 }
+
 ```
-![alt text](/images/basic.jpg)
-# Set className (string)
+![alt text](/images/1-basic.jpg)
 
-```javascript
-<Table
-  ...
-  className='table'
-  ...
-/>
-```
+### main props:
+props           | type                       | default  | description
+--------------- | -------------------------- | -------- | -----------
+model           | json                       | Required | data model of table as rows.
+columns         | array of objects           | Required | list of table columns.
+paging          | object                     | optional | configure table paging.
+groups          | array of objects           | optional | grouping rows.
+sorts           | array of objects           | optional | sorting rows
+className       | string                     | optional | class name of table.
+id              | string                     | optional | id of table.
+style           | css object                 | optional | set table css style.
+padding         | number                     | 12       | set table padding using padding props.(for better styling dont set padding in style instead set padding props)
+headerHeight    | number                     | 36       | height of header.
+rowHeight       | number                     | 36       | height of cells.
+rowGap          | number                     | 6        | gap between rows.
+columnGap       | number                     | 0        | gap between columns.
 
-# Set style (object)
+### each column Object:
+column property | type                       | default                                         | description
+--------------- | -------------------------- | ----------------------------------------------- | -----------
+title           | string                     | ""                                              | title of column.
+getValue        | function                   | optional if you set template property on column | get row object as parameter and returns value of table cell based on row.
+titleJustify    | boolean                    | true                                            | justifying column title.
+justify         | boolean                    | true                                            | justifying cell content.
+search          | boolean                    | false                                           | put search input in toolbar for searching rows based on column values.
+width           | number or string or 'auto' | auto     | set width of column
+minWidth        | number or string           | optional | set min width of column(use in resizing column)
+template        | function                   | optional | get row as parameter and return cell html
+resizable       | boolean                    | false    | make column resizable
+movable         | boolean                    | false    | male column movable. (swaping columns)
+show            | boolean                    | true     | set column visibility
+toggleShow      | boolean                    | false    | set visibility of column by user from toolbar
+before          | function                   | optional | get row as parameters and returns html as before cell content
+after           | function                   | optional | get row as parameters and returns html as after cell content
 
-```javascript
-<Table
-  ...
-  style={{height:600}}
-  ...
-/>
-```
-
-# Set column width (string)
-
-##### default value is 'auto'.
-
-```javascript
-<Table
-  ...
-  columns={[
-    {title:'Name',getValue:(row)=>row.name,width:'auto'},
-    {title:'Population',getValue:(row)=>row.population,width:'100px'},
-    {title:'Percent',getValue:(row)=>row.percent,width:'70px'},
-    {title:'Continent',getValue:(row)=>row.continent,width:'120px'}
-  ]}
-  ...
-/>
-```
-![alt text](/images/width.jpg)
-# Set column minWidth (string)
-
-##### if column width is auto , column width cannot be smaller than minWidth.
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',minWidth:'200px'},
-    ...
-  ]}
-  ...
-/>
-```
-
-
-# Set column titleJustify (boolean)
-
-set columm title align to center. default value is false
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',titleJustify:true},
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/titlejustify.jpg)
-# Set column justify (boolean)
-
-set column cells align to center. default value is false
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {title:'Name',getValue:(row)=>row.name,width:'auto',justify:true},
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/justify.jpg)
-
-# Set column template (function)
-
-##### Set content of column cells by template function.
-
-```javascript
-<Table
-  ...
-  columns={[
-    {title:'Name',getValue:(row)=>row.name},
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      template:(row)=>numberWithCommas(row.population)
-    },
-    {
-      title:'Percent',
-      getValue:(row)=>row.percent,
-      template:(row)=>row.percent + '%'
-    },
-    {title:'Continent',getValue:(row)=>row.continent}
-  ]}
-  ...
-/>
-```
-![alt text](/images/template.jpg)
-#### numberWuidthCommas function
-
-```javascript
-function numberWithCommas(number){
-  let value = number.toString();
-  let result = '';
-  let index = 1;
-  for(let i = value.length - 1; i >= 0; i--){
-    result = value[i] + result;
-    if(index % 3 === 0 && i !== 0){result = ',' + result;}
-    index++;
-  }
-  return result;
-}
-```
-
-
-# Set column resizable (boolean)
-
-default is false
+# Set column resizable
 
 ```javascript
 <Table
@@ -181,20 +136,19 @@ default is false
   columns={[
     ...
     {
-      title:'Population',
-      getValue:(row)=>row.population,
+      title:'Continent',
+      getValue:(row)=>row.continent,
+      width:120,
       resizable:true
-    }
+    },
     ...
   ]}
   ...
 />
 ```
-![alt text](/images/resizable.gif)
-# Set column search (boolean)
+![alt text](/images/resize-column.gif)
 
-##### default is false.
-##### only one column can be searchable.
+# Set column toggleShow
 
 ```javascript
 <Table
@@ -204,60 +158,17 @@ default is false
     {
       title:'Population',
       getValue:(row)=>row.population,
-      search:true
-    }
-    ...
-  ]}
-  ...
-/>
-
-```
-![alt text](/images/search.gif)
-# Set column show (boolean)
-
-##### show or hide column.
-##### default is true
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      show:false
-    }
-    ...
-  ]}
-  ...
-/>
-
-```
-
-# Set column toggleShow (boolean)
-
-##### set visibility of column by user from toolbar.
-##### default is false
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Population',
-      getValue:(row)=>row.population,
-      show:false,
+      justify:false,
+      width:120,
       toggleShow:true
-    }
+    },
     ...
   ]}
   ...
 />
 
 ```
-![alt text](/images/toggleshow.gif)
+![alt text](/images/column-toggleShow.gif)
 # Set column freeze (boolean)
 
 ##### default is false
@@ -313,53 +224,23 @@ default is false
 ![alt text](/images/togglefreeze.gif)
 
 
-# Set rowHeight (number)
-##### set height of aio table rows. 
-default value is 36.
-```javascript
-<Table
-  ...
-  rowHeight={48}
-  ...
-/>
-```
-![alt text](/images/rowheight.jpg)
-# Set headerHeight (number)
+# sizing props (headerHeight,rowHeight,rowGap,columnGap,padding)
 
 default value is 36
 ```javascript
 <Table
   ...
-  headerHeight={48}
+  headerHeight={24}
+  rowHeight={36}
+  rowGap={8}
+  columnGap={1}
+  padding={12}
   ...
 />
 ```
-![alt text](/images/headerheight.jpg)
+![alt text](/images/sizing-props.jpg)
 
-# set rowGap (number)
 
-set gap between rows. default is 6
-
-```javascript
-<Table
-  ...
-  rowGap={1}
-  ...
-/>
-```
-![alt text](/images/rowgap.jpg)
-# set columnGap (number)
-
-set gap between columns. default is 0
-
-```javascript
-<Table
-  ...
-  columnGap={6}
-  ...
-/>
-```
-![alt text](/images/columngap.jpg)
 # set column movable (boolean)
 ##### drag and drop movable columns to swap and reorder.
 ##### default is true
@@ -384,20 +265,47 @@ set gap between columns. default is 0
 ![alt text](/images/movable.gif)
 # set column filter (object)
 ##### filter rows by column value automatically.
+##### for filter rows based on column , getValue property is required on column.
+property | type                        | default | description
+-------- | --------------------------- | ------- | -----------
+type     | string ('text' or 'number') | 'text'  | based on column values.
  
 ```javascript
 <Table
   ...
   columns={[
-    {title:'Name',field:'name',filter:{type:'text'}},
-    {title:'Population',field:'population',filter:{type:'number'}},
-    {title:'Percent',field:'percent'},
-    {title:'Continent',field:'continent'}
+    {
+      title:'Name',
+      getValue:(row)=>row.name,
+      justify:false,
+      titleJustify:false,
+      filter:{type:'text'}
+    },
+    {
+      title:'Continent',
+      getValue:(row)=>row.continent,
+      width:120,
+      resizable:true,
+    },
+    {
+      title:'Population',
+      getValue:(row)=>row.population,
+      justify:false,
+      width:120,
+      filter:{type:'number'}
+    },
+    {
+      title:'Percent',
+      getValue:(row)=>row.percent,
+      template:(row)=>row.percent + '%',
+      width:90,
+    }
   ]}
   ...
 />
     
 ```
+![alt text](/images/column-filter.gif)
 ##### if you want to filter rows outside of aio table , you can set onChangeFilter props (for example server side filtering)
 ```javbascript
 <Table
@@ -421,7 +329,7 @@ size | number | first index of sizes property | rows count per page
 number | number | 1 | page number
 onChange | function | Optional | if you set onChange , you must paging rows of model in parent component and aio table will not paging rows automatically
 
-onChange function get paging changed paging object as parameters
+onChange function get changed paging object as parameters
 
 ```javascript
 <Table
@@ -439,9 +347,9 @@ onChange function get paging changed paging object as parameters
 />
 ```
 
-# Set column before (function)
+# Set column before and after (function)
 
-##### set html before cells of column content.
+##### set html before and after cells of column content.
 
 ```javascript
 <Table
@@ -451,44 +359,23 @@ onChange function get paging changed paging object as parameters
     {
       title:'Name',
       getValue:(row)=>row.name,
-      width:'auto',
       before:(row)=>{
         return (
           <div 
             style={{
-              background:'#000',
+              background:'dodgerblue',
               color:'#fff',
-              width:'24px',
-              height:'24px',
-              lineHeight:'24px',
-              textAlign:'center',
-              borderRadius:'100%'
+              borderRadius:'100%',
+              width:20,
+              height:20,
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              fontSize:10
             }}
-          >
-              {row._index + 1}
-          </div>
+          >{row._index}</div>
         )
-      }
-    }
-    ...
-  ]}
-  ...
-/>
-```
-![alt text](/images/before.jpg)
-# Set column after (function)
-
-##### set html after cells of column content.
-
-```javascript
-<Table
-  ...
-  columns={[
-    ...
-    {
-      title:'Name',
-      getValue:(row)=>row.name,
-      width:'auto',
+      },
       after:(row)=>{
         var colors = {
           'Asia':'orange','North America':'blue','South America':'lightblue','Africa':'black','Europe':'green'
@@ -505,18 +392,16 @@ onChange function get paging changed paging object as parameters
               textAlign:'center',
               borderRadius:'3px'
             }}
-          >
-              {row.continent}
-          </div>
+          >{row.continent}</div>
         )
       }
-    }
+    },
     ...
   ]}
   ...
 />
 ```
-![alt text](/images/after.jpg)
+![alt text](/images/column-before-after.jpg)
 # Set groups (Array Of Objects)
 
 ##### group by rows.
@@ -542,37 +427,39 @@ toggle | boolean | true | if true, user can toggle activity of group item from t
   ...
 />
 ```
+![alt text](/images/groupby-1.gif)
  ##### Other Example:
  
  ```javascript
 <Table
   ...
-  groups:[
-     {
-        title:'Populatuion',
-        getValue:(row)=>{
-          if(row.population > 1000000000){
-            return 'More than 1,000,000,000'
-          }
-          if(row.population > 500000000){
-            return 'Between 500,000,000 and 1,000,000,000'
-          }
-          if(row.population > 100000000){
-            return 'Between 100,000,000 and 500,000,000'
-          }
-          if(row.population > 50000000){
-            return 'Between 50,000,000 and 100,000,000'
-          }
-          if(row.population > 25000000){
-            return 'Between 25,000,000 and 50,000,000'
-          }
-          return 'Less Than 25,000,000'
+  groups={[
+    {
+      title:'Populatuion',
+      getValue:(row)=>{
+        if(row.population > 1000000000){
+          return 'More than 1,000,000,000'
         }
-     }
-  }
+        if(row.population > 500000000){
+          return 'Between 500,000,000 and 1,000,000,000'
+        }
+        if(row.population > 100000000){
+          return 'Between 100,000,000 and 500,000,000'
+        }
+        if(row.population > 50000000){
+          return 'Between 50,000,000 and 100,000,000'
+        }
+        if(row.population > 25000000){
+          return 'Between 25,000,000 and 50,000,000'
+        }
+        return 'Less Than 25,000,000'
+      }
+    }
+  ]}
   ...
 />
 ```
+![alt text](/images/groupby-2.gif)
 
 # Set sorts (Array Of Objects)
 
@@ -589,44 +476,17 @@ toggle | boolean | true | if true, user can toggle activity of sort item from to
 ```javascript
 <Table
   ...
-  sorts:[
+  sorts={[
     {
       title:'Name',
       getValue:(row)=>row.name,
       type:'inc'
     }
-  ]
-  ...
-/>
-```
-
-
-# Set selectives (Array Of Objects)
-
-##### filter rows by check or uncheck row property(dropdown).
-##### each selective properties:
-Property | Type | Default | Description
--------- | ---- | ------- | -----------
-title | string | optional | title of selective item button.
-icon | html/jsx | optional | icon of selective item button.
-getValue | function | Required | this function get (row) as parameter and return a value for filtering rows.
-getText | function | optional | this function get (row) as parameter and return an string as name of filter item.
-
-```javascript
-<Table
-  ...
-  selectives={[
-    {
-      getValue:(row)=>row.continent,
-      getText:(row)=>row.continent === '-'?'other':row.continent,
-      title:'Continents',
-      icon:<Icon path={mdiCheckboxMarkedOutline} size={0.7}/>,
-    }
   ]}
   ...
 />
 ```
-
+![alt text](/images/sorts.gif)
 # Set column inlineEdit (Objects)
 
 ##### inline editing cells.
@@ -697,6 +557,169 @@ onChange | function | required | get row and value as parameters. if return an s
 />
 ```
 ![alt text](/images/inlineedit.gif)
+
+# Tree data (nested json)
+
+##### nested json example:
+```javascript
+let nestedData = [
+  {
+    name:'Applications',id:'1',
+    childs:[
+      {name:'Calendar',id:'2',type:'app'},
+      {name:'Chrome',id:'3',type:'app'},
+      {name:'Webstorm',id:'4',type:'app'}    
+    ]
+  },
+  {
+    name:'Documents',id:'5',
+    childs:[
+      {
+        name:'Angular',id:'6',
+        childs:[
+          {
+            name:'SRC',id:'7',
+            childs:[
+              {name:'Compiler',id:'8',type:'ts'},
+              {name:'Core',id:'9',type:'ts'},
+            ]
+          },
+        ]
+      },
+      {
+        name:'Material2',id:'10',
+        childs:[
+          {
+            name:'SRC',id:'11',
+            childs:[
+              {name:'Button',id:'12',type:'ts'},
+              {name:'Checkbox',id:'13',type:'ts'},
+              {name:'Input',id:'14',type:'ts'}
+            ]
+          }
+        ]
+      },
+    ]
+  },
+  {
+    name:'Downloads',id:'15',
+    childs:[
+      {name:'October',id:'16',type:'pdf'},
+      {name:'November',id:'17',type:'pdf'},
+      {name:'Tutorial',id:'18',type:'pdf'}
+    ]
+  },
+  {
+    name:'Pictures',id:'19',
+    childs:[
+      {
+        name:'Library',id:'20',
+        childs:[
+          {name:'Contents',id:'21',type:'dir'},
+          {name:'Pictures',id:'22',type:'dir'}
+        ]
+      },
+      {name:'Sun',id:'23',type:'png'},
+      {name:'Woods',id:'24',type:'jpg'}
+    ]
+  }
+]
+```
+
+##### set getRowChilds function for get rows childs.
+##### set column treeMode for collapse and indent rows.
+```javascript
+export default class App extends Component {
+  render(){
+    return (
+      <Table
+        className='table'
+        model={nestedData}
+        columns={[
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            justify:false,
+            titleJustify:false,
+            treeMode:true
+          },
+          {
+            title:'Type',
+            getValue:(row)=>row.type
+          }
+        ]}
+        getRowChilds={(row)=>row.childs}
+      />
+    );
+  }
+}
+```
+![alt text](/images/tree-nested.gif)
+
+# Tree data (flat json)
+
+##### data as array with id and parent id.
+##### flat json example:
+```javascript
+let flatData = [
+  {name:'Applications',id:'1'},
+  {name:'Calendar',id:'2',type:'app',parentId:'1'},
+  {name:'Chrome',id:'3',type:'app',parentId:'1'},
+  {name:'Webstorm',id:'4',type:'app',parentId:'1'},
+  {name:'Documents',id:'5'},
+  {name:'Angular',id:'6',parentId:'5'},
+  {name:'SRC',id:'7',parentId:'6'},
+  {name:'Compiler',id:'8',type:'ts',parentId:'7'},
+  {name:'Core',id:'9',type:'ts',parentId:'7'},
+  {name:'Material2',id:'10',parentId:'5'},
+  {name:'SRC',id:'11',parentId:'10'},
+  {name:'Button',id:'12',type:'ts',parentId:'11'},
+  {name:'Checkbox',id:'13',type:'ts',parentId:'11'},
+  {name:'Input',id:'14',type:'ts',parentId:'11'},
+  {name:'Downloads',id:'15'},
+  {name:'October',id:'16',type:'pdf',parentId:'15'},
+  {name:'November',id:'17',type:'pdf',parentId:'15'},
+  {name:'Tutorial',id:'18',type:'pdf',parentId:'15'},
+  {name:'Pictures',id:'19'},
+  {name:'Library',id:'20',parentId:'19'},
+  {name:'Contents',id:'21',type:'dir',parentId:'20'},
+  {name:'Pictures',id:'22',type:'dir',parentId:'20'},
+  {name:'Sun',id:'23',type:'png',parentId:'19'},
+  {name:'Woods',id:'24',type:'jpg',parentId:'19'}
+]
+```
+##### set getRowParentId function for get rows parent id.
+##### set getRowId function for get rows id.
+##### set column treeMode for collapse and indent rows.
+```javascript
+export default class App extends Component {
+  render(){
+    return (
+      <Table
+        className='table'
+        model={flatData}
+        columns={[
+          {
+            title:'Name',
+            getValue:(row)=>row.name,
+            justify:false,
+            titleJustify:false,
+            treeMode:true
+          },
+          {
+            title:'Type',
+            getValue:(row)=>row.type
+          }
+        ]}
+        getRowId={(row)=>row.id}
+        getRowParentId={(row)=>row.parentId} 
+      />
+    );
+  }
+}
+```
+![alt text](/images/tree-nested.gif)
+
 # Gantt chrt example
 
 ##### for set column as gantt chart , you can set a column by template:'gantt'.
@@ -767,139 +790,3 @@ export default class App extends Component {
 ```
 ![alt text](/images/ganttchart.jpg)
 
-# Tree data
-
-##### data as nested json.
-##### set getRowChilds function for get rows childs.
-##### set column treeMode for collapse and indent rows.
-```javascript
-export default class App extends Component {
-  state = {
-    model:[
-      {
-        name:'a',
-        value:10,
-        childs:[
-          {
-            name:'a-0',
-            value:4,
-            childs:[
-              {name:'a-0-0',value:3},
-              {name:'a-0-1',value:1},
-            ]
-          },
-          {
-            name:'a-1',
-            value:6,
-            childs:[
-              {name:'a-1-0',value:2},
-              {name:'a-1-1',value:4},
-            ]
-          },
-        ]
-      },
-      {
-        name:'b',
-        value:20,
-        childs:[
-          {
-            name:'b-0',
-            value:16,
-            childs:[
-              {name:'b-0-0',value:8},
-              {name:'b-0-1',value:8},
-            ]
-          },
-          {
-            name:'b-1',
-            value:4,
-            childs:[
-              {name:'b-1-0',value:2},
-              {name:'b-1-1',value:2},
-            ]
-          },
-        ]
-      }
-    ],
-  }
-  render(){
-    var {model} = this.state;
-    return (
-      <Table
-        className='table'
-        model={model}
-        columns={[
-          {
-            title:'Name',
-            treeMode:true,
-            getValue:(row)=>row.name,
-            width:'auto',
-          },
-          {
-            title:'Value',
-            getValue:(row)=>row.value,
-            width:'100px',  
-          }
-        ]}
-        getRowChilds={(row)=>row.childs}
-      />
-    );
-  }
-}
-```
-![alt text](/images/tree.jpg)
-
-# Tree data (flat)
-
-##### data as array with id and parent id.
-##### set flat props true.
-##### set getRowParentId function for get rows parent id.
-##### set getRowId function for get rows id.
-##### set column treeMode for collapse and indent rows.
-```javascript
-export default class App extends Component {
-  state = {
-    model:[
-      {name:'a',id:'a',value:10},
-      {name:'a-0',id:'a-0',value:4,parentId:'a'},
-      {name:'a-0-0',id:'a-0-0',value:3,parentId:'a-0'},
-      {name:'a-0-1',id:'a-0-1',value:1,parentId:'a-0'},
-      {name:'a-1',id:'a-1',value:6,parentId:'a'},
-      {name:'a-1-0',id:'a-1-0',value:2,parentId:'a-1'},
-      {name:'a-1-1',id:'a-1-1',value:4,parentId:'a-1'},
-      {name:'b',id:'b',value:20},
-      {name:'b-0',id:'b-0',value:16,parentId:'b'},
-      {name:'b-0-0',id:'b-0-0',value:8,parentId:'b-0'},
-      {name:'b-0-1',id:'b-0-1',value:8,parentId:'b-0'},
-      {name:'b-1',id:'b-1',value:4,parentId:'b'},
-      {name:'b-1-0',id:'b-1-0',value:2,parentId:'b-1'},
-      {name:'b-1-1',id:'b-1-1',value:2,parentId:'b-1'}
-    ]
-  }
-  render(){
-    var {model} = this.state;
-    return (
-      <Table
-        flat={true}
-        getRowId={(row)=>row.id}
-        getRowParentId={(row)=>row.parentId}
-        model={model}
-        columns={[
-          {
-            title:'Name',
-            treeMode:true,
-            getValue:(row)=>row.name,
-            width:'auto',
-          },
-          {
-            title:'Value',
-            getValue:(row)=>row.value,
-            width:'100px',  
-          }
-        ]}
-      />
-    );
-  }
-}
-```
-![alt text](/images/tree.jpg)
