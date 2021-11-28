@@ -6,7 +6,7 @@ import {
   mdiClose,mdiChevronDown,mdiEye,mdiFileTree,mdiSort,mdiArrowUp,mdiArrowDown,mdiCollapseAll,mdiExpandAll,
   mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
 import $ from 'jquery';
-  import Slider from './r-range-slider';
+  import Slider from 'r-range-slider';
 import './index.css';
 var AioTableContext = createContext();
 export default class AIOTable extends Component{

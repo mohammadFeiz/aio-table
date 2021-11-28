@@ -19,7 +19,7 @@ var _js = require("@mdi/js");
 
 var _jquery = _interopRequireDefault(require("jquery"));
 
-var _rRangeSlider = _interopRequireDefault(require("./r-range-slider"));
+var _rRangeSlider = _interopRequireDefault(require("r-range-slider"));
 
 require("./index.css");
 
