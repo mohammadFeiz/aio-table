@@ -868,7 +868,9 @@ var AIOTable = /*#__PURE__*/function (_Component) {
           onChangeSort = _this$props5.onChangeSort,
           _this$props5$toggleAl = _this$props5.toggleAll,
           toggleAll = _this$props5$toggleAl === void 0 ? false : _this$props5$toggleAl,
-          id = _this$props5.id;
+          id = _this$props5.id,
+          _this$props5$toolbarI = _this$props5.toolbarItems,
+          toolbarItems = _this$props5$toolbarI === void 0 ? [] : _this$props5$toolbarI;
       var _this$state2 = this.state,
           groupDictionary = _this$state2.groupDictionary,
           sorts = _this$state2.sorts,
@@ -880,7 +882,7 @@ var AIOTable = /*#__PURE__*/function (_Component) {
       this.freezeColumns = [];
       this.unFreezeColumns = [];
       this.toolbar = {
-        show: toggleAll,
+        show: toggleAll === true || toolbarItems.length > 0,
         toggle: [{
           text: translate('Show Columns')
         }],

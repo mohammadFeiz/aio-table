@@ -405,7 +405,7 @@ export default class AIOTable extends Component{
     return groupDictionary[column.groupName] !== true;
   }
   updateColumns(){
-    var {freezeMode = true,translate,groups,cardTemplate,onChangeSort,toggleAll = false,id} = this.props;
+    var {freezeMode = true,translate,groups,cardTemplate,onChangeSort,toggleAll = false,id,toolbarItems = []} = this.props;
     var {groupDictionary,sorts,columns} = this.state;
     this.groups = [];
     this.sorts = [];
@@ -414,7 +414,7 @@ export default class AIOTable extends Component{
     this.freezeColumns = [];
     this.unFreezeColumns = [];
     this.toolbar = {
-      show:toggleAll,
+      show:toggleAll === true || toolbarItems.length > 0,
       toggle:[{text:translate('Show Columns')}],
       toggleAll:toggleAll?this.toggleAll.bind(this):false,
       freeze:[{text:translate('Freeze')}],
