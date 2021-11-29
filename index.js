@@ -1533,7 +1533,9 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
           translate = _this$context.translate,
           rtl = _this$context.rtl,
           toggleAllState = _this$context.toggleAllState,
-          padding = _this$context.padding;
+          padding = _this$context.padding,
+          _this$context$toolbar = _this$context.toolbarItems,
+          toolbarItems = _this$context$toolbar === void 0 ? [] : _this$context$toolbar;
       var _this$props8 = this.props,
           toggle = _this$props8.toggle,
           freeze = _this$props8.freeze,
@@ -1556,6 +1558,7 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
       }, toggleAll !== false && /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({
         key: 0
       }, buttonProps, {
+        type: "button",
         title: translate('Toggle All'),
         onClick: function onClick() {
           return toggleAll();
@@ -1564,7 +1567,16 @@ var RTableToolbar = /*#__PURE__*/function (_Component2) {
           path: !toggleAllState ? _js.mdiCollapseAll : _js.mdiExpandAll,
           size: 0.7
         })
-      })), searchColumnIndex !== false && /*#__PURE__*/_react.default.createElement("div", {
+      })), toolbarItems.map(function (o, i) {
+        return /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({
+          type: "button"
+        }, o, {
+          rtl: rtl,
+          className: "aio-table-toolbar-button",
+          animate: true,
+          key: 'ti' + i
+        }));
+      }), searchColumnIndex !== false && /*#__PURE__*/_react.default.createElement("div", {
         key: 1,
         className: "aio-table-search"
       }, /*#__PURE__*/_react.default.createElement("input", {

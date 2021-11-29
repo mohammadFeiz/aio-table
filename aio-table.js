@@ -706,17 +706,18 @@ class RTableToolbar extends Component{
     },time);
   }
   render(){
-    var {searchText,translate,rtl,toggleAllState,padding} = this.context;
+    var {searchText,translate,rtl,toggleAllState,padding,toolbarItems = []} = this.context;
     var {toggle,freeze,groupBy,sort,searchColumnIndex,toggleAll} = this.props;
     var buttonProps = {type:'select',caret:false,rtl,className:'aio-table-toolbar-button',animate:true};
     return (
       <div className='aio-table-toolbar' style={{marginBottom:padding}}>
         {
           toggleAll !== false &&
-          <AIOButton key={0} {...buttonProps} title={translate('Toggle All')} onClick={()=>toggleAll()}
+          <AIOButton key={0} {...buttonProps} type='button' title={translate('Toggle All')} onClick={()=>toggleAll()}
             text={<Icon path={!toggleAllState?mdiCollapseAll:mdiExpandAll } size={0.7}/>} 
           />
-        } 
+        }
+        {toolbarItems.map((o,i)=><AIOButton type='button' {...o} rtl={rtl} className='aio-table-toolbar-button' animate={true} key={'ti' + i}/>)}
         {
           searchColumnIndex !== false &&
           <div key={1} className='aio-table-search'>
