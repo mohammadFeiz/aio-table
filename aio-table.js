@@ -1361,6 +1361,7 @@ class RTableFilter extends Component{
       <AIOButton
         type='button'
         rtl={rtl}
+        caret={false}
         openRelatedTo='.aio-table'
         text={icon}
         popOver={()=>{

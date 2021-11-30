@@ -2959,6 +2959,7 @@ var RTableFilter = /*#__PURE__*/function (_Component6) {
       }, /*#__PURE__*/_react.default.createElement(_aioButton.default, {
         type: "button",
         rtl: rtl,
+        caret: false,
         openRelatedTo: ".aio-table",
         text: icon,
         popOver: function popOver() {
