@@ -12,7 +12,7 @@ var AioTableContext = createContext();
 export default class AIOTable extends Component{
   constructor(props){
     super(props);
-    this.touch = false;
+    let touch = 'ontouchstart' in document.documentElement;
     this.dom = createRef();
     var {id,freezeSize,sorts,paging,columns} = this.props;
     let openDictionary = {},groupDictionary = {};
@@ -41,35 +41,32 @@ export default class AIOTable extends Component{
       if(target.parents('.aio-table-cell').length !== 0 || target.hasClass('aio-table-cell')){return;}
       this.setState({focused:false})
     });
-    this.state = {openDictionary,filterDictionary:{},groupsOpen:{},freezeSize,groupDictionary,sorts,paging,columns,focused:false,toggleAllState:true,searchText:''};
+    this.state = {touch,openDictionary,filterDictionary:{},groupsOpen:{},freezeSize,groupDictionary,sorts,paging,columns,focused:false,toggleAllState:true,searchText:''};
   }
-  onScroll(e,index){
-    if(!this.freezeMode){return;}
-    if(this.activeTableIndex === undefined){
-      return;
+  onScroll1(){
+    if(!this.firstscroll){
+      this.secondscroll = true;
+      var unit1 = $(this.dom.current).find('#aio-table-first-split');
+      var unit2 = $(this.dom.current).find('#aio-table-second-split');
+      var scrollTop = unit1.scrollTop();
+      unit2.scrollTop(scrollTop);
     }
-    if(index !== this.activeTableIndex){
-      this.onMouseEnter(index);
-      clearTimeout(this.timeo);
-      this.timeo = setTimeout(()=>this.bindScroll(),40);
-      return;
+    this.firstscroll = false;
+  }
+  onScroll2(){
+    if(!this.secondscroll){
+      this.firstscroll = true;
+      var unit1 = $(this.dom.current).find('#aio-table-first-split');
+      var unit2 = $(this.dom.current).find('#aio-table-second-split');
+      var scrollTop = unit2.scrollTop();
+      unit1.scrollTop(scrollTop);
     }
-    this.bindScroll();
-    
-  }
-  bindScroll(){
-    var units = $(this.dom.current).find('.aio-table-unit');
-    var scrollTop = units.eq(this.activeTableIndex).scrollTop();
-    units.eq(this.deactiveTableIndex).scrollTop(scrollTop);
-  }
-  onMouseEnter(index){
-    this.activeTableIndex = index;
-    this.deactiveTableIndex = index === 0?1:0;
+    this.secondscroll = false;
   }
   getGap(){return <div className='aio-table-gap' style={{width:this.props.cellGap}}></div>}
-  getClient(e){return this.context.touch?[e.changedTouches[0].clientX,e.changedTouches[0].clientY]:[e.clientX,e.clientY];}
+  getClient(e){return this.state.touch?[e.changedTouches[0].clientX,e.changedTouches[0].clientY]:[e.clientX,e.clientY];}
   resizeDown(e){
-    var {touch} = this.context;
+    var {touch} = this.state;
     $(window).bind(touch?'touchmove':'mousemove',$.proxy(this.resizeMove,this));
     $(window).bind(touch?'touchend':'mouseup',$.proxy(this.resizeUp,this));
     this.resizeDetails = {
@@ -88,7 +85,7 @@ export default class AIOTable extends Component{
     $('#aio-table-first-split').css({width:newWidth});
   }
   resizeUp(){
-    var {touch} = this.context;
+    var {touch} = this.state;
     $(window).unbind(touch?'touchmove':'mousemove',this.resizeMove);
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     this.setState({freezeSize:this.resizeDetails.newWidth});
@@ -651,7 +648,6 @@ export default class AIOTable extends Component{
     var Paging = this.getPaging();
     var context = {
       ...this.props,...this.state,
-      touch:this.touch,
       onDrag:(obj)=>this.dragStart = obj,
       onDrop:(obj)=>{
         if(!this.dragStart){return}
@@ -671,8 +667,8 @@ export default class AIOTable extends Component{
       cubes2:this.cubes2.bind(this),
       toggleRow:this.toggleRow.bind(this),
       getGap:this.getGap.bind(this),
-      onScroll:this.onScroll.bind(this),
-      onMouseEnter:this.onMouseEnter.bind(this),
+      onScroll1:this.onScroll1.bind(this),
+      onScroll2:this.onScroll2.bind(this),
       getClient:this.getClient.bind(this),
       getLoading:this.getLoading.bind(this),
       groups:this.groups
@@ -949,7 +945,7 @@ class RTableUnit extends Component{
     return {rowIndex,colIndex};
   }
   card(){
-    var {indent,onMouseEnter,onScroll,rowHeight,cardGap = 0,getLoading,cardTemplate,cardRowCount = 1,rowGap,columnGap,toggleRow} = this.context;
+    var {indent,onScroll1,onScroll2,rowHeight,cardGap = 0,getLoading,cardTemplate,cardRowCount = 1,rowGap,columnGap,toggleRow} = this.context;
     var {rows,id,index} = this.props;
     var groupStyle = {gridColumnStart:1,gridColumnEnd:cardRowCount + 1,height:rowHeight};
     if(cardRowCount === 'auto'){groupStyle.gridColumnStart = undefined; groupStyle.gridColumnEnd = undefined;}
@@ -960,9 +956,7 @@ class RTableUnit extends Component{
         onKeyDown={this.keyDown.bind(this)}
         ref={this.dom}
         style={{gridRowGap:rowGap,gridColumnGap:columnGap,gridTemplateColumns:cardRowCount === 'auto'?undefined:`repeat(${cardRowCount},auto)`}}
-        onMouseEnter={()=>onMouseEnter(index)}
-        onMouseDown={()=>onMouseEnter(index)}
-        onScroll={(e)=>onScroll(e,index)}
+        onScroll={(e)=>index === 0?onScroll1():onScroll2()}
       >
         {rows && rows.length !== 0 && rows.map((row,i)=>{
           if(row._groupId){
@@ -992,7 +986,7 @@ class RTableUnit extends Component{
   }
   render(){
     if(this.context.cardTemplate){return this.card()}
-    var {indent,onMouseEnter,onScroll,rowHeight,groups,getLoading,cardTemplate} = this.context;
+    var {indent,onScroll1,onScroll2,rowHeight,groups,getLoading,cardTemplate} = this.context;
     var {rows,id,index,type} = this.props;
     return (
       <div 
@@ -1001,9 +995,7 @@ class RTableUnit extends Component{
         onKeyDown={this.keyDown.bind(this)}
         style={this.getStyle()} 
         ref={this.dom}
-        onMouseEnter={()=>onMouseEnter(index)}
-        onMouseDown={()=>onMouseEnter(index)}
-        onScroll={(e)=>onScroll(e,index)}
+        onScroll={(e)=>index === 0?onScroll1():onScroll2()}
       >
         {this.getTitles()}
         {rows && rows.length !== 0 && rows.map((row,i)=>{
