@@ -1037,19 +1037,20 @@ class AIOTableCell extends Component{
     return <><div style={{flex:1}}></div><div className='aio-table-icon'>{after}</div></>
   }
   
-  getStyle(column){
+  getStyle(column,row){
     var {padding = '36px',template,minWidth = '30px'} = column;
-    var {rowHeight} = this.context;
+    var {rowHeight,striped} = this.context;
     var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth}
+    if(typeof striped === 'string' && row._index % 2 === 0){style.background = striped}
     if(column.template === 'gantt'){
       style.padding = `0 ${padding}`
     }
     return style
   }
   getClassName(row,column){
-    let {striped} = this.context;
     var className = 'aio-table-cell';
-    if(striped){className += ' striped'}
+    let {striped} = this.context;
+    if(row._index % 2 === 0 && striped === true){className += ' striped'}
     if(column.template){className += ' aio-table-cell-template';}
     if(column.template === 'gantt'){className += ' aio-table-cell-gantt'}
     if(column.className){className += ' ' + column.className;}
@@ -1241,7 +1242,7 @@ class AIOTableCell extends Component{
         data-evenodd={row._index % 2 === 0?'even':'odd'}
         rowindex={row._renderIndex} colindex={column._renderIndex} childindex={row._childIndex} level={row._level}
         isfirstchild={row._isFirstChild?1:0} islastchild={row._isLastChild?1:0} childslength={row._childsLength}
-        style={this.getStyle(column)} className={this.getClassName(row,column)}
+        style={this.getStyle(column,row)} className={this.getClassName(row,column)}
         draggable={typeof onSwap === 'function' && column.swap}
         onDragOver={(e)=>e.preventDefault()}
         onDragStart={()=>onDrag(row)}

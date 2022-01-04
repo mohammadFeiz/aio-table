@@ -2230,18 +2230,24 @@ var AIOTableCell = /*#__PURE__*/function (_Component4) {
     }
   }, {
     key: "getStyle",
-    value: function getStyle(column) {
+    value: function getStyle(column, row) {
       var _column$padding2 = column.padding,
           padding = _column$padding2 === void 0 ? '36px' : _column$padding2,
           template = column.template,
           _column$minWidth = column.minWidth,
           minWidth = _column$minWidth === void 0 ? '30px' : _column$minWidth;
-      var rowHeight = this.context.rowHeight;
+      var _this$context13 = this.context,
+          rowHeight = _this$context13.rowHeight,
+          striped = _this$context13.striped;
       var style = {
         height: rowHeight,
         overflow: template ? undefined : 'hidden',
         minWidth: minWidth
       };
+
+      if (typeof striped === 'string' && row._index % 2 === 0) {
+        style.background = striped;
+      }
 
       if (column.template === 'gantt') {
         style.padding = "0 ".concat(padding);
@@ -2252,10 +2258,10 @@ var AIOTableCell = /*#__PURE__*/function (_Component4) {
   }, {
     key: "getClassName",
     value: function getClassName(row, column) {
-      var striped = this.context.striped;
       var className = 'aio-table-cell';
+      var striped = this.context.striped;
 
-      if (striped) {
+      if (row._index % 2 === 0 && striped === true) {
         className += ' striped';
       }
 
@@ -2284,9 +2290,9 @@ var AIOTableCell = /*#__PURE__*/function (_Component4) {
   }, {
     key: "getToggleIcon",
     value: function getToggleIcon(row) {
-      var _this$context13 = this.context,
-          rtl = _this$context13.rtl,
-          toggleRow = _this$context13.toggleRow;
+      var _this$context14 = this.context,
+          rtl = _this$context14.rtl,
+          toggleRow = _this$context14.toggleRow;
       var icon;
 
       if (!row._childsLength) {
@@ -2607,14 +2613,14 @@ var AIOTableCell = /*#__PURE__*/function (_Component4) {
     value: function render() {
       var _this16 = this;
 
-      var _this$context14 = this.context,
-          indent = _this$context14.indent,
-          cubes2 = _this$context14.cubes2,
-          focused = _this$context14.focused,
-          SetState = _this$context14.SetState,
-          onDrag = _this$context14.onDrag,
-          _onDrop = _this$context14.onDrop,
-          onSwap = _this$context14.onSwap;
+      var _this$context15 = this.context,
+          indent = _this$context15.indent,
+          cubes2 = _this$context15.cubes2,
+          focused = _this$context15.focused,
+          SetState = _this$context15.SetState,
+          onDrag = _this$context15.onDrag,
+          _onDrop = _this$context15.onDrop,
+          onSwap = _this$context15.onSwap;
       var _this$props12 = this.props,
           row = _this$props12.row,
           column = _this$props12.column,
@@ -2680,7 +2686,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component4) {
         isfirstchild: row._isFirstChild ? 1 : 0,
         islastchild: row._isLastChild ? 1 : 0,
         childslength: row._childsLength,
-        style: this.getStyle(column),
+        style: this.getStyle(column, row),
         className: this.getClassName(row, column),
         draggable: typeof onSwap === 'function' && column.swap,
         onDragOver: function onDragOver(e) {
@@ -2915,9 +2921,9 @@ var RTableFilter = /*#__PURE__*/function (_Component6) {
   _createClass(RTableFilter, [{
     key: "render",
     value: function render() {
-      var _this$context15 = this.context,
-          filterDictionary = _this$context15.filterDictionary,
-          rtl = _this$context15.rtl;
+      var _this$context16 = this.context,
+          filterDictionary = _this$context16.filterDictionary,
+          rtl = _this$context16.rtl;
       var column = this.props.column;
 
       if (!column.filter || column.search) {
@@ -2973,10 +2979,10 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component7) {
   _createClass(RTableFilterPopup, [{
     key: "add",
     value: function add() {
-      var _this$context16 = this.context,
-          filterDictionary = _this$context16.filterDictionary,
-          SetState = _this$context16.SetState,
-          onChangeFilter = _this$context16.onChangeFilter;
+      var _this$context17 = this.context,
+          filterDictionary = _this$context17.filterDictionary,
+          SetState = _this$context17.SetState,
+          onChangeFilter = _this$context17.onChangeFilter;
       var column = this.props.column;
 
       filterDictionary[column._index].items.push({
@@ -2998,10 +3004,10 @@ var RTableFilterPopup = /*#__PURE__*/function (_Component7) {
       var _this19 = this;
 
       var column = this.props.column;
-      var _this$context17 = this.context,
-          filterDictionary = _this$context17.filterDictionary,
-          SetState = _this$context17.SetState,
-          translate = _this$context17.translate;
+      var _this$context18 = this.context,
+          filterDictionary = _this$context18.filterDictionary,
+          SetState = _this$context18.SetState,
+          translate = _this$context18.translate;
       var filters = filterDictionary[column._index].items;
       var booleanType = filterDictionary[column._index].booleanType;
       var filterItems = filters.map(function (filter, i) {
@@ -3065,10 +3071,10 @@ var RTableFilterItem = /*#__PURE__*/function (_Component8) {
   _createClass(RTableFilterItem, [{
     key: "remove",
     value: function remove(index) {
-      var _this$context18 = this.context,
-          filterDictionary = _this$context18.filterDictionary,
-          SetState = _this$context18.SetState,
-          onChangeFilter = _this$context18.onChangeFilter;
+      var _this$context19 = this.context,
+          filterDictionary = _this$context19.filterDictionary,
+          SetState = _this$context19.SetState,
+          onChangeFilter = _this$context19.onChangeFilter;
       var column = this.props.column;
 
       filterDictionary[column._index].items.splice(index, 1);
@@ -3114,11 +3120,11 @@ var RTableFilterItem = /*#__PURE__*/function (_Component8) {
     value: function render() {
       var _this22 = this;
 
-      var _this$context19 = this.context,
-          filterDictionary = _this$context19.filterDictionary,
-          SetState = _this$context19.SetState,
-          translate = _this$context19.translate,
-          onChangeFilter = _this$context19.onChangeFilter;
+      var _this$context20 = this.context,
+          filterDictionary = _this$context20.filterDictionary,
+          SetState = _this$context20.SetState,
+          translate = _this$context20.translate,
+          onChangeFilter = _this$context20.onChangeFilter;
       var _this$props14 = this.props,
           filter = _this$props14.filter,
           column = _this$props14.column,
