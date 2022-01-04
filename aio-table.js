@@ -1047,7 +1047,9 @@ class AIOTableCell extends Component{
     return style
   }
   getClassName(row,column){
+    let {striped} = this.context;
     var className = 'aio-table-cell';
+    if(striped){className += ' striped'}
     if(column.template){className += ' aio-table-cell-template';}
     if(column.template === 'gantt'){className += ' aio-table-cell-gantt'}
     if(column.className){className += ' ' + column.className;}
@@ -1236,6 +1238,7 @@ class AIOTableCell extends Component{
     return (
       <div 
         key={row._index + '-' + column._index} tabIndex={0} ref={this.dom} cellid={cellId} title={typeof content === 'string'?content:''}
+        data-evenodd={row._index % 2 === 0?'even':'odd'}
         rowindex={row._renderIndex} colindex={column._renderIndex} childindex={row._childIndex} level={row._level}
         isfirstchild={row._isFirstChild?1:0} islastchild={row._isLastChild?1:0} childslength={row._childsLength}
         style={this.getStyle(column)} className={this.getClassName(row,column)}
