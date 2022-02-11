@@ -29,7 +29,7 @@
 }
 #aio-table-first-split{
   width:fit-content;
-  overflow-x:scroll;
+  overflow-x:scroll !important;
 }
 #aio-table-second-split{
   flex:1;
@@ -89,6 +89,13 @@
     text-overflow:ellipsis;
     background:#fff;
 }
+.aio-table-cell-selectable{
+    user-select: text;
+    -webkit-user-select: text;
+}
+.aio-table-cell-hidden{
+  display:none;
+}
 .aio-table-content{
   width:100%;
   overflow:hidden;
@@ -128,6 +135,7 @@
 .aio-table-input{
     border:none;
     outline:none;
+    background:none;
     flex:1;
     width:100%;
     position:relative;
@@ -242,13 +250,15 @@ select.aio-table-paging-button{
   .aio-table-cell.aio-table-relative-filter{
     opacity:.4;
   }
-  .aio-table-cell.striped[data-evenodd = even]{
+  .aio-table-cell.striped{
     background:#f5f5f5
   }
   .aio-table-filter-popup{
     background:#e3e6ea;
     padding:6px;
+    
   }
+  
   .aio-table-filter-icon{
     width:24px;
     height:100%;
@@ -279,6 +289,7 @@ select.aio-table-paging-button{
     background:rgb(243, 246, 248);
     color:#888;
     cursor:pointer;
+    font-family:inherit;
   }
 
   .aio-table-filter-item select{
@@ -287,12 +298,14 @@ select.aio-table-paging-button{
     border:none;
     outline:none;
     cursor: pointer;
+    font-family:inherit;
   }
   .aio-table-filter-item input{
     height:24px;
     outline:none;
     width:120px;
     border:none;
+    font-family:inherit;
   }
   .aio-table-filter-remove{
     height:26px;
@@ -309,6 +322,7 @@ select.aio-table-paging-button{
     align-items: center;
     justify-content: center;
     margin-bottom: 6px;
+    cursor:pointer;
   }
   .aio-table-group{
     display:flex;
@@ -437,6 +451,8 @@ select.aio-table-paging-button{
     position:relative;
     display:flex;
     box-sizing: border-box;
+    user-select: text;
+    -webkit-user-select: text;
   }
 
   .r-layout-item{
@@ -500,4 +516,37 @@ display:none;
   
   .aio-table-unit::-webkit-scrollbar-thumb:hover {
     background-color: #868e9e;
+  }
+  .aio-table-options{
+    background:none;
+    font-size:inherit;
+    color:inherit;
+  }
+  .aio-table-slider{
+    display:flex;
+    font-size:inherit;
+    align-items:center;
+    height:100%;
+    width:100%;
+  }
+  .aio-table-cell-has-subtext{
+    flex:1;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+  }
+  .aio-table-cell-uptext{
+    display:flex;
+    align-items:center;
+    flex:1;
+    position:relative;
+    white-space:nowrap;
+  }
+  .aio-table-cell-subtext{
+    display:flex;
+    align-items:center;
+    font-size:80%;
+    opacity:0.7;
+    flex:1;
+    position:relative;
   }
