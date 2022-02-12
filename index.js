@@ -1248,12 +1248,15 @@ var AIOTableTitle = /*#__PURE__*/function (_Component5) {
     value: function getStyle() {
       var _this$context6 = this.context,
           headerHeight = _this$context6.headerHeight,
-          columnGap = _this$context6.columnGap;
+          columnGap = _this$context6.columnGap,
+          _this$context6$titleS = _this$context6.titleStyle,
+          titleStyle = _this$context6$titleS === void 0 ? {} : _this$context6$titleS;
       return {
         height: headerHeight,
         top: 0,
         borderLeft: columnGap ? 'none' : undefined,
-        borderRight: columnGap ? 'none' : undefined
+        borderRight: columnGap ? 'none' : undefined,
+        ...titleStyle
       };
     }
   }, {

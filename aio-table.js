@@ -509,8 +509,8 @@ class AIOTableUnit extends Component{
 class AIOTableTitle extends Component{
   static contextType = AioTableContext;
   getStyle(){
-    let {headerHeight,columnGap} = this.context;
-    return {height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined}
+    let {headerHeight,columnGap,titleStyle = {}} = this.context;
+    return {height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined,...titleStyle}
   }
   mouseDown(e,column){
     if(!column.resizable){return}
