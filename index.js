@@ -1602,22 +1602,36 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
           minWidth = _column$minWidth === void 0 ? '30px' : _column$minWidth;
       var _this$context14 = this.context,
           rowHeight = _this$context14.rowHeight,
-          striped = _this$context14.striped;
+          striped = _this$context14.striped,
+          _this$context14$getCe = _this$context14.getCellStyle,
+          getCellStyle = _this$context14$getCe === void 0 ? function () {
+        return {};
+      } : _this$context14$getCe;
       var style = {
         height: rowHeight,
         overflow: template ? undefined : 'hidden',
         minWidth: minWidth
       };
 
-      if (typeof striped === 'string' && row._index % 2 === 0) {
-        style.background = striped;
+      if (row._index % 2 === 0) {
+        if (typeof striped === 'string') {
+          style.background = striped;
+        }
+
+        if (Array.isArray(striped)) {
+          style.background = striped[0];
+          style.color = striped[1];
+        }
       }
 
       if (column.template === 'gantt') {
         style.padding = "0 ".concat(padding);
       }
 
-      return style;
+      var cellStyle = getCellStyle(row, column);
+      return { ...style,
+        cellStyle: cellStyle
+      };
     }
   }, {
     key: "getClassName",

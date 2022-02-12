@@ -665,13 +665,21 @@ class AIOTableCell extends Component{
   
   getStyle(column,row){
     var {padding = '36px',template,minWidth = '30px'} = column;
-    var {rowHeight,striped} = this.context;
+    var {rowHeight,striped,getCellStyle = ()=>{return {}}} = this.context;
     var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth}
-    if(typeof striped === 'string' && row._index % 2 === 0){style.background = striped}
+    if(row._index % 2 === 0){
+      if(typeof striped === 'string'){style.background = striped}
+      if(Array.isArray(striped)){
+        style.background = striped[0];
+        style.color = striped[1];
+      }
+    
+    }
     if(column.template === 'gantt'){
       style.padding = `0 ${padding}`
     }
-    return style
+    let cellStyle = getCellStyle(row,column);
+    return {...style,cellStyle}
   }
   getClassName(row,column){
     var className = 'aio-table-cell';
