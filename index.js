@@ -1630,7 +1630,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
 
       var cellStyle = getCellStyle(row, column);
       return { ...style,
-        cellStyle: cellStyle
+        ...cellStyle
       };
     }
   }, {

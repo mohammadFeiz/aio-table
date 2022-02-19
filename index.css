@@ -22,7 +22,7 @@
     overflow:hidden;
 }
 .aio-table-unit{
-    display: grid;
+    display: grid; 
     width:100%;
     overflow:auto;
     align-content: flex-start;

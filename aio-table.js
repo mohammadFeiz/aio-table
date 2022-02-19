@@ -679,7 +679,7 @@ class AIOTableCell extends Component{
       style.padding = `0 ${padding}`
     }
     let cellStyle = getCellStyle(row,column);
-    return {...style,cellStyle}
+    return {...style,...cellStyle}
   }
   getClassName(row,column){
     var className = 'aio-table-cell';
