@@ -242,7 +242,7 @@ class RTableToolbar extends Component{
     var {searchColumnIndex,search} = this.props;
     if(typeof searchColumnIndex !== 'number' && !search){return <div style={{flex:1}} key='search'></div>}
     return (
-      <div key='aio-toolbar-search' className='aio-table-search' key='search'>
+      <div className='aio-table-search' key='search'>
         <input className='aio-table-search-input' type='text' value={searchText} placeholder={translate('Search')} onChange={(e)=>this.changeSearch(e.target.value)}/>
         <Icon className='aio-table-search-icon' path={searchText?mdiClose:mdiMagnify} size={0.8} onClick={()=>{
           if(!searchText){return}
@@ -716,12 +716,12 @@ class AIOTableCell extends Component{
     if(template && template.type === 'slider'){content = fn.getSliderCell(template)}
     else if(template && template.type === 'options'){content = fn.getOptionsCell(template)}
     else if(template === 'gantt'){content = fn.getGanttCell(row,column)}
-    else if(template && column.inlineEdit){
+    else if(template && this.inlineEdit){
       if(!focused){content = template}
       else{content = this.getInput(row,column)}
     }
     else if(template){content = template}
-    else if(column.inlineEdit){content = this.getInput(row,column)}
+    else if(this.inlineEdit){content = this.getInput(row,column)}
     else if(column.getValue){content = value;}
     if(column.subText){
       let subText;
@@ -736,16 +736,18 @@ class AIOTableCell extends Component{
     return content;
   }
   getInput(row,column){
-    let {type,getValue} = column.inlineEdit;
+    let {type,getValue,disabled = ()=>false} = this.inlineEdit;
     let {renderIndex} = this.props;
     let {value} = this.state;
-    let {disabled = ()=>false} = column.inlineEdit;
     if(getValue){value = getValue(row)}
+    if(disabled(row)){
+      if(typeof value === 'boolean'){return JSON.stringify(value)}
+      return value
+    }
     let props = {
-      ...column.inlineEdit,
+      ...this.inlineEdit,
       className:'aio-table-input',rowindex:renderIndex,colindex:column._renderIndex,
       value:value === null || value === undefined?'':value,
-      disabled:disabled(row)
     };
     if(type === 'text' || type === 'number'){
       return (
@@ -757,7 +759,7 @@ class AIOTableCell extends Component{
               onBlur={async (e)=>{
                 if(value === this.props.value){return}
                 this.setState({loading:true})
-                let res = await column.inlineEdit.onChange(row,type === 'number'?parseFloat(value):value);
+                let res = await this.inlineEdit.onChange(row,type === 'number'?parseFloat(value):value);
                 this.setState({loading:false})
                 if(typeof res === 'string'){
                   this.setState({error:res})
@@ -772,8 +774,8 @@ class AIOTableCell extends Component{
       )
     }
     if(type === 'select'){
-      if(!column.inlineEdit.options){console.error('aio table => missing options property of column inlineEdit with type="select"'); return '';}
-      if(!Array.isArray(column.inlineEdit.options)){console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!'); return '';}
+      if(!this.inlineEdit.options){console.error('aio table => missing options property of column inlineEdit with type="select"'); return '';}
+      if(!Array.isArray(this.inlineEdit.options)){console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!'); return '';}
       return (
         <div className='aio-table-input-container'>
             <select 
@@ -785,7 +787,7 @@ class AIOTableCell extends Component{
                 if(value === 'true'){value = true}
                 if(value === 'false'){value = false}
                 this.setState({loading:true,value})
-                let res = await column.inlineEdit.onChange(row,value);
+                let res = await this.inlineEdit.onChange(row,value);
                 this.setState({loading:false})
                 if(typeof res === 'string'){
                   this.setState({error:res})
@@ -795,7 +797,7 @@ class AIOTableCell extends Component{
                 }
               }}
             >
-              {column.inlineEdit.options.map((o,i)=><option key={i} value={o.value}>{o.text}</option>)}
+              {this.inlineEdit.options.map((o,i)=><option key={i} value={o.value}>{o.text}</option>)}
             </select>
             <div className='aio-table-input-border'></div>
         </div>
@@ -806,14 +808,14 @@ class AIOTableCell extends Component{
   }
   
   componentDidUpdate(){
-    let {column} = this.props;
-    if(column.inlineEdit && column.inlineEdit.type === 'select' && this.focus){
+    if(this.inlineEdit && this.inlineEdit.type === 'select' && this.focus){
       $(this.dom.current).find('.aio-table-input').focus();
     }
   }
   render(){
     let {indent,fn,focused,SetState,onDrag,onDrop,onSwap} = this.context;
     let {row,column,value,cellId,renderIndex} = this.props;
+    this.inlineEdit = typeof column.inlineEdit === 'function'?column.inlineEdit(row,column):column.inlineEdit;
     if(this.state.prevValue !== value){
       setTimeout(()=>this.setState({value,prevValue:value}),0);
     }
@@ -853,7 +855,7 @@ class AIOTableCell extends Component{
         onDragStart={()=>onDrag(row)}
         onDrop={()=>onDrop(row)}
         onClick={(e)=>{
-          if(column.inlineEdit){
+          if(this.inlineEdit){
             if(focused !== cellId){
               SetState({focused:cellId});
               setTimeout(()=>$('.aio-table-input:focus').select(),10)

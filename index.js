@@ -1722,7 +1722,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
         content = fn.getOptionsCell(template);
       } else if (template === 'gantt') {
         content = fn.getGanttCell(row, column);
-      } else if (template && column.inlineEdit) {
+      } else if (template && this.inlineEdit) {
         if (!focused) {
           content = template;
         } else {
@@ -1730,7 +1730,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
         }
       } else if (template) {
         content = template;
-      } else if (column.inlineEdit) {
+      } else if (this.inlineEdit) {
         content = this.getInput(row, column);
       } else if (column.getValue) {
         content = value;
@@ -1761,26 +1761,33 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
     value: function getInput(row, column) {
       var _this17 = this;
 
-      var _column$inlineEdit = column.inlineEdit,
-          type = _column$inlineEdit.type,
-          getValue = _column$inlineEdit.getValue;
+      var _this$inlineEdit = this.inlineEdit,
+          type = _this$inlineEdit.type,
+          getValue = _this$inlineEdit.getValue,
+          _this$inlineEdit$disa = _this$inlineEdit.disabled,
+          disabled = _this$inlineEdit$disa === void 0 ? function () {
+        return false;
+      } : _this$inlineEdit$disa;
       var renderIndex = this.props.renderIndex;
       var value = this.state.value;
-      var _column$inlineEdit$di = column.inlineEdit.disabled,
-          disabled = _column$inlineEdit$di === void 0 ? function () {
-        return false;
-      } : _column$inlineEdit$di;
 
       if (getValue) {
         value = getValue(row);
       }
 
-      var props = { ...column.inlineEdit,
+      if (disabled(row)) {
+        if (typeof value === 'boolean') {
+          return JSON.stringify(value);
+        }
+
+        return value;
+      }
+
+      var props = { ...this.inlineEdit,
         className: 'aio-table-input',
         rowindex: renderIndex,
         colindex: column._renderIndex,
-        value: value === null || value === undefined ? '' : value,
-        disabled: disabled(row)
+        value: value === null || value === undefined ? '' : value
       };
 
       if (type === 'text' || type === 'number') {
@@ -1804,7 +1811,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
               loading: true
             });
 
-            var res = await column.inlineEdit.onChange(row, type === 'number' ? parseFloat(value) : value);
+            var res = await _this17.inlineEdit.onChange(row, type === 'number' ? parseFloat(value) : value);
 
             _this17.setState({
               loading: false
@@ -1826,12 +1833,12 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
       }
 
       if (type === 'select') {
-        if (!column.inlineEdit.options) {
+        if (!this.inlineEdit.options) {
           console.error('aio table => missing options property of column inlineEdit with type="select"');
           return '';
         }
 
-        if (!Array.isArray(column.inlineEdit.options)) {
+        if (!Array.isArray(this.inlineEdit.options)) {
           console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!');
           return '';
         }
@@ -1861,7 +1868,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
               value: value
             });
 
-            var res = await column.inlineEdit.onChange(row, value);
+            var res = await _this17.inlineEdit.onChange(row, value);
 
             _this17.setState({
               loading: false
@@ -1877,7 +1884,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
               });
             }
           }
-        }), column.inlineEdit.options.map(function (o, i) {
+        }), this.inlineEdit.options.map(function (o, i) {
           return /*#__PURE__*/_react.default.createElement("option", {
             key: i,
             value: o.value
@@ -1893,9 +1900,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
   }, {
     key: "componentDidUpdate",
     value: function componentDidUpdate() {
-      var column = this.props.column;
-
-      if (column.inlineEdit && column.inlineEdit.type === 'select' && this.focus) {
+      if (this.inlineEdit && this.inlineEdit.type === 'select' && this.focus) {
         (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
       }
     }
@@ -1918,6 +1923,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
           value = _this$props15.value,
           cellId = _this$props15.cellId,
           renderIndex = _this$props15.renderIndex;
+      this.inlineEdit = typeof column.inlineEdit === 'function' ? column.inlineEdit(row, column) : column.inlineEdit;
 
       if (this.state.prevValue !== value) {
         setTimeout(function () {
@@ -1993,7 +1999,7 @@ var AIOTableCell = /*#__PURE__*/function (_Component7) {
           return _onDrop2(row);
         },
         onClick: function onClick(e) {
-          if (column.inlineEdit) {
+          if (_this18.inlineEdit) {
             if (focused !== cellId) {
               SetState({
                 focused: cellId
