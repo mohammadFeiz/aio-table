@@ -578,6 +578,7 @@ class AIOTableTitle extends Component{
   render(){
     let {column,onDragStart,onDragOver,onDrop} = this.props;
     if(column.template === 'gantt'){return this.getGanttTitle(column);}
+    let title = typeof column.title === 'function'?column.title():column.title;
     return (
       <div
         style={this.getStyle()}
@@ -593,7 +594,7 @@ class AIOTableTitle extends Component{
           onDragOver={(e)=>onDragOver(e,column._index)}
           onDrop={()=>onDrop(column)}
         >
-          {column.title}
+          {title}
         </div>
         {
           column.width !== 'auto' && 
