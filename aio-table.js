@@ -1,10 +1,5 @@
 import React,{Component,Fragment,createRef,createContext} from 'react';
 import AIOButton from 'aio-button';
-import {Icon} from '@mdi/react';
-import {
-  mdiChevronRight,mdiChevronDoubleRight,mdiChevronLeft,mdiChevronDoubleLeft,mdiFilter,mdiFilterMenu ,mdiDotsHorizontal,mdiMicrosoftExcel,
-  mdiClose,mdiChevronDown,mdiEye,mdiFileTree,mdiSort,mdiArrowUp,mdiArrowDown,mdiCollapseAll,mdiExpandAll,
-  mdiAlignHorizontalLeft,mdiMagnify } from '@mdi/js';
 import $ from 'jquery';
   import Slider from 'r-range-slider';
 import './index.css';
@@ -244,10 +239,7 @@ class RTableToolbar extends Component{
     return (
       <div className='aio-table-search' key='search'>
         <input className='aio-table-search-input' type='text' value={searchText} placeholder={translate('Search')} onChange={(e)=>this.changeSearch(e.target.value)}/>
-        <Icon className='aio-table-search-icon' path={searchText?mdiClose:mdiMagnify} size={0.8} onClick={()=>{
-          if(!searchText){return}
-          this.changeSearch('',0)
-        }}/>
+        {aioTableGetSvg(searchText?'close':'magnify',{onClick:()=>{if(!searchText){return} this.changeSearch('',0)}})}
       </div>
     )
   }
@@ -261,7 +253,7 @@ class RTableToolbar extends Component{
         {
           toggleAll !== false &&
           <AIOButton key='toggleAll' {...buttonProps} type='button' title={translate('Toggle All')} onClick={()=>toggleAll()}
-            text={<Icon path={!toggleAllState?mdiCollapseAll:mdiExpandAll } size={iconSize}/>} 
+            text={!toggleAllState?aioTableGetSvg('toggleAllMinus'):aioTableGetSvg('toggleAllPlus')} 
           />
         }
         {
@@ -269,7 +261,7 @@ class RTableToolbar extends Component{
           <AIOButton key='excel' {...buttonProps} type='button' title={translate('Export To Excel')} onClick={()=>{
             fn.exportToExcel(excelColumns,rows);
           }}
-            text={<Icon path={mdiMicrosoftExcel} size={iconSize}/>} 
+            text={aioTableGetSvg('excel')} 
           />
         }
         {toolbarItems.map((o,i)=><AIOButton type='button' rtl={rtl} className='aio-table-toolbar-button' animate={true} {...o} key={'ti' + i}/>)}
@@ -277,7 +269,7 @@ class RTableToolbar extends Component{
         {
           groupBy.length > 1 &&
           <AIOButton key='groupby' {...buttonProps} options={groupBy} title={translate('Group By')}
-            text={<Icon path={mdiFileTree} size={iconSize} horizontal={rtl === true}/>}
+            text={aioTableGetSvg('group',{flip:rtl === true})}
             onSwap={(start,end,swap)=>{
               let {groups} = this.context;
               SetState({groups:swap(groups,start - 1,end - 1)})
@@ -287,7 +279,7 @@ class RTableToolbar extends Component{
         {
           sort.length > 1 &&
           <AIOButton key='sort' {...buttonProps} options={sort} title={translate('Sort')}
-            text={<Icon path={mdiSort} size={iconSize}/>} 
+            text={aioTableGetSvg('sort')} 
             onSwap={(start,end,swap)=>{
               let {sorts} = this.context;
               SetState({sorts:swap(sorts,start - 1,end - 1)})//-1 because title of items added to options[0]
@@ -296,11 +288,11 @@ class RTableToolbar extends Component{
         }
         {
           toggle.length > 1 && 
-          <AIOButton key='toggle' {...buttonProps} text={<Icon path={mdiEye} size={iconSize}/>} options={toggle} title={translate('Show Columns')} popupStyle={{maxHeight:400}}/>
+          <AIOButton key='toggle' {...buttonProps} text={aioTableGetSvg('eye')} options={toggle} title={translate('Show Columns')} popupStyle={{maxHeight:400}}/>
         }
         {
           freeze.length > 1 &&
-          <AIOButton key='freeze' {...buttonProps} text={<Icon path={mdiAlignHorizontalLeft} size={iconSize} horizontal={rtl === true}/>} options={freeze} title={translate('Freeze Columns')}/>
+          <AIOButton key='freeze' {...buttonProps} text={aioTableGetSvg('freeze',{flip:rtl === true})} options={freeze} title={translate('Freeze Columns')}/>
         }
       </div>
     )
@@ -335,23 +327,23 @@ class AIOTablePaging extends Component{
           className='aio-table-paging-button' 
           onClick={()=>this.changePage(rtl?'last':'first')}
           title={translate(rtl?'Last Page':'First Page')}
-        ><Icon path={mdiChevronDoubleLeft} size={.8}/></div>
+        >{aioTableGetSvg('doubleChevronRight',{flip:true})}</div>
         <div 
           className='aio-table-paging-button' 
           onClick={()=>this.changePage(rtl?'next':'prev')}
           title={translate(rtl?'Next Page':'Previous Page')}
-        ><Icon path={mdiChevronLeft} size={.8}/></div>
+        >{aioTableGetSvg('chevronRight',{flip:true})}</div>
         <div className='aio-table-paging-number'>{rtl?pages + ' / ' + number:number + ' / ' + pages}</div>
         <div 
           className='aio-table-paging-button' 
           onClick={()=>this.changePage(rtl?'prev':'next')}
           title={translate(rtl?'Previous Page':'Next Page')}
-        ><Icon path={mdiChevronRight} size={.8}/></div>
+        >{aioTableGetSvg('chevronRight')}</div>
         <div 
           className='aio-table-paging-button' 
           onClick={()=>this.changePage(rtl?'first':'last')}
           title={translate(rtl?'First Page':'Last Page')}
-        ><Icon path={mdiChevronDoubleRight} size={.8}/></div>
+        >{aioTableGetSvg('doubleChevronRight')}</div>
         <select 
           className='aio-table-paging-button' value={size} 
           onChange={(e)=>onChange({...paging,size:parseInt(e.target.value)})}
@@ -498,7 +490,9 @@ class AIOTableUnit extends Component{
             return <AIOTableGroup {...{tableIndex,row,columns}} key={'group' + i + '-' + tableIndex}/>
           }
           this.renderIndex++;
-          return row[type].map((r,j)=><AIOTableCell cellId={i + '-' + j + '-' + tableIndex} renderIndex={this.renderIndex} {...r} row={row.row}/>)
+          return row[type].map((r,j)=>{
+            return <AIOTableCell cellId={i + '-' + j + '-' + tableIndex} renderIndex={this.renderIndex} {...r} row={row.row}/>
+          })
         })}
         {rows && rows.length === 0 && fn.getNoData(columns)}
         {!rows && fn.getLoading()}
@@ -618,8 +612,8 @@ class AIOTableGroup extends Component{
   }
   getIcon(row){
     let {rtl} = this.context;
-    if(row._opened){return <Icon path={mdiChevronDown} size={1}/>}
-    return <Icon path={mdiChevronRight} size={1} horizontal={rtl === true}/>
+    if(row._opened){return aioTableGetSvg('chevronDown',{box:'2 1 20 20'})}
+    return aioTableGetSvg('chevronRight',{flip:rtl === true})
   }
   click(row){
     let {SetState,groupsOpen} = this.context;
@@ -699,9 +693,9 @@ class AIOTableCell extends Component{
   getToggleIcon(row){
     let {rtl,fn} = this.context;
     let icon;
-    if(!row._childsLength){icon = <Icon path={''} size={1}/>}
-    else if(row._opened){icon = <Icon path={mdiChevronDown} size={1}/>}
-    else{icon = <Icon path={mdiChevronRight} size={1} horizontal={rtl === true}/>}
+    if(!row._childsLength){icon = ''}
+    else if(row._opened){icon = aioTableGetSvg('chevronDown')}
+    else{icon = aioTableGetSvg('chevronRight',{flip:rtl === true})}
     return (
       <>
         <div className='aio-table-toggle' onClick={()=>fn.toggleRow(row)}>{icon}</div>
@@ -740,6 +734,7 @@ class AIOTableCell extends Component{
     let {type,getValue,disabled = ()=>false} = this.inlineEdit;
     let {renderIndex} = this.props;
     let {value} = this.state;
+    
     if(getValue){value = getValue(row)}
     if(disabled(row)){
       if(typeof value === 'boolean'){return JSON.stringify(value)}
@@ -750,6 +745,8 @@ class AIOTableCell extends Component{
       className:'aio-table-input',rowindex:renderIndex,colindex:column._renderIndex,
       value:value === null || value === undefined?'':value,
     };
+    
+    
     if(type === 'text' || type === 'number'){
       return (
         <div className={'aio-table-input-container'}>
@@ -766,6 +763,9 @@ class AIOTableCell extends Component{
                   this.setState({error:res})
                 }
                 else if(res === false){
+                  this.setState({value:this.props.value})
+                }
+                else {
                   this.setState({value:this.props.value})
                 }
               }}
@@ -817,6 +817,11 @@ class AIOTableCell extends Component{
     let {indent,fn,focused,SetState,onDrag,onDrop,onSwap} = this.context;
     let {row,column,value,cellId,renderIndex} = this.props;
     this.inlineEdit = typeof column.inlineEdit === 'function'?column.inlineEdit(row,column):column.inlineEdit;
+    if(column.title === 'تعداد' && row._index === 0){
+      console.log('aio table cell render value',value)
+      console.log('aio table cell render state.value',this.state.value)
+      console.log('aio table cell render this.state.prevValue',this.state.prevValue)
+    }
     if(this.state.prevValue !== value){
       setTimeout(()=>this.setState({value,prevValue:value}),0);
     }
@@ -886,7 +891,7 @@ class AIOTableFilter extends Component{
     if(!filterDictionary[column._index]){return null;}
     let {items,booleanType} = filterDictionary[column._index];
     let {type} = column.filter;
-    let icon = items.length?<Icon className='has-filter' path={mdiFilterMenu} size={0.7}/>:<Icon path={mdiFilter} size={0.7}/>;
+    let icon = items.length?aioTableGetSvg('filterActive',{className:'has-filter'}):aioTableGetSvg('filter');
     return (
       <div className='aio-table-filter-icon'>
         <AIOButton
@@ -968,7 +973,7 @@ class AIOTableFilterItem extends Component{
         <div style={{width:'6px'}}></div>
         <input type={type === 'date'?'text':type} value={value} onChange={(e)=>this.changeValue(e.target.value)}/>
         <div style={{width:'6px'}}></div>
-        <div className='aio-table-filter-remove' onClick={()=>onRemove()}><Icon path={mdiClose} size={0.7}/></div>     
+        <div className='aio-table-filter-remove' onClick={()=>onRemove()}>{aioTableGetSvg('close')}</div>     
       </div>
     )
   }
@@ -1038,7 +1043,7 @@ function ATFN({getProps,getState,setState}){
         document.body.removeChild(link);
     },
     getSliderCell({colors = ['#eee','dodgerblue'],start = 0,end = 100,value,editValue = (value)=>value}){
-      let {rowHeight} = getProps();
+      let {rowHeight,rtl} = getProps();
       let [clr1 = '#eee',clr2 = 'dodgerblue'] = colors;
       let points = Array.isArray(value)?value:[value]
       if(points.length > 2){points = [points[0],points[1]]}
@@ -1046,7 +1051,7 @@ function ATFN({getProps,getState,setState}){
         <div className='aio-table-slider'>
           {points.length === 2 && <div style={{display:'flex',alignItems:'center',padding:'0 3px'}}>{editValue(points[0])}</div>}
           <Slider 
-            style={{height:rowHeight}}
+            style={{height:rowHeight}} direction={rtl?'left':'right'}
             start={start} end={end} step={0.1} pointStyle={()=>{return {display:'none'}}}
             lineStyle={()=>{return {height:5,borderRadius:6,background:clr1}}}
             fillStyle={(index,obj)=>{if(index === (points.length === 2?1:0)){return {height:5,background:clr2,borderRadius:6}}}}
@@ -1061,7 +1066,7 @@ function ATFN({getProps,getState,setState}){
         <AIOButton
           type='select' caret={false}
           className='aio-table-options'
-          text={<Icon path={mdiDotsHorizontal} size={0.7}/>}
+          text={aioTableGetSvg('dots')}
           options={options.map(({text,icon,onClick})=>{
             return {text,before:(<>{icon}<div style={{width:6}}></div></>),onClick}
           })}
@@ -1186,43 +1191,143 @@ function ATFN({getProps,getState,setState}){
       let list = [year,month,day];
       return parseInt(list.map((o)=>o.length === 1?('0' + o):o).join(''))
     },
+    // getSorts(toolbar){
+    //   let {onChangeSort} = getProps();
+    //   let {sorts,columns = []} = getState();
+    //   let Sorts = sorts.map((o)=>{
+    //     return {
+    //       ...o,
+    //       onChangeDir:()=>{
+    //         o.dir = o.dir === 'dec'?'inc':'dec';
+    //         setState({sorts});
+    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+    //       },
+    //       onChangeActive:()=>{
+    //         o.active = o.active === undefined?true:o.active; 
+    //         o.active = !o.active; 
+    //         setState({sorts});
+    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+    //       }
+    //     }
+    //   })
+    //   for(let i = 0; i < columns.length; i++){
+    //     if(!columns[i].sort || columns[i]._addedTosorts){continue}
+    //     let column = columns[i];
+    //     let {sort,getValue} = columns[i];
+    //     let title = sort.title || column.title || '';
+    //     let {toggle = true,dir = 'inc',active = true,type} = sort;
+    //     Sorts.push({
+    //       title,dir,active,toggle,getValue,type,
+    //       onChangeDir:()=>{
+    //         sort.dir = sort.dir === 'dec'?'inc':'dec';
+    //         setState({columns});
+    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+    //       },
+    //       onChangeActive:()=>{
+    //         sort.active = sort.active === undefined?true:sort.active; 
+    //         sort.active = !sort.active; 
+    //         setState({columns});
+    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+    //       }
+    //     })
+    //   }
+    //   let result = [];
+    //   for(let i = 0; i < Sorts.length; i++){
+    //     let sort = Sorts[i];
+    //     let {getValue,dir = 'inc',title,active = true,toggle = true,type,onChangeDir,onChangeActive} = sort;
+    //     if(!title){console.error('aio table => missing sort title property'); continue;}
+    //     if(typeof getValue !== 'function'){console.error('aio table => sort getValue property is not a function'); continue;}
+    //     if(active === true){
+    //       if(type === 'date'){
+    //         let newGetValue = (row)=>{
+    //           let value = getValue(row);
+    //           if(typeof value !== 'string'){return 0}
+    //           return $$.getDateNumber(value)
+    //         }
+    //         result.push({getValue:(row)=>newGetValue(row),dir});
+    //       }
+    //       else{
+    //         result.push({getValue,dir});
+    //       }
+    //     }
+    //     if(toggle){
+    //       toolbar.show = true;
+    //       toolbar.sort.push({
+    //         text:title,checked:active === true,
+    //         after:(
+    //           <div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}>
+    //             <Icon 
+    //               size={0.8} path={dir === 'dec'?mdiArrowDown:mdiArrowUp} 
+    //               onClick={(e)=>{e.stopPropagation(); onChangeDir()}}
+    //             />
+    //           </div>
+    //         ),
+    //         onClick:()=>onChangeActive()
+    //       })
+    //     }
+    //   }
+    //   return result;
+    // },
     getSorts(toolbar){
       let {onChangeSort} = getProps();
-      let {sorts} = getState();
+      let {sorts,columns = []} = getState();
+      for(let i = 0; i < columns.length; i++){
+        if(!columns[i].sort || columns[i]._addedTosorts){continue}
+        columns[i]._addedTosorts = true;
+        let column = columns[i];
+        if(column.sort === true){column.sort = {}}
+        let {sort} = columns[i];
+        let title = sort.title || column.title || '';
+        let getValue = sort.getValue || column.getValue; 
+        let {toggle = true,dir = 'inc',active = true,type} = sort;
+        sorts.push({title,dir,active,toggle,getValue,type})
+      }
+      let Sorts = sorts.map((o)=>{
+        return {
+          ...o,
+          onChangeDir:()=>{
+            o.dir = o.dir === 'dec'?'inc':'dec';
+            setState({sorts});
+            if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+          },
+          onChangeActive:()=>{
+            o.active = o.active === undefined?true:o.active; 
+            o.active = !o.active; 
+            setState({sorts});
+            if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
+          }
+        }
+      })
+      
       let result = [];
-      for(let i = 0; i < sorts.length; i++){
-        let sort = sorts[i];
-        let {getValue,type = 'inc',title,active = true,toggle = true,isDate} = sort;
+      for(let i = 0; i < Sorts.length; i++){
+        let sort = Sorts[i];
+        let {getValue,dir = 'inc',title,active = true,toggle = true,type,onChangeDir,onChangeActive} = sort;
         if(!title){console.error('aio table => missing sort title property'); continue;}
         if(typeof getValue !== 'function'){console.error('aio table => sort getValue property is not a function'); continue;}
         if(active === true){
-          if(isDate){
+          if(type === 'date'){
             let newGetValue = (row)=>{
               let value = getValue(row);
               if(typeof value !== 'string'){return 0}
               return $$.getDateNumber(value)
             }
-            result.push({getValue:(row)=>newGetValue(row),type});
+            result.push({getValue:(row)=>newGetValue(row),dir});
           }
           else{
-            result.push({getValue,type});
+            result.push({getValue,dir});
           }
         }
         if(toggle){
           toolbar.show = true;
           toolbar.sort.push({
             text:title,checked:active === true,
-            after:<div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}><Icon path={type === 'dec'?mdiArrowDown:mdiArrowUp} size={0.8} onClick={(e)=>{
-              e.stopPropagation();
-              sort.type = sort.type === 'dec'?'inc':'dec';
-              setState({sorts});
-              if(onChangeSort){onChangeSort(sorts.filter((o)=>o.active !== false))}
-            }}/></div>,
-            onClick:()=>{
-              sort.active = !active; 
-              setState({sorts});
-              if(onChangeSort){onChangeSort(sorts.filter((o)=>o.active !== false))}
-            }
+            after:(
+              <div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}>
+                {aioTableGetSvg(dir === 'dec'?'arrowDown':'arrowUp',{onClick:(e)=>{e.stopPropagation(); onChangeDir()}})}
+              </div>
+            ),
+            onClick:()=>onChangeActive()
           })
         }
       }
@@ -1551,10 +1656,10 @@ function ATFN({getProps,getState,setState}){
       if(getProps().onChangeSort){return rows}
       return rows.sort((a,b)=>{
         for (let i = 0; i < sorts.length; i++){
-          let {getValue,type} = sorts[i];
+          let {getValue,dir} = sorts[i];
           let aValue = getValue(a),bValue = getValue(b);
-          if ( aValue < bValue ){return -1 * (type === 'dec'?-1:1);}
-          if ( aValue > bValue ){return 1 * (type === 'dec'?-1:1);}
+          if ( aValue < bValue ){return -1 * (dir === 'dec'?-1:1);}
+          if ( aValue > bValue ){return 1 * (dir === 'dec'?-1:1);}
           if(i !== sorts.length - 1){continue;}
           return 0;
         }
@@ -1691,3 +1796,106 @@ function ATFN({getProps,getState,setState}){
     getNoData:$$.getNoData
   }
 }
+function aioTableGetSvg(type,conf = {}){
+    let {className,flip,onClick,box = '0 0 24 24'} = conf;
+    let style1 = {width:'1.05rem',height:'1.05rem'}
+    style1.background = ''
+    if(flip){
+      style1.transform = 'scaleX(-1)';
+      style1.transformOrigin = 'center center';
+      
+    }
+    let style2 = {fill:'currentcolor'}
+    let Attrs = {
+      viewBox:box,role:"presentation",style:style1
+    }
+    if(className){Attrs.className = className}
+    if(onClick){Attrs.onClick = onClick}
+    
+    if(type === 'eye'){
+     return (
+       <svg {...Attrs}><path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'magnify'){
+     return (
+       <svg {...Attrs}><path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'close'){
+     return (
+       <svg {...Attrs}><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'toggleAllPlus'){
+     return (
+       <svg {...Attrs}><path d="M18,8H8V18H6V8A2,2 0 0,1 8,6H18V8M14,2H4A2,2 0 0,0 2,4V14H4V4H14V2M22,12V20A2,2 0 0,1 20,22H12A2,2 0 0,1 10,20V12A2,2 0 0,1 12,10H20A2,2 0 0,1 22,12M20,15H17V12H15V15H12V17H15V20H17V17H20V15Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'toggleAllMinus'){
+     return (
+       <svg {...Attrs}><path d="M14,4H4V14H2V4A2,2 0 0,1 4,2H14V4M18,6H8A2,2 0 0,0 6,8V18H8V8H18V6M22,12V20A2,2 0 0,1 20,22H12A2,2 0 0,1 10,20V12A2,2 0 0,1 12,10H20A2,2 0 0,1 22,12M20,15H12V17H20V15Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'excel'){
+     return (
+       <svg {...Attrs}><path d="M21.17 3.25Q21.5 3.25 21.76 3.5 22 3.74 22 4.08V19.92Q22 20.26 21.76 20.5 21.5 20.75 21.17 20.75H7.83Q7.5 20.75 7.24 20.5 7 20.26 7 19.92V17H2.83Q2.5 17 2.24 16.76 2 16.5 2 16.17V7.83Q2 7.5 2.24 7.24 2.5 7 2.83 7H7V4.08Q7 3.74 7.24 3.5 7.5 3.25 7.83 3.25M7 13.06L8.18 15.28H9.97L8 12.06L9.93 8.89H8.22L7.13 10.9L7.09 10.96L7.06 11.03Q6.8 10.5 6.5 9.96 6.25 9.43 5.97 8.89H4.16L6.05 12.08L4 15.28H5.78M13.88 19.5V17H8.25V19.5M13.88 15.75V12.63H12V15.75M13.88 11.38V8.25H12V11.38M13.88 7V4.5H8.25V7M20.75 19.5V17H15.13V19.5M20.75 15.75V12.63H15.13V15.75M20.75 11.38V8.25H15.13V11.38M20.75 7V4.5H15.13V7Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'sort'){
+     return (
+       <svg {...Attrs}><path d="M18 21L14 17H17V7H14L18 3L22 7H19V17H22M2 19V17H12V19M2 13V11H9V13M2 7V5H6V7H2Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'group'){
+     return (
+       <svg {...Attrs}><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H7V18H13V20H7L5,20V9H7V11H13V13Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'freeze'){
+     return (
+       <svg {...Attrs}><path d="M4 22H2V2H4V22M22 7H6V10H22V7M16 14H6V17H16V14Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'filter'){
+     return (
+       <svg {...Attrs}><path d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'filterActive'){
+     return (
+       <svg {...Attrs}><path d="M11 11L16.76 3.62A1 1 0 0 0 16.59 2.22A1 1 0 0 0 16 2H2A1 1 0 0 0 1.38 2.22A1 1 0 0 0 1.21 3.62L7 11V16.87A1 1 0 0 0 7.29 17.7L9.29 19.7A1 1 0 0 0 10.7 19.7A1 1 0 0 0 11 18.87V11M13 16L18 21L23 16Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'dots'){
+     return (
+       <svg {...Attrs}><path d="M16,12A2,2 0 0,1 18,10A2,2 0 0,1 20,12A2,2 0 0,1 18,14A2,2 0 0,1 16,12M10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12M4,12A2,2 0 0,1 6,10A2,2 0 0,1 8,12A2,2 0 0,1 6,14A2,2 0 0,1 4,12Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'chevronDown'){
+     return (
+       <svg {...Attrs}><path d="M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'chevronRight'){
+     return (
+       <svg {...Attrs}><path d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'doubleChevronRight'){
+     return (
+       <svg {...Attrs}><path d="M5.59,7.41L7,6L13,12L7,18L5.59,16.59L10.17,12L5.59,7.41M11.59,7.41L13,6L19,12L13,18L11.59,16.59L16.17,12L11.59,7.41Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'arrowUp'){
+     return (
+       <svg {...Attrs}><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z" style={style2}></path></svg>
+     ) 
+    }
+    if(type === 'arrowDown'){
+     return (
+       <svg {...Attrs}><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z" style={style2}></path></svg>
+     ) 
+    }
+}
+
