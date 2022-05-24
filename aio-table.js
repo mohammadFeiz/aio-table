@@ -486,7 +486,13 @@ class AIOTableUnit extends Component{
     var groupStyle = {gridColumnStart:1,gridColumnEnd:cardRowCount + 1,height:rowHeight};
     if(cardRowCount === 'auto'){groupStyle.gridColumnStart = undefined; groupStyle.gridColumnEnd = undefined;}
     let rows;
-    if(search){rows = this.props.rows.filter((o)=>search(o.row,searchText))}
+    if(search){
+      rows = this.props.rows.filter((o)=>{
+        if(searchText === ''){return true}
+        try{return search(o.row,searchText)}
+        catch{return false}
+      })
+    }
     else {rows = this.props.rows;}
     return (
       <div {...props} style={{...props.style,gridTemplateColumns:cardRowCount === 'auto'?undefined:`repeat(${cardRowCount},auto)`}}>
@@ -809,8 +815,11 @@ class AIOTableCell extends Component{
               onBlur={async (e)=>{
                 let {value} = this.state;
                 if(value === this.props.value){return}
-                let newValue = type === 'number'?parseFloat(value):value
-                if(isNaN(newValue)){newValue = 0;}
+                let newValue = value
+                if(type === 'number'){
+                  newValue = parseFloat(newValue);
+                  if(isNaN(newValue)){newValue = 0;}
+                }
                 let res = await this.changeCell(newValue);
                 if(typeof res === 'string'){this.setState({error:res})}
                 else {this.setState({value:this.props.value})}
@@ -1536,7 +1545,13 @@ function ATFN({getProps,getState,setState}){
             value = getCellValue(row,column.getValue,column.field);
         row._values[column._index] = value;
         filterDictionary[column._index] = filterDictionary[column._index] || {items:[],booleanType:'or'};
-        if(show && search){show = search(row,searchText)}
+        if(show && search){
+          if(searchText === ''){show = true}
+          else {
+            try{show = search(row,searchText)}
+            catch{show = false}
+          }
+        }
         if(show && !onChangeFilter){show = show && $$.getFilterResult(column,value)}
         let obj = {key:row._index + ',' + column._index,column,value,freeze:column.freeze};
         if(freeze.active){

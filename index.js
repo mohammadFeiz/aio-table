@@ -991,7 +991,17 @@ class AIOTableUnit extends _react.Component {
     let rows;
 
     if (search) {
-      rows = this.props.rows.filter(o => search(o.row, searchText));
+      rows = this.props.rows.filter(o => {
+        if (searchText === '') {
+          return true;
+        }
+
+        try {
+          return search(o.row, searchText);
+        } catch {
+          return false;
+        }
+      });
     } else {
       rows = this.props.rows;
     }
@@ -1630,10 +1640,14 @@ class AIOTableCell extends _react.Component {
             return;
           }
 
-          let newValue = type === 'number' ? parseFloat(value) : value;
+          let newValue = value;
 
-          if (isNaN(newValue)) {
-            newValue = 0;
+          if (type === 'number') {
+            newValue = parseFloat(newValue);
+
+            if (isNaN(newValue)) {
+              newValue = 0;
+            }
           }
 
           let res = await this.changeCell(newValue);
@@ -3156,7 +3170,15 @@ function ATFN({
         };
 
         if (show && search) {
-          show = search(row, searchText);
+          if (searchText === '') {
+            show = true;
+          } else {
+            try {
+              show = search(row, searchText);
+            } catch {
+              show = false;
+            }
+          }
         }
 
         if (show && !onChangeFilter) {
