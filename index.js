@@ -461,8 +461,6 @@ class AIOTable extends _react.Component {
 exports.default = AIOTable;
 AIOTable.defaultProps = {
   columns: [],
-  headerHeight: 36,
-  rowHeight: 36,
   toolbarHeight: 36,
   rowGap: 6,
   padding: 12,
@@ -830,6 +828,7 @@ class AIOTableUnit extends _react.Component {
     } = this.props;
     return columns.map((column, i) => {
       return /*#__PURE__*/_react.default.createElement(AIOTableTitle, {
+        isLast: i === columns.length - 1,
         key: 'title' + i,
         column: column,
         gridTemplateColumns: this.gridTemplateColumns,
@@ -1287,8 +1286,12 @@ class AIOTableTitle extends _react.Component {
       column,
       onDragStart,
       onDragOver,
-      onDrop
+      onDrop,
+      isLast
     } = this.props;
+    let {
+      rtl
+    } = this.context;
 
     if (column.template === 'gantt') {
       return this.getGanttTitle(column);
@@ -1298,7 +1301,7 @@ class AIOTableTitle extends _react.Component {
     return /*#__PURE__*/_react.default.createElement("div", {
       style: this.getStyle(),
       draggable: false,
-      className: "aio-table-title"
+      className: 'aio-table-title' + (column.titleClassName ? ' ' + column.titleClassName : '') + (isLast ? ' last-child' : '') + (rtl ? ' rtl' : ' ltr')
     }, /*#__PURE__*/_react.default.createElement(AIOTableFilter, {
       column: column
     }), /*#__PURE__*/_react.default.createElement("div", {

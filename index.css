@@ -56,10 +56,15 @@
   height:100%;
   top:0;
   background:#ddd;
-  left:calc(100% - 1px);
   position:absolute;
 }
-.aio-table-title.is-last:after{
+.aio-table-title.ltr:after{
+  left:calc(100% - 1px);
+}
+.aio-table-title.rtl:after{
+  right:calc(100% - 1px);
+}
+.aio-table-title.last-child:after{
   display:none;
 }
 .aio-table.rtl .aio-table-title{

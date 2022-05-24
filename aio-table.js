@@ -235,7 +235,7 @@ export default class AIOTable extends Component{
     )
   }
 }
-AIOTable.defaultProps = {columns:[],headerHeight:36,rowHeight:36,toolbarHeight:36,rowGap:6,padding:12,indent:20,translate:(text)=>text,freezeSize:300,sorts:[],groups:[]}
+AIOTable.defaultProps = {columns:[],toolbarHeight:36,rowGap:6,padding:12,indent:20,translate:(text)=>text,freezeSize:300,sorts:[],groups:[]}
 class AIOTableToolbar extends Component{
   static contextType = AioTableContext;
   state = {searchText:''}
@@ -408,6 +408,7 @@ class AIOTableUnit extends Component{
     return columns.map((column,i)=>{
       return (
         <AIOTableTitle 
+          isLast={i === columns.length - 1}
           key={'title' + i} column={column} gridTemplateColumns={this.gridTemplateColumns} setStyle={this.setStyle.bind(this)}
           onDragStart={(index)=>this.startColumnSwap = index}
           onDragOver={(e,index)=>{e.preventDefault(); this.endColumnSwap = index;}}
@@ -639,14 +640,15 @@ class AIOTableTitle extends Component{
     </div>
   }
   render(){
-    let {column,onDragStart,onDragOver,onDrop} = this.props;
+    let {column,onDragStart,onDragOver,onDrop,isLast} = this.props;
+    let {rtl} = this.context;
     if(column.template === 'gantt'){return this.getGanttTitle(column);}
     let title = typeof column.title === 'function'?column.title():column.title;
     return (
       <div
         style={this.getStyle()}
         draggable={false}
-        className='aio-table-title'  
+        className={'aio-table-title' + (column.titleClassName?' ' + column.titleClassName:'') + (isLast?' last-child':'') + (rtl?' rtl':' ltr')}
       >
         <AIOTableFilter column={column}/>
         <div
