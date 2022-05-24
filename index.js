@@ -57,9 +57,20 @@ class AIOTable extends _react.Component {
       filterDictionary: {},
       groupsOpen: {},
       searchText: '',
+      addedSorts: [],
       freezeSize,
       groupDictionary,
-      sorts,
+      startIndex: 0,
+      //بخاطر شرایط خاص سورتس باید کاملا از پروپس ورودی ایموتیبل شود//
+      sorts: sorts.map(o => {
+        let res = {};
+
+        for (let prop in o) {
+          res[prop] = o[prop];
+        }
+
+        return res;
+      }),
       //make imutable to prevent change of props.paging because that will compaire with next input props.paging
       paging: paging ? { ...paging
       } : false,
@@ -67,8 +78,34 @@ class AIOTable extends _react.Component {
       columns: copiedColumns,
       prevColumns: JSON.stringify(copiedColumns),
       focused: false,
-      toggleAllState: true
+      toggleAllState: true,
+      getCellValue: (row, getValue, field) => {
+        try {
+          if (typeof getValue === 'function') {
+            return getValue(row);
+          }
+
+          if (field) {
+            let result;
+            eval('result = row.' + field);
+            return result;
+          }
+
+          return;
+        } catch {
+          return;
+        }
+      },
+      setCellValue: (row, field, value) => {
+        //row is used in eval
+        let {
+          model
+        } = this.props;
+        eval('row.' + field + ' = ' + value);
+        return model;
+      }
     };
+    console.log('in table', this.state.sorts);
   }
 
   copyJson(j) {
@@ -91,15 +128,6 @@ class AIOTable extends _react.Component {
     };
 
     return a(j);
-  }
-
-  getGap() {
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-gap",
-      style: {
-        width: this.props.cellGap
-      }
-    });
   }
 
   resizeDown(e) {
@@ -335,7 +363,7 @@ class AIOTable extends _react.Component {
       setTimeout(() => this.setState({
         paging: { ...paging
         },
-        prevPaging: JSON.stringify(paging)
+        prevPaging: p
       }), 0);
     }
   }
@@ -368,7 +396,7 @@ class AIOTable extends _react.Component {
     this.rg = rowGap;
     this.cg = columnGap;
     this.updateColumns();
-    var Toolbar = this.toolbar.show ? /*#__PURE__*/_react.default.createElement(RTableToolbar, this.toolbar) : null;
+    var Toolbar = this.toolbar.show ? /*#__PURE__*/_react.default.createElement(AIOTableToolbar, this.toolbar) : null;
     var table = columns ? this.getTable(Toolbar) : '';
     var context = { ...this.props,
       ...this.state,
@@ -398,7 +426,6 @@ class AIOTable extends _react.Component {
       },
       onChangeFilter: onChangeFilter ? this.onChangeFilter.bind(this) : undefined,
       SetState: obj => this.setState(obj),
-      getGap: this.getGap.bind(this),
       onScroll: index => this.fn.onScroll(this.dom, index),
       groups: this.groups,
       fn: this.fn,
@@ -426,7 +453,7 @@ class AIOTable extends _react.Component {
           paging.onChange(obj);
         }
       }
-    })));
+    }), this.fn.getLoading(true)));
   }
 
 }
@@ -446,7 +473,7 @@ AIOTable.defaultProps = {
   groups: []
 };
 
-class RTableToolbar extends _react.Component {
+class AIOTableToolbar extends _react.Component {
   constructor(...args) {
     super(...args);
 
@@ -643,7 +670,7 @@ class RTableToolbar extends _react.Component {
 
 }
 
-_defineProperty(RTableToolbar, "contextType", AioTableContext);
+_defineProperty(AIOTableToolbar, "contextType", AioTableContext);
 
 class AIOTablePaging extends _react.Component {
   getPageNumber(type) {
@@ -849,7 +876,8 @@ class AIOTableUnit extends _react.Component {
 
   keyDown(e) {
     var {
-      SetState
+      SetState,
+      focused
     } = this.context;
 
     if (e.keyCode === 27) {
@@ -885,12 +913,11 @@ class AIOTableUnit extends _react.Component {
 
       if (inputCells.length) {
         let cell = inputCells.eq(0);
-        let cellId = cell.attr('cellid');
         SetState({
-          focused: cellId
+          focused: cell.attr('data-cell-id')
         });
         setTimeout(() => {
-          (0, _jquery.default)('.aio-table-cell-input[cellid=' + cellId + '] .aio-table-input').focus().select();
+          cell.find('.aio-table-input').focus().select();
         }, 10);
       }
 
@@ -898,16 +925,17 @@ class AIOTableUnit extends _react.Component {
     }
 
     let [rowIndex, colIndex] = this.getCellIndex(focusedInput.parents('.aio-table-cell'));
+    console.log(rowIndex, colIndex);
 
     if (e.keyCode === 40 || e.keyCode === 38) {
       let sign = e.keyCode === 40 ? 1 : -1;
       e.preventDefault();
       rowIndex += sign;
-      let next = inputs.filter(`[rowindex=${rowIndex}][colindex=${colIndex}]`);
+      let next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
 
       while (rowIndex < this.renderIndex && rowIndex > 0 && next.length === 0) {
         rowIndex += sign;
-        next = inputs.filter(`[rowindex=${rowIndex}][colindex=${colIndex}]`);
+        next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
       }
 
       if (next.length) {
@@ -918,11 +946,11 @@ class AIOTableUnit extends _react.Component {
       e.preventDefault();
       let sign = (e.keyCode === 37 ? -1 : 1) * (rtl ? -1 : 1);
       colIndex += sign;
-      let next = inputs.filter(`[rowindex=${rowIndex}][colindex=${colIndex}]`);
+      let next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
 
       while (colIndex > 0 && colIndex < columns.length && next.length === 0) {
         colIndex += sign;
-        next = inputs.filter(`[rowindex=${rowIndex}][colindex=${colIndex}]`);
+        next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
       }
 
       if (next.length) {
@@ -933,7 +961,7 @@ class AIOTableUnit extends _react.Component {
   }
 
   getCellIndex(cell) {
-    return [parseInt(cell.attr('rowindex')), parseInt(cell.attr('colindex'))];
+    return [parseInt(cell.attr('data-row-index')), parseInt(cell.attr('data-col-index'))];
   }
 
   card(props) {
@@ -988,10 +1016,20 @@ class AIOTableUnit extends _react.Component {
     }), rows && rows.length === 0 && fn.getNoData(columns), !rows && fn.getLoading());
   }
 
+  getPropValue(row, column, prop) {
+    return typeof prop === 'function' ? prop(row, column) : prop;
+  }
+
   render() {
     var {
       onScroll,
-      fn
+      onSwap,
+      onDrop,
+      onDrag,
+      fn,
+      focused,
+      SetState,
+      striped
     } = this.context;
     var {
       rows,
@@ -1015,24 +1053,60 @@ class AIOTableUnit extends _react.Component {
     }
 
     this.renderIndex = -1;
-    return /*#__PURE__*/_react.default.createElement("div", props, this.getTitles(), rows && rows.length !== 0 && rows.map((row, i) => {
-      if (row._groupId) {
+    return /*#__PURE__*/_react.default.createElement("div", props, this.getTitles(), rows && rows.length !== 0 && rows.map((o, i) => {
+      if (o._groupId) {
         return /*#__PURE__*/_react.default.createElement(AIOTableGroup, {
           tableIndex,
-          row,
+          row: o,
           columns,
           key: 'group' + i + '-' + tableIndex
         });
       }
 
       this.renderIndex++;
-      return row[type].map((r, j) => {
-        return /*#__PURE__*/_react.default.createElement(AIOTableCell, _extends({
-          cellId: i + '-' + j + '-' + tableIndex,
-          renderIndex: this.renderIndex
-        }, r, {
-          row: row.row
-        }));
+      return o[type].map(({
+        value,
+        column
+      }, j) => {
+        let row = o.row;
+        let cellId = i + '-' + j + '-' + tableIndex;
+        let inlineEdit = this.getPropValue(row, column, column.inlineEdit);
+        return /*#__PURE__*/_react.default.createElement(AIOTableCell, {
+          key: cellId,
+          attrs: {
+            'data-row-index': this.renderIndex,
+            'data-col-index': column._renderIndex,
+            'data-real-row-index': row._index,
+            'data-real-col-index': column._index,
+            'data-child-index': row._childIndex,
+            'data-childs-length': row._childsLength,
+            'data-lavel': row._level,
+            'data-cell-id': cellId,
+            tabIndex: 0,
+            draggable: typeof onSwap === 'function' && column.swap,
+            onDrop: () => onDrop(row),
+            onDragOver: e => e.preventDefault(),
+            onDragStart: () => onDrag(row),
+            onClick: () => {
+              if (!inlineEdit || focused === cellId) {
+                return;
+              }
+
+              SetState({
+                focused: cellId
+              });
+              setTimeout(() => (0, _jquery.default)('.aio-table-input:focus').select(), 10);
+            }
+          },
+          striped: this.renderIndex % 2 === 0 && striped,
+          value: value,
+          column: column,
+          row: row,
+          inlineEdit: inlineEdit,
+          before: this.getPropValue(row, column, column.before),
+          after: this.getPropValue(row, column, column.after),
+          justify: column.justify !== false && !column.treeMode
+        });
       });
     }), rows && rows.length === 0 && fn.getNoData(columns), !rows && fn.getLoading());
   }
@@ -1285,8 +1359,7 @@ class AIOTableGroup extends _react.Component {
 
   render() {
     let {
-      indent,
-      getGap
+      indent
     } = this.context;
     let {
       row,
@@ -1304,7 +1377,9 @@ class AIOTableGroup extends _react.Component {
     }), /*#__PURE__*/_react.default.createElement("div", {
       className: "aio-table-toggle",
       onClick: () => this.click(row)
-    }, this.getIcon(row)), getGap(), /*#__PURE__*/_react.default.createElement("div", {
+    }, this.getIcon(row)), /*#__PURE__*/_react.default.createElement("div", {
+      className: "aio-table-cell-gap"
+    }), /*#__PURE__*/_react.default.createElement("div", {
       className: "aio-table-group-text"
     }, row._groupValue)));
   }
@@ -1327,32 +1402,6 @@ class AIOTableCell extends _react.Component {
     };
   }
 
-  getBefore(row, column) {
-    if (!column.before) {
-      return '';
-    }
-
-    var before = typeof column.before === 'function' ? column.before(row, column) : column.before;
-    return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-icon"
-    }, before), this.context.getGap());
-  }
-
-  getAfter(row, column) {
-    if (!column.after) {
-      return '';
-    }
-
-    var after = typeof column.after === 'function' ? column.after(row, column) : column.after;
-    return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      style: {
-        flex: 1
-      }
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-icon"
-    }, after));
-  }
-
   getStyle(column, row) {
     var {
       padding = '36px',
@@ -1361,7 +1410,6 @@ class AIOTableCell extends _react.Component {
     } = column;
     var {
       rowHeight,
-      striped,
       getCellStyle = () => {
         return {};
       }
@@ -1371,17 +1419,6 @@ class AIOTableCell extends _react.Component {
       overflow: template ? undefined : 'hidden',
       minWidth
     };
-
-    if (row._index % 2 === 0) {
-      if (typeof striped === 'string') {
-        style.background = striped;
-      }
-
-      if (Array.isArray(striped)) {
-        style.background = striped[0];
-        style.color = striped[1];
-      }
-    }
 
     if (column.template === 'gantt') {
       style.padding = `0 ${padding}`;
@@ -1397,12 +1434,9 @@ class AIOTableCell extends _react.Component {
     var className = 'aio-table-cell';
     let {
       striped
-    } = this.context;
-    let {
-      renderIndex
     } = this.props;
 
-    if (renderIndex % 2 === 0 && striped === true) {
+    if (striped) {
       className += ' striped';
     }
 
@@ -1410,11 +1444,7 @@ class AIOTableCell extends _react.Component {
       className += ' aio-table-cell-selectable';
     }
 
-    if (column.template) {
-      className += ' aio-table-cell-template';
-    }
-
-    if (column.template === 'gantt') {
+    if (column.template && column.template.type === 'gantt') {
       className += ' aio-table-cell-gantt';
     }
 
@@ -1432,6 +1462,14 @@ class AIOTableCell extends _react.Component {
 
     if (row._show === false) {
       className += ' aio-table-cell-hidden';
+    }
+
+    if (row._isFirstChild) {
+      className += ' first-child';
+    }
+
+    if (row._isLastChild) {
+      className += ' last-child';
     }
 
     return className;
@@ -1457,7 +1495,9 @@ class AIOTableCell extends _react.Component {
     return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
       className: "aio-table-toggle",
       onClick: () => fn.toggleRow(row)
-    }, icon), this.context.getGap());
+    }, icon), /*#__PURE__*/_react.default.createElement("div", {
+      className: "aio-table-cell-gap"
+    }));
   }
 
   getContent(row, column, value) {
@@ -1465,6 +1505,9 @@ class AIOTableCell extends _react.Component {
       focused,
       fn
     } = this.context;
+    let {
+      inlineEdit
+    } = this.props;
     var content = '';
     let template = typeof column.template === 'function' ? column.template(row, column) : column.template;
 
@@ -1472,19 +1515,15 @@ class AIOTableCell extends _react.Component {
       content = fn.getSliderCell(template);
     } else if (template && template.type === 'options') {
       content = fn.getOptionsCell(template);
-    } else if (template === 'gantt') {
-      content = fn.getGanttCell(row, column);
-    } else if (template && this.inlineEdit) {
-      if (!focused) {
-        content = template;
-      } else {
-        content = this.getInput(row, column);
-      }
+    } else if (template && template.type === 'gantt') {
+      content = fn.getGanttCell(row, template);
+    } else if (template && inlineEdit) {
+      content = focused ? this.getInput(row, column) : template;
     } else if (template) {
       content = template;
-    } else if (this.inlineEdit) {
+    } else if (inlineEdit) {
       content = this.getInput(row, column);
-    } else if (column.getValue) {
+    } else {
       content = value;
     }
 
@@ -1509,21 +1548,52 @@ class AIOTableCell extends _react.Component {
     return content;
   }
 
+  async changeCell(value) {
+    let {
+      row,
+      column,
+      inlineEdit
+    } = this.props;
+    let {
+      setCellValue
+    } = this.context;
+    let res;
+    this.setState({
+      loading: true
+    });
+
+    if (inlineEdit.onChange) {
+      res = await inlineEdit.onChange(row, value);
+    } else {
+      res = await this.context.onChange(setCellValue(row, column.field, value));
+    }
+
+    this.setState({
+      loading: false
+    });
+    return res;
+  }
+
   getInput(row, column) {
+    let {
+      getCellValue
+    } = this.context;
+    let {
+      attrs,
+      inlineEdit
+    } = this.props;
     let {
       type,
       getValue,
-      disabled = () => false
-    } = this.inlineEdit;
-    let {
-      renderIndex
-    } = this.props;
+      disabled = () => false,
+      options
+    } = inlineEdit;
     let {
       value
     } = this.state;
 
     if (getValue) {
-      value = getValue(row);
+      value = getCellValue(row, getValue, column.field);
     }
 
     if (disabled(row)) {
@@ -1534,10 +1604,10 @@ class AIOTableCell extends _react.Component {
       return value;
     }
 
-    let props = { ...this.inlineEdit,
+    let props = { ...inlineEdit,
       className: 'aio-table-input',
-      rowindex: renderIndex,
-      colindex: column._renderIndex,
+      'data-row-index': attrs['data-row-index'],
+      'data-col-index': attrs['data-col-index'],
       value: value === null || value === undefined ? '' : value
     };
 
@@ -1552,25 +1622,25 @@ class AIOTableCell extends _react.Component {
           value: e.target.value
         }),
         onBlur: async e => {
+          let {
+            value
+          } = this.state;
+
           if (value === this.props.value) {
             return;
           }
 
-          this.setState({
-            loading: true
-          });
-          let res = await this.inlineEdit.onChange(row, type === 'number' ? parseFloat(value) : value);
-          this.setState({
-            loading: false
-          });
+          let newValue = type === 'number' ? parseFloat(value) : value;
+
+          if (isNaN(newValue)) {
+            newValue = 0;
+          }
+
+          let res = await this.changeCell(newValue);
 
           if (typeof res === 'string') {
             this.setState({
               error: res
-            });
-          } else if (res === false) {
-            this.setState({
-              value: this.props.value
             });
           } else {
             this.setState({
@@ -1584,12 +1654,12 @@ class AIOTableCell extends _react.Component {
     }
 
     if (type === 'select') {
-      if (!this.inlineEdit.options) {
+      if (!options) {
         console.error('aio table => missing options property of column inlineEdit with type="select"');
         return '';
       }
 
-      if (!Array.isArray(this.inlineEdit.options)) {
+      if (!Array.isArray(options)) {
         console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!');
         return '';
       }
@@ -1611,13 +1681,9 @@ class AIOTableCell extends _react.Component {
           }
 
           this.setState({
-            loading: true,
             value
           });
-          let res = await this.inlineEdit.onChange(row, value);
-          this.setState({
-            loading: false
-          });
+          let res = await this.changeCell(value);
 
           if (typeof res === 'string') {
             this.setState({
@@ -1629,10 +1695,39 @@ class AIOTableCell extends _react.Component {
             });
           }
         }
-      }), this.inlineEdit.options.map((o, i) => /*#__PURE__*/_react.default.createElement("option", {
+      }), options.map((o, i) => /*#__PURE__*/_react.default.createElement("option", {
         key: i,
         value: o.value
       }, o.text))), /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-input-border"
+      }));
+    }
+
+    if (type === 'checkbox') {
+      return /*#__PURE__*/_react.default.createElement("div", {
+        className: 'aio-table-input-container',
+        tabIndex: 0,
+        onKeyDown: async e => {
+          if (e.keyCode === 13) {
+            value = value === true ? true : false;
+            await this.changeCell(!value);
+          }
+        }
+      }, /*#__PURE__*/_react.default.createElement("input", _extends({}, props, {
+        onFocus: () => this.focus = true,
+        onBlur: () => this.focus = false,
+        checked: value === true ? true : false,
+        onChange: async e => {
+          let value = e.target.checked;
+          this.setState({
+            loading: true
+          });
+          await this.changeCell(value);
+          this.setState({
+            loading: false
+          });
+        }
+      })), /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-input-border"
       }));
     }
@@ -1642,35 +1737,41 @@ class AIOTableCell extends _react.Component {
   }
 
   componentDidUpdate() {
-    if (this.inlineEdit && this.inlineEdit.type === 'select' && this.focus) {
-      (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
+    let {
+      inlineEdit
+    } = this.props;
+
+    if (inlineEdit && this.focus) {
+      if (inlineEdit.type === 'select' || inlineEdit.type === 'checkbox') {
+        (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
+      }
     }
+  }
+
+  getProps(row, column, content) {
+    let title = column.getTooltip ? column.getTooltip(row) : typeof content === 'string' ? content : undefined;
+    return {
+      ref: this.dom,
+      title,
+      style: this.getStyle(column, row),
+      className: this.getClassName(row, column)
+    };
   }
 
   render() {
     let {
       indent,
-      fn,
-      focused,
-      SetState,
-      onDrag,
-      onDrop,
-      onSwap
+      fn
     } = this.context;
     let {
       row,
       column,
       value,
-      cellId,
-      renderIndex
+      before,
+      after,
+      justify,
+      attrs
     } = this.props;
-    this.inlineEdit = typeof column.inlineEdit === 'function' ? column.inlineEdit(row, column) : column.inlineEdit;
-
-    if (column.title === 'تعداد' && row._index === 0) {
-      console.log('aio table cell render value', value);
-      console.log('aio table cell render state.value', this.state.value);
-      console.log('aio table cell render this.state.prevValue', this.state.prevValue);
-    }
 
     if (this.state.prevValue !== value) {
       setTimeout(() => this.setState({
@@ -1684,9 +1785,6 @@ class AIOTableCell extends _react.Component {
       loading
     } = this.state;
     let content = this.getContent(row, column, value);
-    let before = this.getBefore(row, column);
-    let after = this.getAfter(row, column);
-    let showToggleIcon = column.treeMode;
     let cell;
 
     if (loading) {
@@ -1704,51 +1802,30 @@ class AIOTableCell extends _react.Component {
         }
       }, error);
     } else {
-      let style = {
-        justifyContent: column.justify !== false && !column.treeMode ? 'center' : undefined
-      };
       cell = /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, column.treeMode && /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-indent",
         style: {
-          width: row._level * indent
+          width: row._level * indent,
+          flexShrink: 0
         }
-      }), showToggleIcon && this.getToggleIcon(row), before, /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-content",
-        style: style
-      }, content), after);
+      }), column.treeMode && this.getToggleIcon(row), before !== undefined && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-icon"
+      }, before), /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-cell-gap"
+      })), content !== undefined && /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-cell-content",
+        style: {
+          justifyContent: justify ? 'center' : undefined
+        }
+      }, content), after !== undefined && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
+        style: {
+          flex: 1
+        }
+      }), /*#__PURE__*/_react.default.createElement("div", {
+        className: "aio-table-icon"
+      }, after)));
     }
 
-    return /*#__PURE__*/_react.default.createElement("div", {
-      key: cellId,
-      tabIndex: 0,
-      ref: this.dom,
-      cellid: cellId,
-      title: typeof content === 'string' ? content : '',
-      "data-evenodd": row._index % 2 === 0 ? 'even' : 'odd',
-      rowindex: renderIndex,
-      colindex: column._renderIndex,
-      childindex: row._childIndex,
-      level: row._level,
-      isfirstchild: row._isFirstChild ? 1 : 0,
-      islastchild: row._isLastChild ? 1 : 0,
-      childslength: row._childsLength,
-      style: this.getStyle(column, row),
-      className: this.getClassName(row, column),
-      draggable: typeof onSwap === 'function' && column.swap,
-      onDragOver: e => e.preventDefault(),
-      onDragStart: () => onDrag(row),
-      onDrop: () => onDrop(row),
-      onClick: e => {
-        if (this.inlineEdit) {
-          if (focused !== cellId) {
-            SetState({
-              focused: cellId
-            });
-            setTimeout(() => (0, _jquery.default)('.aio-table-input:focus').select(), 10);
-          }
-        }
-      }
-    }, cell);
+    return /*#__PURE__*/_react.default.createElement("div", _extends({}, attrs, this.getProps(row, column, content)), cell);
   }
 
 }
@@ -2045,7 +2122,7 @@ function ATFN({
       } = getProps();
       let name = window.prompt(translate('Inter Excel File Name')); // if (name === false || name === undefined || name === null) { return; }
 
-      if (!name.length) return;
+      if (!name || name === null || !name.length) return;
       var data = $$.getJSON(columns, rows);
       var arrData = typeof data != "object" ? JSON.parse(data) : data;
       var CSV = ""; // CSV += 'title';
@@ -2182,7 +2259,7 @@ function ATFN({
       });
     },
 
-    getGanttCell(row, column) {
+    getGanttCell(row, template) {
       let {
         rtl
       } = getProps();
@@ -2195,7 +2272,7 @@ function ATFN({
         getText = () => false,
         getStart,
         getEnd
-      } = column;
+      } = template;
 
       if (typeof getStart !== 'function') {
         console.error('aio table => gantt column => column getStart property is not a function');
@@ -2328,7 +2405,56 @@ function ATFN({
       return result;
     },
 
-    onScroll(dom, index) {
+    async onScroll(dom, index) {
+      let {
+        onScrollEnd
+      } = getProps();
+
+      if (onScrollEnd) {
+        if (index === undefined || index === 0) {
+          let table = (0, _jquery.default)(dom.current).find('.aio-table-unit');
+          let scrollTop = table.scrollTop();
+          let scrollHeight = table[0].scrollHeight;
+          let height = table.height();
+
+          if (scrollTop + height === scrollHeight) {
+            let {
+              startIndex
+            } = getState();
+            let {
+              scrollLoadLength,
+              scrollTotalLength
+            } = getProps();
+            let from = startIndex + scrollLoadLength;
+
+            if (from > scrollTotalLength) {
+              return;
+            }
+
+            let to = from + scrollLoadLength;
+
+            if (to > scrollTotalLength) {
+              to = scrollTotalLength;
+            }
+
+            let a = (0, _jquery.default)(dom.current).find('.aio-table-main-loading');
+            a.css({
+              display: 'flex'
+            });
+            let res = await onScrollEnd(from, to);
+            a.css({
+              display: 'none'
+            });
+
+            if (res !== false) {
+              setState({
+                startIndex: from
+              });
+            }
+          }
+        }
+      }
+
       if (index === undefined) {
         return;
       }
@@ -2398,98 +2524,27 @@ function ATFN({
       return parseInt(list.map(o => o.length === 1 ? '0' + o : o).join(''));
     },
 
-    // getSorts(toolbar){
-    //   let {onChangeSort} = getProps();
-    //   let {sorts,columns = []} = getState();
-    //   let Sorts = sorts.map((o)=>{
-    //     return {
-    //       ...o,
-    //       onChangeDir:()=>{
-    //         o.dir = o.dir === 'dec'?'inc':'dec';
-    //         setState({sorts});
-    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-    //       },
-    //       onChangeActive:()=>{
-    //         o.active = o.active === undefined?true:o.active; 
-    //         o.active = !o.active; 
-    //         setState({sorts});
-    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-    //       }
-    //     }
-    //   })
-    //   for(let i = 0; i < columns.length; i++){
-    //     if(!columns[i].sort || columns[i]._addedTosorts){continue}
-    //     let column = columns[i];
-    //     let {sort,getValue} = columns[i];
-    //     let title = sort.title || column.title || '';
-    //     let {toggle = true,dir = 'inc',active = true,type} = sort;
-    //     Sorts.push({
-    //       title,dir,active,toggle,getValue,type,
-    //       onChangeDir:()=>{
-    //         sort.dir = sort.dir === 'dec'?'inc':'dec';
-    //         setState({columns});
-    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-    //       },
-    //       onChangeActive:()=>{
-    //         sort.active = sort.active === undefined?true:sort.active; 
-    //         sort.active = !sort.active; 
-    //         setState({columns});
-    //         if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-    //       }
-    //     })
-    //   }
-    //   let result = [];
-    //   for(let i = 0; i < Sorts.length; i++){
-    //     let sort = Sorts[i];
-    //     let {getValue,dir = 'inc',title,active = true,toggle = true,type,onChangeDir,onChangeActive} = sort;
-    //     if(!title){console.error('aio table => missing sort title property'); continue;}
-    //     if(typeof getValue !== 'function'){console.error('aio table => sort getValue property is not a function'); continue;}
-    //     if(active === true){
-    //       if(type === 'date'){
-    //         let newGetValue = (row)=>{
-    //           let value = getValue(row);
-    //           if(typeof value !== 'string'){return 0}
-    //           return $$.getDateNumber(value)
-    //         }
-    //         result.push({getValue:(row)=>newGetValue(row),dir});
-    //       }
-    //       else{
-    //         result.push({getValue,dir});
-    //       }
-    //     }
-    //     if(toggle){
-    //       toolbar.show = true;
-    //       toolbar.sort.push({
-    //         text:title,checked:active === true,
-    //         after:(
-    //           <div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}>
-    //             <Icon 
-    //               size={0.8} path={dir === 'dec'?mdiArrowDown:mdiArrowUp} 
-    //               onClick={(e)=>{e.stopPropagation(); onChangeDir()}}
-    //             />
-    //           </div>
-    //         ),
-    //         onClick:()=>onChangeActive()
-    //       })
-    //     }
-    //   }
-    //   return result;
-    // },
     getSorts(toolbar) {
       let {
         onChangeSort
       } = getProps();
       let {
         sorts,
-        columns = []
+        columns = [],
+        getCellValue
       } = getState();
+      let sortTitles = sorts.map(o => o.title);
 
       for (let i = 0; i < columns.length; i++) {
-        if (!columns[i].sort || columns[i]._addedTosorts) {
+        if (!columns[i].sort) {
           continue;
         }
 
-        columns[i]._addedTosorts = true;
+        if (sortTitles.indexOf(columns[i].title) !== -1) {
+          continue;
+        }
+
+        columns[i]._addedToSorts = true;
         let column = columns[i];
 
         if (column.sort === true) {
@@ -2499,8 +2554,10 @@ function ATFN({
         let {
           sort
         } = columns[i];
-        let title = sort.title || column.title || '';
+        let a = sort.title || column.title || '';
+        let title = typeof a === 'function' ? a() : a;
         let getValue = sort.getValue || column.getValue;
+        let field = sort.field || column.field;
         let {
           toggle = true,
           dir = 'inc',
@@ -2513,7 +2570,8 @@ function ATFN({
           active,
           toggle,
           getValue,
-          type
+          type,
+          field
         });
       }
 
@@ -2554,7 +2612,8 @@ function ATFN({
           toggle = true,
           type,
           onChangeDir,
-          onChangeActive
+          onChangeActive,
+          field
         } = sort;
 
         if (!title) {
@@ -2562,15 +2621,10 @@ function ATFN({
           continue;
         }
 
-        if (typeof getValue !== 'function') {
-          console.error('aio table => sort getValue property is not a function');
-          continue;
-        }
-
         if (active === true) {
           if (type === 'date') {
             let newGetValue = row => {
-              let value = getValue(row);
+              let value = getCellValue(row, getValue, field);
 
               if (typeof value !== 'string') {
                 return 0;
@@ -2631,17 +2685,11 @@ function ATFN({
         let {
           title,
           active = true,
-          toggle = true,
-          getValue
+          toggle = true
         } = group;
 
         if (!title) {
           console.error('aio table => missing group title property');
-          continue;
-        }
-
-        if (typeof getValue !== 'function') {
-          console.error('aio table => group getValue property is not a function');
           continue;
         }
 
@@ -2746,10 +2794,10 @@ function ATFN({
       } = getState();
       let column = columns[index];
       let {
-        title,
         show,
         storageKey
       } = column;
+      let title = typeof column.title === 'function' ? column.title() : column.title;
       toolbar.show = true;
       toolbar.toggle.push({
         text: title,
@@ -3009,7 +3057,18 @@ function ATFN({
       }, items);
     },
 
-    getLoading() {
+    getLoading(isMain) {
+      if (isMain) {
+        return /*#__PURE__*/_react.default.createElement("div", {
+          className: "aio-table-loading aio-table-main-loading",
+          style: {
+            display: 'none'
+          }
+        }, $$.cubes2({
+          thickness: [6, 40]
+        }));
+      }
+
       return /*#__PURE__*/_react.default.createElement("div", {
         className: "aio-table-loading"
       }, $$.cubes2({
@@ -3076,7 +3135,8 @@ function ATFN({
       } = getProps();
       let {
         filterDictionary,
-        searchText
+        searchText,
+        getCellValue
       } = getState();
       row._values = {};
       let show = true,
@@ -3088,14 +3148,7 @@ function ATFN({
 
       for (let i = 0; i < columns.length; i++) {
         let column = columns[i],
-            value;
-
-        try {
-          value = typeof column.getValue === 'function' ? column.getValue(row) : undefined;
-        } catch {
-          value = undefined;
-        }
-
+            value = getCellValue(row, column.getValue, column.field);
         row._values[column._index] = value;
         filterDictionary[column._index] = filterDictionary[column._index] || {
           items: [],
@@ -3350,6 +3403,10 @@ function ATFN({
     },
 
     getRowsBySort(rows, sorts) {
+      let {
+        getCellValue
+      } = getState();
+
       if (!sorts.length) {
         return rows;
       }
@@ -3362,10 +3419,11 @@ function ATFN({
         for (let i = 0; i < sorts.length; i++) {
           let {
             getValue,
-            dir
+            dir,
+            field
           } = sorts[i];
-          let aValue = getValue(a),
-              bValue = getValue(b);
+          let aValue = getCellValue(a, getValue, field),
+              bValue = getCellValue(b, getValue, field);
 
           if (aValue < bValue) {
             return -1 * (dir === 'dec' ? -1 : 1);
@@ -3452,7 +3510,8 @@ function ATFN({
       }
 
       var {
-        groupsOpen
+        groupsOpen,
+        getCellValue
       } = getState();
 
       function msf(obj, _level, parents) {
@@ -3484,7 +3543,7 @@ function ATFN({
       for (let i = 0; i < roots.length; i++) {
         let root = roots[i];
         var obj = newModel;
-        let values = groups.map(group => group.getValue(root[0].row));
+        let values = groups.map(group => getCellValue(root[0].row, group.getValue, group.field));
 
         for (let j = 0; j < values.length; j++) {
           let value = values[j];

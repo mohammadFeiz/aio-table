@@ -45,10 +45,22 @@
     box-sizing:border-box;
     position: -webkit-sticky;
     background: #fff;
-    z-index:100;
+    height:36px;
     border-bottom:1px solid #ddd;
-    border-left:1px solid #ddd;
+    z-index:100;
     box-shadow: 1px 4px 6px -2px rgba(0,0,0,0.1);
+}
+.aio-table-title:after{
+  content:'';
+  width:1px;
+  height:100%;
+  top:0;
+  background:#ddd;
+  left:calc(100% - 1px);
+  position:absolute;
+}
+.aio-table-title.is-last:after{
+  display:none;
 }
 .aio-table.rtl .aio-table-title{
     box-shadow: -1px 4px 6px -2px rgba(0,0,0,0.1);
@@ -67,17 +79,6 @@
   opacity:1;
   cursor:col-resize;
 }
-.aio-table.rtl .aio-table-title{
-  border-left:none;
-  border-right:1px solid #ddd;
-}
-.aio-table-title:first-child{
-  border-left:none;
-  border-right:none;
-}
-.aio-table-indent{
-  flex-shrink:0;
-}
 .aio-table-cell{
     display:flex;
     align-items: center;
@@ -88,6 +89,10 @@
     white-space:nowrap;
     text-overflow:ellipsis;
     background:#fff;
+    height:36px;
+}
+.aio-table-cell.last-child{
+  border:none;
 }
 .aio-table-cell-selectable{
     user-select: text;
@@ -96,8 +101,10 @@
 .aio-table-cell-hidden{
   display:none;
 }
-.aio-table-content{
+.aio-table-cell-content{
   width:100%;
+  height:100%;
+  align-items: center;
   overflow:hidden;
   display: flex;
 }
@@ -202,7 +209,7 @@ select.aio-table-paging-button{
   flex-shrink:0;
   cursor:pointer;
 }
-.aio-table-gap{
+.aio-table-cell-gap{
   width:6px;
   flex-shrink:0;
 }
@@ -329,7 +336,7 @@ select.aio-table-paging-button{
   .aio-table-group{
     display:flex;
     padding:0 12px;
-    height:24px;
+    height:36px;
     align-items: center;
     white-space:nowrap;
     background:#fff;
@@ -358,9 +365,10 @@ select.aio-table-paging-button{
     }
   }
   .aio-table-toolbar-button{
-    background:dodgerblue;
-    color:#fff;
+    background:#fff;
+    color:inherit;
     height:30px;
+    border-radius:36px;
     width:30px;
     margin:0 3px;
   }
@@ -456,46 +464,6 @@ select.aio-table-paging-button{
     user-select: text;
     -webkit-user-select: text;
   }
-
-  .r-layout-item{
-  overflow:auto;
-  display:flex;
-  position: relative;
-  flex-grow:0;
-  flex-shrink: 0;
-  }
-.r-layout-parent{
-position:relative;
-display:flex;
-flex-grow:0;
-flex-shrink: 0;
-overflow:auto;
-}
-.r-layout-html{
-position: absolute;
-width:100%;
-height:100%;
-left:0;
-top:0;
-overflow:hidden;
-}
-.r-layout-gap{
-flex-shrink:0;
-}
-.r-layout-gap:last-child{
-display:none;
-}
-
-@media screen and (max-width: 768px) {
-.r-layout-hide-in-small {
-  display: none !important;
-}
-}
-@media screen and (min-width: 768px) {
-.r-layout-hide-in-large {
-  display: none !important;
-}
-}
 /* custom scrollbar */
   .aio-table-unit::-webkit-scrollbar {
     width: 10px !important;
