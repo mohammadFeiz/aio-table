@@ -10,52 +10,27 @@ export default class AIOTable extends Component{
     this.fn = new ATFN({
       getProps:()=>this.props,
       getState:()=>this.state,
-      setState:(obj)=>this.setState(obj),
+      setState:(obj,caller)=>this.SetState(obj,caller),
+      getContext:()=>this.context,
     })
     let touch = 'ontouchstart' in document.documentElement;
     this.dom = createRef();
-    var {freezeSize,sorts,paging,columns,groups} = this.props;
+    var {freezeSize,paging,columns,groups = []} = this.props;
     let cardRowCount = this.fn.getCardRowCount();
-    let openDictionary = this.fn.getOpenDictionary(),groupDictionary = this.fn.getGroupDictionaty();
-    this.fn.handleOutsideClick();
+    let openDictionary = this.fn.getOpenDictionary();
     let copiedColumns = [...columns];
     this.state = {
-      touch,openDictionary,cardRowCount,groups,filterDictionary:{},groupsOpen:{},searchText:'',addedSorts:[],
-      freezeSize,groupDictionary,
+      touch,openDictionary,cardRowCount,groups,groupsOpen:{},searchText:'',
+      freezeSize,
       startIndex:0,
-      //بخاطر شرایط خاص سورتس باید کاملا از پروپس ورودی ایموتیبل شود//
-      sorts:sorts.map((o)=>{
-        let res = {};
-        for(let prop in o){res[prop] = o[prop];}
-        return res;
-      }),
       //make imutable to prevent change of props.paging because that will compaire with next input props.paging
       paging:paging?{...paging}:false,
       prevPaging:JSON.stringify(paging),
       columns:copiedColumns,
       prevColumns:JSON.stringify(copiedColumns),
-      focused:false,toggleAllState:true,
-      getCellValue:(row,getValue,field)=>{
-        try{
-          if(typeof getValue === 'function'){return getValue(row);}
-          if(field){
-            let result;
-            eval('result = row.' + field);
-            return result;
-          }
-          return; 
-        }
-        catch{return;}
-      },
-      setCellValue:(row,field,value)=>{//row is used in eval
-        let {model} = this.props;
-        eval('row.' + field + ' = ' + value);
-        return model;
-      }
+      focused:false,toggleAllState:true
     };
-    console.log('in table',this.state.sorts);
   }
-  copyJson(j){let a = (o)=>{if(Array.isArray(o)){return o.map((o)=>a(o))}if(typeof o==='object'){let r={};for(let prop in o){r[prop]=a(o[prop])}return r}return o};return a(j)}
   resizeDown(e){
     var {touch} = this.state;
     $(window).bind(touch?'touchmove':'mousemove',$.proxy(this.resizeMove,this));
@@ -81,117 +56,60 @@ export default class AIOTable extends Component{
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     this.setState({freezeSize:this.resizeDetails.newWidth});
   }
-  getTable(Toolbar){
-    var {freezeSize} = this.state;
-    var rows = this.getRows();
+  getTable({sorts,freezeColumns,unFreezeColumns,columns}){
+    let {freezeSize} = this.state;
+    let freezeMode = freezeColumns.length !== 0 && unFreezeColumns.length !== 0;
+    let rows = this.getRows(sorts,freezeMode);
     this.rows = rows;
-    let freezeMode = this.columnDetails.freeze.active;
     return (
-       <div className={'aio-table-body'} style={this.fn.getBodyStyle(Toolbar)}>
-        {!freezeMode && <AIOTableUnit rows={rows} columns={this.columnDetails.visibleColumns} type='cells'/>}
+       <div className={'aio-table-body'}>
+        {!freezeMode && columns.length !== 0 && <AIOTableUnit rows={rows} columns={columns} type='cells'/>}
         {
           freezeMode &&
           <>
-            <AIOTableUnit key={0} id='aio-table-first-split' rows={rows} columns={this.columnDetails.freeze.freezeColumns} tableIndex={0} type='freezeCells' style={{width:freezeSize}}/>
+            <AIOTableUnit key={0} id='aio-table-first-split' rows={rows} columns={freezeColumns} tableIndex={0} type='freezeCells' style={{width:freezeSize}}/>
             <div className='aio-table-splitter' onMouseDown={(e)=>this.resizeDown(e)} onTouchStart={(e)=>this.resizeDown(e)}></div>
-            <AIOTableUnit key={1} id='aio-table-second-split' rows={rows} columns={this.columnDetails.freeze.unFreezeColumns} tableIndex={1} type='unFreezeCells'/>
+            <AIOTableUnit key={1} id='aio-table-second-split' rows={rows} columns={unFreezeColumns} tableIndex={1} type='unFreezeCells'/>
           </>
         }
        </div> 
     )
   }
-  getRows(){
+  getRows(sorts,freezeMode){
     var {model} = this.props;
     if(!model){return false}
+    let {groups} = this.state;
     this.index = {render:0,real:0}
     let rows;
     rows = this.fn.getRowsNested([...model],'_childs');
-    rows = this.fn.getRowsBySort(rows,this.sorts);
-    rows = this.fn.getRows(rows,this.columnDetails);
+    rows = this.fn.getRowsBySort(rows,sorts.filter(({active = true})=>active));
+    rows = this.fn.getRows(rows,freezeMode);
     rows = this.fn.getRootsByPaging(rows,this.index);
-    rows = this.fn.getRootsByGroup(rows,this.groups);
+    rows = this.fn.getRootsByGroup(rows,groups.filter(({active = true})=>active));
     return this.fn.getRowsByRoots(rows);
   }
-  
-  updateColumns(){
-    var {search,translate,cardTemplate,toggleAll = false,toolbarItems = []} = this.props;
-    var {columns} = this.state;
-    this.columnDetails = {
-      freeze:{
-        active:false,
-        freezeColumns:[],
-        unFreezeColumns:[]
-      },
-      visibleColumns:[],
-    }
-    this.toolbar = {
-      show:toggleAll === true || toolbarItems.length > 0,
-      toggle:[{text:translate('Show Columns')}],
-      toggleAll:toggleAll?()=>this.setState(this.fn.getStateByToggleAll(this.rows)):false,
-      freeze:[{text:translate('Freeze')}],
-      groupBy:[{text:translate('Group By')}],
-      sort:[{text:translate('Sort')}],
-      excelColumns:[],
-      searchColumnIndex:false,
-      search
-    }
-    this.sorts = this.fn.getSorts(this.toolbar)
-    this.groups = this.fn.getGroups(this.toolbar)
-    if(search){this.toolbar.show = true}
-    if(cardTemplate){return}
-    for(let i = 0; i < columns.length; i++){
-      let column = columns[i];
-      column._index = i;
-      this.fn.setColumnByStorage(column);
-      if(column.show && this.fn.showColumnRelativeGroups(column)){
-        this.columnDetails.visibleColumns.push(column)
-        if(column.excel){
-          this.toolbar.excelColumns.push(column);
-          this.toolbar.show = true;
-        }
-        this.fn.getFreezes(i,this.columnDetails,this.toolbar)
-      }
-      if(column.toggleShow){
-        this.fn.getToggleShows(i,this.toolbar)
-      }
-      if(column.search){this.toolbar.show = true; this.toolbar.searchColumnIndex = column._index;}
-    }
-    if(this.columnDetails.freeze.freezeColumns.length === 0 || this.columnDetails.freeze.unFreezeColumns.length === 0){this.columnDetails.freeze.active = false}
-  }
-  onChangeFilter(obj){
-    var {onChangeFilter} = this.props;
-    var {columns} = this.state;
-    var filters = [];
-    for(let prop in obj){
-      if(obj[prop].items.length){
-        filters.push({column:columns[prop],...obj[prop]})
-      }
-    }
-    onChangeFilter(filters);
-  }
   handleIncomingProps(){
-    let {columns,paging} = this.props;
-    let {prevColumns,prevPaging} = this.state;
-    let c = JSON.stringify(columns);
-    if(c !== prevColumns){
-      setTimeout(()=>this.setState({columns:columns.map((o)=>{return {...o}}),prevColumns:JSON.stringify(columns)}),0);
-    }
+    let {paging} = this.props;
+    let {prevPaging} = this.state;
     let p = JSON.stringify(paging);
-    if(p !== prevPaging){
-      setTimeout(()=>this.setState({paging:{...paging},prevPaging:p}),0)
-    }
-    
+    if(p !== prevPaging){setTimeout(()=>this.setState({paging:{...paging},prevPaging:p}),0)}
+  }
+  getCellAttrs(row,column){
+    let {cellAttrs = {}} = column;
+    return (typeof cellAttrs === 'function'?cellAttrs(row):cellAttrs) || {}
+  }
+  SetState(obj,caller){
+    this.setState(obj)
   }
   render(){
     this.handleIncomingProps();
-    var {rowHeight,headerHeight,toolbarHeight,rowGap,className,columnGap,rtl,style,attrs = {},cardTemplate,onChangeFilter,onSwap,padding,translate} = this.props;
-    var {columns,paging} = this.state;
+    var {rowHeight,headerHeight,toolbarHeight,rowGap,className,columnGap,rtl,style,attrs = {},cardTemplate,onSwap,translate} = this.props;
+    var {paging} = this.state;
     this.rh = rowHeight; this.hh = headerHeight; this.th = toolbarHeight; this.rg = rowGap; this.cg = columnGap;
-    this.updateColumns();
-    var Toolbar = this.toolbar.show?<AIOTableToolbar {...this.toolbar}/>:null;
-    var table = columns?this.getTable(Toolbar):'';
+    let details = this.fn.getDetails()
     var context = {
       ...this.props,...this.state,
+      details,
       onDrag:(obj)=>this.dragStart = obj,
       
       onDrop:(obj)=>{
@@ -207,17 +125,17 @@ export default class AIOTable extends Component{
           onSwap(this.dragStart,obj);
         }
       },
-      onChangeFilter:onChangeFilter?this.onChangeFilter.bind(this):undefined,
-      SetState:(obj)=>this.setState(obj),
+      SetState:this.SetState.bind(this),
       onScroll:(index)=>this.fn.onScroll(this.dom,index),
-      groups:this.groups,
+      getCellAttrs:this.getCellAttrs.bind(this),
       fn:this.fn,rows:this.rows
     }
+    this.context = context;
+    let table = this.getTable(details);
     return (
       <AioTableContext.Provider value={context}>
-        <div className={'aio-table' + (className?' ' + className:'') + (rtl?' rtl':'')} tabIndex={0} ref={this.dom} style={{...style,padding}} {...attrs}>
-          {Toolbar}
-          {!cardTemplate && this.columnDetails.visibleColumns.length === 0 && this.fn.getLoading()}
+        <div className={'aio-table' + (className?' ' + className:'') + (rtl?' rtl':'')} tabIndex={0} ref={this.dom} style={{...style}} {...attrs}>
+          <AIOTableToolbar {...details}/>
           {table}
           {
             paging &&
@@ -235,34 +153,20 @@ export default class AIOTable extends Component{
     )
   }
 }
-AIOTable.defaultProps = {columns:[],toolbarHeight:36,rowGap:6,padding:12,indent:20,translate:(text)=>text,freezeSize:300,sorts:[],groups:[]}
+AIOTable.defaultProps = {columns:[],toolbarHeight:36,rowGap:6,indent:16,translate:(text)=>text,freezeSize:300,groups:[]}
 class AIOTableToolbar extends Component{
   static contextType = AioTableContext;
   state = {searchText:''}
   changeSearch(value,time = 1000){
     clearTimeout(this.searchTimeout);
     this.setState({searchText:value});
-    this.searchTimeout = setTimeout(()=>{
-      let {SetState} = this.context;
-      let {search} = this.props;
-      if(search){
-        SetState({searchText:value})
-      }
-      else{
-        let {filterDictionary} = this.context;
-        let {searchColumnIndex} = this.props;
-        filterDictionary[searchColumnIndex] = {
-          items:value?[{operator:'contain',value}]:[],booleanType:'or'
-        }
-        SetState({filterDictionary});
-      }
-    },time);
+    this.searchTimeout = setTimeout(()=>this.context.SetState({searchText:value}),time);
   }
   getSearch(){
-    var {translate} = this.context;
-    var {searchText} = this.state;
-    var {searchColumnIndex,search} = this.props;
-    if(typeof searchColumnIndex !== 'number' && !search){return <div style={{flex:1}} key='search'></div>}
+    let {translate} = this.context;
+    let {search} = this.props;
+    let {searchText} = this.state;
+    if(!search){return <div style={{flex:1}} key='search'></div>}
     return (
       <div className='aio-table-search' key='search'>
         <input className='aio-table-search-input' type='text' value={searchText} placeholder={translate('Search')} onChange={(e)=>this.changeSearch(e.target.value)}/>
@@ -271,56 +175,69 @@ class AIOTableToolbar extends Component{
     )
   }
   render(){
-    var {fn,rows,translate,rtl,toggleAllState,padding,toolbarItems = [],SetState,toolbarStyle = {}} = this.context;
-    var {toggle,freeze,groupBy,sort,toggleAll,excelColumns} = this.props;
-    var buttonProps = {type:'select',caret:false,rtl,className:'aio-table-toolbar-button',animate:true};
-    let iconSize = 0.7;
+    let {fn,rows,translate,rtl,toggleAllState,toolbarItems = [],SetState,toolbarAttrs = {},toggleAll,groups} = this.context;
+    let {toggleOptions,freezeOptions,groupOptions,excelColumns,sortOptions} = this.props;
+    let buttonProps = {
+      type:'select',rtl,caret:false,className:'aio-table-toolbar-button',animate:true,
+      popupAttrs:{style:{maxHeight:500}} 
+    };
+    let Sort,Toggle,Group,Freeze,Excel,ToggleAll;
+    if(sortOptions.length){
+      let title = translate('Sort')
+      let props = {
+        ...buttonProps,options:sortOptions,title,key:'sort',
+        text:aioTableGetSvg('sort'),popupHeader:<div className='aio-table-popup-header'>{title}</div>
+      }
+      Sort = <AIOButton {...props}/>
+    }
+    if(toggleOptions.length){
+      let title = translate('Show Columns')
+      let props = {
+        ...buttonProps,options:toggleOptions,title,key:'toggle',
+        text:aioTableGetSvg('eye'),popupHeader:<div className='aio-table-popup-header'>{title}</div>
+      }
+      Toggle = <AIOButton {...props}/>
+    }
+    if(groupOptions.length){
+      let title = translate('Group By')
+      let props = {
+        ...buttonProps,options:groupOptions,title,key:'group',
+        text:aioTableGetSvg('group',{flip:rtl === true}),popupHeader:<div className='aio-table-popup-header'>{title}</div>,
+        onSwap:(start,end,swap)=>SetState({groups:swap(groups,start,end)})
+      }
+      Group = <AIOButton {...props}/>
+    }
+    if(freezeOptions.length){
+      let title = translate('Freeze')
+      let props = {
+        ...buttonProps,options:freezeOptions,title,key:'freeze',
+        text:aioTableGetSvg('freeze'),popupHeader:<div className='aio-table-popup-header'>{title}</div>
+      }
+      Freeze = <AIOButton {...props}/>
+    }
+    if(toggleAll){
+      let title = translate('Toggle All')
+      let props = {
+        ...buttonProps,title,key:'toggleAll',type:'button',
+        text:!toggleAllState?aioTableGetSvg('toggleAllMinus'):aioTableGetSvg('toggleAllPlus'),
+        onclick:()=>SetState(fn.getStateByToggleAll(rows))
+      }
+      ToggleAll = <AIOButton {...props}/>
+    }
+    if(excelColumns.length){
+      let title = translate('Export To Excel')
+      let props = {
+        ...buttonProps,title,key:'excel',type:'button',text:aioTableGetSvg('excel'),
+        onClick:()=>fn.exportToExcel(excelColumns,rows)
+      }
+      Excel = <AIOButton {...props}/>
+    }
     return (
-      <div className='aio-table-toolbar' style={{marginBottom:padding,...toolbarStyle}}>
-        {
-          toggleAll !== false &&
-          <AIOButton key='toggleAll' {...buttonProps} type='button' title={translate('Toggle All')} onClick={()=>toggleAll()}
-            text={!toggleAllState?aioTableGetSvg('toggleAllMinus'):aioTableGetSvg('toggleAllPlus')} 
-          />
-        }
-        {
-          excelColumns.length > 0 &&
-          <AIOButton key='excel' {...buttonProps} type='button' title={translate('Export To Excel')} onClick={()=>{
-            fn.exportToExcel(excelColumns,rows);
-          }}
-            text={aioTableGetSvg('excel')} 
-          />
-        }
+      <div className={'aio-table-toolbar' + (toolbarAttrs.className?' ' + toolbarAttrs.className:'')} style={{...toolbarAttrs.style}}>
+        {ToggleAll}{Excel}
         {toolbarItems.map((o,i)=><AIOButton type='button' rtl={rtl} className='aio-table-toolbar-button' animate={true} {...o} key={'ti' + i}/>)}
         {this.getSearch()}
-        {
-          groupBy.length > 1 &&
-          <AIOButton key='groupby' {...buttonProps} options={groupBy} title={translate('Group By')}
-            text={aioTableGetSvg('group',{flip:rtl === true})}
-            onSwap={(start,end,swap)=>{
-              let {groups} = this.context;
-              SetState({groups:swap(groups,start - 1,end - 1)})
-            }} 
-          />
-        }
-        {
-          sort.length > 1 &&
-          <AIOButton key='sort' {...buttonProps} options={sort} title={translate('Sort')}
-            text={aioTableGetSvg('sort')} 
-            onSwap={(start,end,swap)=>{
-              let {sorts} = this.context;
-              SetState({sorts:swap(sorts,start - 1,end - 1)})//-1 because title of items added to options[0]
-            }}
-          />
-        }
-        {
-          toggle.length > 1 && 
-          <AIOButton key='toggle' {...buttonProps} text={aioTableGetSvg('eye')} options={toggle} title={translate('Show Columns')} popupStyle={{maxHeight:400}}/>
-        }
-        {
-          freeze.length > 1 &&
-          <AIOButton key='freeze' {...buttonProps} text={aioTableGetSvg('freeze',{flip:rtl === true})} options={freeze} title={translate('Freeze Columns')}/>
-        }
+        {Group}{Sort}{Toggle}{Freeze}
       </div>
     )
   }
@@ -430,10 +347,10 @@ class AIOTableUnit extends Component{
     })
   }
   keyDown(e){
-    var {SetState,focused} = this.context;
+    var {SetState} = this.context;
     if(e.keyCode === 27){
       $('.aio-table-input').blur();
-      SetState({focused:false}) 
+      SetState({focused:false},'keyDown') 
     }
     else if([37,38,39,40].indexOf(e.keyCode) !== -1){this.arrow(e);}
   }
@@ -509,7 +426,7 @@ class AIOTableUnit extends Component{
   }
   getPropValue(row,column,prop){return typeof prop === 'function'?prop(row,column):prop;}
   render(){
-    var {onScroll,onSwap,onDrop,onDrag,fn,focused,SetState,striped} = this.context;
+    var {onScroll,onSwap,onDrop,onDrag,fn,focused,SetState,striped,getCellAttrs} = this.context;
     var {rows,id,tableIndex,type,columns} = this.props;
     let props = {
       id,tabIndex:0,className:'aio-table-unit',style:this.getStyle(),ref:this.dom,
@@ -522,21 +439,22 @@ class AIOTableUnit extends Component{
         {this.getTitles()}
         {rows && rows.length !== 0 && rows.map((o,i)=>{
           if(o._groupId){
-            return <AIOTableGroup {...{tableIndex,row:o,columns}} key={'group' + i + '-' + tableIndex}/>
+            return <AIOTableGroup {...{tableIndex,row:o}} columns={columns} key={'group' + i + '-' + tableIndex}/>
           }
           this.renderIndex++;
           return o[type].map(({value,column},j)=>{
             let row = o.row;
             let cellId = i + '-' + j + '-' + tableIndex;
             let inlineEdit = this.getPropValue(row,column,column.inlineEdit);
+            let attrs = getCellAttrs(row,column)
             return (
               <AIOTableCell 
                 key={cellId}
                 attrs={{
                   'data-row-index':this.renderIndex,
-                  'data-col-index':column._renderIndex,
+                  'data-col-index':column.renderIndex,
                   'data-real-row-index':row._index,
-                  'data-real-col-index':column._index,
+                  'data-real-col-index':column.realIndex,
                   'data-child-index':row._childIndex,
                   'data-childs-length':row._childsLength,
                   'data-lavel':row._level,
@@ -547,9 +465,14 @@ class AIOTableUnit extends Component{
                   onDragOver:(e)=>e.preventDefault(),
                   onDragStart:()=>onDrag(row),
                   onClick:()=>{
+                    var {focused,SetState} = this.context;
+                    if(attrs.onClick){attrs.onClick(row)}
                     if(!inlineEdit || focused === cellId){return}
-                      SetState({focused:cellId});
-                      setTimeout(()=>$('.aio-table-input:focus').select(),10)
+                    if(focused === false){
+                      setTimeout(()=>fn.handleOutsideClick(),5)
+                    }
+                    SetState({focused:cellId},'cellonClick');
+                    setTimeout(()=>$('.aio-table-input:focus').select(),10)
                   }
                 }}
                 striped={this.renderIndex % 2 === 0 && striped}
@@ -572,9 +495,13 @@ class AIOTableUnit extends Component{
 }
 class AIOTableTitle extends Component{
   static contextType = AioTableContext;
-  getStyle(){
-    let {headerHeight,columnGap,titleStyle = {}} = this.context;
-    return {height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined,...titleStyle}
+  constructor(props){
+    super(props);
+    this.dom = createRef();
+  }
+  getStyle(style){
+    let {headerHeight,columnGap} = this.context;
+    return {height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined,...style}
   }
   mouseDown(e,column){
     if(!column.resizable){return}
@@ -588,10 +515,8 @@ class AIOTableTitle extends Component{
     $(window).bind(touch?'touchend':'mouseup',$.proxy(this.resizeUp,this));
     this.resizeDetails = {
       client:fn.getClient(e),
-      width:parseInt(gridTemplateColumns[column._renderIndex]),
-      renderIndex:column._renderIndex,
-      index:column._index,
-      minWidth:column.minWidth
+      width:parseInt(gridTemplateColumns[column.renderIndex]),
+      column
     }
   }
   resizeMove(e){
@@ -599,12 +524,12 @@ class AIOTableTitle extends Component{
     var {rtl,fn} = this.context;
     var {setStyle,gridTemplateColumns} = this.props;
     var Client = fn.getClient(e);
-    var {client,renderIndex,width,minWidth = '30px'} = this.resizeDetails;
+    var {client,width,column} = this.resizeDetails;
     var offset = Client[0] - client[0];
     let newWidth = (width + offset * (rtl?-1:1));
-    if(newWidth < parseInt(minWidth)){newWidth = parseInt(minWidth)}
+    if(newWidth < parseInt(column.minWidth || 36)){newWidth = parseInt(column.minWidth || 36)}
     this.resizeDetails.newWidth = newWidth + 'px';
-    gridTemplateColumns[renderIndex] = this.resizeDetails.newWidth;
+    gridTemplateColumns[column.renderIndex] = this.resizeDetails.newWidth;
     setStyle(gridTemplateColumns);
   }
   resizeUp(){
@@ -612,22 +537,22 @@ class AIOTableTitle extends Component{
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     if(!this.resized){return;}
     var {touch,columns,SetState} = this.context;
-    var {index,newWidth} = this.resizeDetails;
-    let column = {...columns[index],width:newWidth}
+    var {newWidth} = this.resizeDetails;
+    let {column} = this.props;
+    column = {...column,width:newWidth}
     if(column.storageKey){
       column = {...column,_storageObj:{...column._storageObj,width:newWidth}};
       localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
     }
-    SetState({columns:columns.map((c,i)=>{
-      if(i === index){return column}
-      return c;
-    })});
+    columns = columns.map((c,i)=>i === column.realIndex?column:c)
+    SetState({columns});
   }
   getGanttTitle(column){
     var {headerHeight,columnGap} = this.context
-    var {getKeys,padding = '36px'} = column;
-    var keys = getKeys();
-    return <div className='aio-table-title aio-table-title-gantt' style={{padding:`0 ${padding}`,height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined}} key={column._index + 'title'}>
+    var {template} = column;
+    let {padding = 36} = template;
+    var keys = template.getKeys();
+    return <div className='aio-table-title aio-table-title-gantt' style={{padding:`0 ${+padding}px`,height:headerHeight,top:0,borderLeft:columnGap?'none':undefined,borderRight:columnGap?'none':undefined}} key={column.realIndex + 'title'}>
       <Slider
           start={0}
           end={keys.length - 1}
@@ -642,21 +567,25 @@ class AIOTableTitle extends Component{
   render(){
     let {column,onDragStart,onDragOver,onDrop,isLast} = this.props;
     let {rtl} = this.context;
-    if(column.template === 'gantt'){return this.getGanttTitle(column);}
+    if(column.template && column.template.type === 'gantt'){return this.getGanttTitle(column);}
     let title = typeof column.title === 'function'?column.title():column.title;
+    let attrs = {...this.context.titleAttrs,...column.titleAttrs};
+    let dataUniqId = 'aiotabletitle' + Math.round(Math.random() * 10000000)
     return (
       <div
-        style={this.getStyle()}
+        ref={this.dom}
+        data-uniq-id={dataUniqId}
+        style={this.getStyle(attrs.style)}
         draggable={false}
-        className={'aio-table-title' + (column.titleClassName?' ' + column.titleClassName:'') + (isLast?' last-child':'') + (rtl?' rtl':' ltr')}
+        className={'aio-table-title' + (attrs.className?' ' + attrs.className:'') + (isLast?' last-child':'') + (rtl?' rtl':' ltr')}
       >
-        <AIOTableFilter column={column}/>
+        <AIOTableFilter column={column} dataUniqId={dataUniqId}/>
         <div
           className='aio-table-title-text'
           style={{justifyContent:column.titleJustify !== false?'center':undefined,cursor:column.movable === false?undefined:'move'}}
           draggable={column.movable !== false}
-          onDragStart={()=>onDragStart(column._index)}
-          onDragOver={(e)=>onDragOver(e,column._index)}
+          onDragStart={()=>onDragStart(column.realIndex)}
+          onDragOver={(e)=>onDragOver(e,column.realIndex)}
           onDrop={()=>onDrop(column)}
         >
           {title}
@@ -677,8 +606,9 @@ class AIOTableTitle extends Component{
 }
 class AIOTableGroup extends Component{
   static contextType = AioTableContext;
-  getStyle(columns){
+  getStyle(){
     let {rowHeight,fn} = this.context;
+    let {columns} = this.props;
     return {...fn.getFullCellStyle(columns),height:rowHeight}
   }
   getIcon(row){
@@ -694,9 +624,9 @@ class AIOTableGroup extends Component{
   }
   render(){
     let {indent} = this.context;
-    let {row,tableIndex,columns} = this.props;
+    let {row,tableIndex} = this.props;
     return (
-      <div className='aio-table-group' style={this.getStyle(columns)}>
+      <div className='aio-table-group' style={this.getStyle()}>
         {
           tableIndex !== 1 && 
           <>
@@ -719,22 +649,24 @@ class AIOTableCell extends Component{
     this.state = {value,error:false,prevValue:value};
   }
   getStyle(column,row){
-    var {padding = '36px',template,minWidth = '30px'} = column;
-    var {rowHeight,getCellStyle = ()=>{return {}}} = this.context;
+    var {template,minWidth = '30px'} = column;
+    var {rowHeight,getCellAttrs} = this.context;
     var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth}
-    if(column.template === 'gantt'){
-      style.padding = `0 ${padding}`
+    if(column.template && column.template.type === 'gantt'){
+      style.padding = 0
     }
-    let cellStyle = getCellStyle(row,column);
-    return {...style,...cellStyle}
+    let attrs = getCellAttrs(row,column);
+    return {...style,...attrs.style}
   }
   getClassName(row,column){
+    let {getCellAttrs} = this.context;
     var className = 'aio-table-cell';
     let {striped} = this.props;
+    let attrs = getCellAttrs(row,column);
     if(striped){className += ' striped'}
     if(column.selectable !== false){className += ' aio-table-cell-selectable';}
     if(column.template && column.template.type === 'gantt'){className += ' aio-table-cell-gantt'}
-    if(column.className){className += ' ' + column.className;}
+    if(attrs.className){className += ' ' + attrs.className;}
     if(column.inlineEdit){className += ' aio-table-cell-input';}
     if(row._show === 'relativeFilter'){className += ' aio-table-relative-filter'}
     if(row._show === false){className += ' aio-table-cell-hidden'}  
@@ -745,36 +677,66 @@ class AIOTableCell extends Component{
   getToggleIcon(row){
     let {rtl,fn} = this.context;
     let icon;
-    if(!row._childsLength){icon = ''}
-    else if(row._opened){icon = aioTableGetSvg('chevronDown')}
+    if(row._opened){icon = aioTableGetSvg('chevronDown')}
     else{icon = aioTableGetSvg('chevronRight',{flip:rtl === true})}
     return (
       <>
-        <div className='aio-table-toggle' onClick={()=>fn.toggleRow(row)}>{icon}</div>
+        <div className='aio-table-toggle' onClick={()=>fn.toggleRow(row)} style={{opacity:row._childsLength?1:0}}>{icon}</div>
         <div className='aio-table-cell-gap'></div>
       </>
     )
     
   }
-  getContent(row,column,value){
-    var {focused,fn} = this.context;
-    let {inlineEdit} = this.props;
-    var content = '';
+  splitNumber(num){
+    if(!num){return num}
+    let str = num.toString()
+    let dotIndex = str.indexOf('.');
+    if(dotIndex !== -1){
+        str = str.slice(0,dotIndex)
+    }
+    let res = ''
+    let index = 0;
+    for(let i = str.length - 1; i >= 0; i--){
+        res = str[i] + res;
+        if(index === 2){
+            index = 0;
+            if(i > 0){res = ',' + res;}
+        }
+        else{index++}
+    }
+    return res
+        
+  }
+  getContentByTemplate(row,column,value){
+    let {fn} = this.context;
     let template = typeof column.template === 'function'?column.template(row,column):column.template;
-    if(template && template.type === 'slider'){content = fn.getSliderCell(template)}
-    else if(template && template.type === 'options'){content = fn.getOptionsCell(template)}
-    else if(template && template.type === 'gantt'){content = fn.getGanttCell(row,template)}
-    else if(template && inlineEdit){content = focused?this.getInput(row,column):template}
-    else if(template){content = template}
-    else if(inlineEdit){content = this.getInput(row,column)}
-    else{content = value;}
+    if(!template){return value}
+    if(!template.type){return template}
+    if(template.type === 'slider'){return fn.getSliderCell(template,value)}
+    if(template.type === 'options'){return fn.getOptionsCell(template,row)}
+    if(template.type === 'split'){
+      let newValue = this.splitNumber(value)
+      if(template.editValue){newValue = template.editValue(newValue)}
+      return newValue
+    }
+    if(template.type === 'gantt'){return fn.getGanttCell(row,template)} 
+  }
+  getContent(row,column,value){
+    let {focused} = this.context;
+    let {inlineEdit} = this.props;
+    let template = this.getContentByTemplate(row,column,value);
+    var content = '';
+    if(inlineEdit && focused){content = this.getInput(row,column)}
+    else{content = template;}
     if(column.subText){
       let subText;
       try{subText = column.subText(row);} catch{subText = ''}
       return (
         <div className='aio-table-cell-has-subtext'>
+          <div style={{flex:1}}></div>
           <div className='aio-table-cell-uptext'>{content}</div>
           <div className='aio-table-cell-subtext'>{subText}</div>
+          <div style={{flex:1}}></div>
         </div>
       )
     }
@@ -782,20 +744,22 @@ class AIOTableCell extends Component{
   }
   async changeCell(value){
     let {row,column,inlineEdit} = this.props;
-    let {setCellValue} = this.context;
+    let {fn} = this.context;
     let res;
     this.setState({loading:true})
     if(inlineEdit.onChange){res = await inlineEdit.onChange(row,value);}
-    else{res = await this.context.onChange(setCellValue(row,column.field,value));} 
+    else if(typeof column.getValue === 'string'){
+      res = await this.context.onChange(fn.setCellValue(row,column.getValue,value));
+    } 
     this.setState({loading:false})
     return res;
   }
   getInput(row,column){
-    let {getCellValue} = this.context;
+    let {fn} = this.context;
     let {attrs,inlineEdit} = this.props;
     let {type,getValue,disabled = ()=>false,options} = inlineEdit;
     let {value} = this.state;
-    if(getValue){value = getCellValue(row,getValue,column.field)}
+    if(getValue){value = fn.getCellValue(row,getValue)}
     if(disabled(row)){
       if(typeof value === 'boolean'){return JSON.stringify(value)}
       return value
@@ -812,7 +776,7 @@ class AIOTableCell extends Component{
         <div className={'aio-table-input-container'}>
             <input 
               {...props}
-              style={{textAlign:column.justify?'center':undefined}}
+              style={{textAlign:column.justify || type === 'number'?'center':undefined}}
               onChange={(e)=>this.setState({value:e.target.value})}
               onBlur={async (e)=>{
                 let {value} = this.state;
@@ -893,10 +857,12 @@ class AIOTableCell extends Component{
     }
   }
   getProps(row,column,content){
-    let title = column.getTooltip?column.getTooltip(row):(typeof content === 'string'?content:undefined)
+    let attrs = this.context.getCellAttrs(row,column);
+    let title = typeof content === 'string'?content:undefined;
     return {
       ref:this.dom,
       title,
+      ...attrs,
       style:this.getStyle(column,row),
       className:this.getClassName(row,column),
     }
@@ -909,6 +875,9 @@ class AIOTableCell extends Component{
     }
     let {error,loading} = this.state;
     let content = this.getContent(row,column,value);
+    if(column.affix){
+      content = content + ' ' + column.affix;
+    }
     let cell;
     if(loading){return fn.cubes2()}
     if(error){
@@ -945,26 +914,36 @@ class AIOTableCell extends Component{
 } 
 class AIOTableFilter extends Component{
   static contextType = AioTableContext;
-  change(obj){
-    let {onChangeFilter,filterDictionary,SetState} = this.context;
+  dom = createRef();
+  async change(obj){
+    let {SetState,columns} = this.context;
     let {column} = this.props;
-    filterDictionary[column._index] = {...filterDictionary[column._index],...obj}
-    if(onChangeFilter){onChangeFilter(filterDictionary)}
-    SetState({filterDictionary});
+    column = {...column,filter:{...column.filter,...obj}}
+    let approve = true;
+    if(column.filter.onChange){
+      let loading = $(this.dom.current).parents('.aio-table').find('.aio-table-main-loading');
+      loading.css({display:'flex'})
+      approve = await newFilter.onChange(column.filter);
+      loading.css({display:'none'})
+    }
+    if(approve !== false){SetState({columns:columns.map((o)=>o.realIndex === column.realIndex?column:o)})}
   }
   render(){
-    var {filterDictionary,rtl,translate} = this.context;
+    var {rtl,translate} = this.context;
     var {column} = this.props;
     if(!column.filter || column.search){return null}
-    if(!filterDictionary[column._index]){return null;}
-    let {items,booleanType} = filterDictionary[column._index];
-    let {type} = column.filter;
+    let {items = [],booleanType = 'or',type = 'text'} = column.filter;
     let icon = items.length?aioTableGetSvg('filterActive',{className:'has-filter'}):aioTableGetSvg('filter');
     return (
-      <div className='aio-table-filter-icon'>
+      <div className='aio-table-filter-icon' ref={this.dom} onClick={()=>{
+        $('.aio-table-title').css({zIndex:100});
+        $(`[data-uniq-id = ${this.props.dataUniqId}]`).css({zIndex:1000})
+      }}>
         <AIOButton
           type='button' rtl={rtl} caret={false} openRelatedTo='.aio-table' text={icon}
-          popOver={()=><AIOTableFilterPopup {...{translate,type,items,booleanType}} onChange={(obj)=>this.change(obj)}/>}
+          popOver={()=>{
+            return <AIOTableFilterPopup {...{translate,type,items,booleanType}} onChange={(obj)=>this.change(obj)}/>
+          }}
         />
       </div>
     )
@@ -1017,7 +996,7 @@ class AIOTableFilterItem extends Component{
   }
   getOptions(type,translate){
     let options = [];
-    if(type !== 'number'){
+    if(type !== 'number' && type !== 'date'){
       options.push(<option key='contain' value='contain'>{translate('Contain')}</option>)
       options.push(<option key='notContain' value='notContain'>{translate('Not Contain')}</option>)
     }
@@ -1046,7 +1025,7 @@ class AIOTableFilterItem extends Component{
     )
   }
 }
-function ATFN({getProps,getState,setState}){
+function ATFN({getProps,getState,setState,getContext}){
   let $$ = {
     fixPersianAndArabicNumbers (str){
       var persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g],
@@ -1067,8 +1046,8 @@ function ATFN({getProps,getState,setState}){
         let row = rows[i].row; 
         let obj = {}
         for (let j = 0; j < columns.length; j++) {
-          let {title,_index} = columns[j];
-          let res = row._values[_index];
+          let {title,realIndex} = columns[j];
+          let res = row._values[realIndex];
           obj[title] = res !== undefined ? $$.fixPersianAndArabicNumbers(res) : "";
         }
         result.push(obj);
@@ -1109,7 +1088,8 @@ function ATFN({getProps,getState,setState}){
         link.click();
         document.body.removeChild(link);
     },
-    getSliderCell({colors = ['#eee','dodgerblue'],start = 0,end = 100,value,editValue = (value)=>value}){
+    getSliderCell(template,val){
+      let {colors = ['#eee','dodgerblue'],start = 0,end = 100,value = val,editValue = (value)=>value} = template;
       let {rowHeight,rtl} = getProps();
       let [clr1 = '#eee',clr2 = 'dodgerblue'] = colors;
       let points = Array.isArray(value)?value:[value]
@@ -1128,48 +1108,37 @@ function ATFN({getProps,getState,setState}){
         </div>
       )
     },
-    getOptionsCell({options = []}){
+    getOptionsCell({options,row}){
       return (
         <AIOButton
           type='select' caret={false}
           className='aio-table-options'
           text={aioTableGetSvg('dots')}
           options={options.map(({text,icon,onClick})=>{
-            return {text,before:(<>{icon}<div style={{width:6}}></div></>),onClick}
+            return {text,before:icon,onClick:()=>onClick(row)}
           })}
         />
       )
     },
     getGanttCell(row,template){
       let {rtl} = getProps();
-      let {getKeys,getColor = ()=>'#fff',getBackgroundColor = ()=>'#69bedb',getFlags = ()=>[],getProgress = ()=>false,getText = ()=>false,getStart,getEnd} = template;
-      if(typeof getStart !== 'function'){
-        console.error('aio table => gantt column => column getStart property is not a function');
-        return '';
-      }
-      if(typeof getEnd !== 'function'){
-        console.error('aio table => gantt column => column getEnd property is not a function');
-        return '';
-      }
-      if(typeof getKeys !== 'function'){
-        console.error('aio table => gantt column => column getKeys property is not a function');
-        return '';
-      }
+      let {getKeys,getColor = ()=>'#fff',getBackgroundColor = ()=>'#69bedb',getFlags = ()=>[],getProgress = ()=>false,getText = ()=>false,getStart,getEnd,padding = 36} = template;
       let keys = getKeys();
       if(!Array.isArray(keys)){
         console.error('aio table => gantt column => column getKeys property must return an array of strings');
         return '';
       }
-      let color = getColor(row);
-      let backgroundColor = getBackgroundColor(row);
-      let progress = getProgress(row);
-      let text = getText(row);
-      let startIndex = keys.indexOf(getStart(row));
-      let endIndex = keys.indexOf(getEnd(row));
-      let background = progress === false?color:`linear-gradient(to ${rtl?'left':'right'},rgba(0,0,0,.1) 0%,rgba(0,0,0,.1) ${progress}% ,transparent ${progress}%,transparent 100%)`
+      let color = $$.getCellValue(row,getColor);
+      let backgroundColor = $$.getCellValue(row,getBackgroundColor);
+      let progress = $$.getCellValue(row,getProgress);
+      let text = $$.getCellValue(row,getText);
+      let startIndex = keys.indexOf($$.getCellValue(row,getStart));
+      let endIndex = keys.indexOf($$.getCellValue(row,getEnd));
+      let background = progress === false?color:`linear-gradient(to ${rtl?'left':'right'},rgba(0,0,0,.2) 0%,rgba(0,0,0,.2) ${progress}% ,transparent ${progress}%,transparent 100%)`
       let flags = getFlags();
       return <Slider
-        start={0}
+        attrs={{style:{padding:`0 ${+padding}px`}}}
+        start={0} 
         editValue={(value)=>keys[value]}
         end={keys.length - 1}
         points={[startIndex,endIndex]}
@@ -1190,13 +1159,19 @@ function ATFN({getProps,getState,setState}){
       />
     },
     handleOutsideClick(){
-      $(window).bind('click',(e)=>{
-        var {focused} = getState();
-        if(focused === false){return;}
-        var target = $(e.target);
-        if(target.parents('.aio-table-cell').length !== 0 || target.hasClass('aio-table-cell')){return;}
-        setState({focused:false})
-      });
+      $(window).unbind('click',$$.outSideClick);
+      $(window).bind('click',$$.outSideClick);
+    },
+    outSideClick(e){
+      let {focused} = getState();
+      if(focused === false){return;}
+      let target = $(e.target);
+      if(target.hasClass('aio-table-cell')){return}
+      if(target.parents('.aio-table-input-container').length){return}
+      if(target.parents('.aio-table-cell-content').length){return}
+      if(target.parents('.aio-table-cell').length){return}
+      $(window).unbind('click',$$.outSideClick);
+      setState({focused:false},'outsideClick')
     },
     getCardRowCount(){
       var {cardRowCount = 1} = getProps();
@@ -1250,18 +1225,6 @@ function ATFN({getProps,getState,setState}){
       }
       $$['scroll' + index] = false;
     },
-    getGroupDictionaty(){
-      let {id} = getProps();
-      if(id === undefined){return {}}
-      let groupDictionary = localStorage.getItem('aio table group' + id);
-      if(groupDictionary === null || groupDictionary === undefined){
-        localStorage.setItem('aio table group' + id,'{}');
-        return {}
-      }
-      else{
-        return JSON.parse(groupDictionary);
-      }
-    },
     getOpenDictionary(){
       let {id} = getProps();
       if(id === undefined){return {}}
@@ -1283,169 +1246,196 @@ function ATFN({getProps,getState,setState}){
       let list = [year,month,day];
       return parseInt(list.map((o)=>o.length === 1?('0' + o):o).join(''))
     },
-    getSorts(toolbar){
-      let {onChangeSort} = getProps();
-      let {sorts,columns = [],getCellValue} = getState();
-      let sortTitles = sorts.map((o)=>o.title)
-      for(let i = 0; i < columns.length; i++){
-        if(!columns[i].sort){continue}
-        if(sortTitles.indexOf(columns[i].title) !== -1){continue}
-        columns[i]._addedToSorts = true;
-        let column = columns[i];
-        if(column.sort === true){column.sort = {}}
-        let {sort} = columns[i];
-        let a = sort.title || column.title || '';
-        let title = typeof a === 'function'?a():a;
-        let getValue = sort.getValue || column.getValue; 
-        let field = sort.field || column.field;
-        let {toggle = true,dir = 'inc',active = true,type} = sort;
-        sorts.push({title,dir,active,toggle,getValue,type,field})
+    setCellValue:(row,getValue,value)=>{//row is used in eval
+      let {model} = getProps();
+      let evalText;
+      if(typeof value === 'string'){
+        evalText = `row.${getValue} = "${value}"`;
       }
-      let Sorts = sorts.map((o)=>{
-        return {
-          ...o,
-          onChangeDir:()=>{
-            o.dir = o.dir === 'dec'?'inc':'dec';
-            setState({sorts});
-            if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-          },
-          onChangeActive:()=>{
-            o.active = o.active === undefined?true:o.active; 
-            o.active = !o.active; 
-            setState({sorts});
-            if(onChangeSort){onChangeSort(Sorts.filter((o)=>o.active !== false))}
-          }
-        }
-      })
-      
-      let result = [];
-      for(let i = 0; i < Sorts.length; i++){
-        let sort = Sorts[i];
-        let {getValue,dir = 'inc',title,active = true,toggle = true,type,onChangeDir,onChangeActive,field} = sort;
-        if(!title){console.error('aio table => missing sort title property'); continue;}
-        if(active === true){
-          if(type === 'date'){
-            let newGetValue = (row)=>{
-              let value = getCellValue(row,getValue,field);
-              if(typeof value !== 'string'){return 0}
-              return $$.getDateNumber(value)
-            }
-            result.push({getValue:(row)=>newGetValue(row),dir});
-          }
-          else{
-            result.push({getValue,dir});
-          }
-        }
-        if(toggle){
-          toolbar.show = true;
-          toolbar.sort.push({
-            text:title,checked:active === true,
-            after:(
-              <div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}>
-                {aioTableGetSvg(dir === 'dec'?'arrowDown':'arrowUp',{onClick:(e)=>{e.stopPropagation(); onChangeDir()}})}
-              </div>
-            ),
-            onClick:()=>onChangeActive()
-          })
-        }
+      else{
+        evalText = 'row.' + getValue + ' = ' + JSON.stringify(value);
       }
-      return result;
+      eval(evalText);
+      return model;
     },
-    getGroups(toolbar){
-      var {id} = getProps();
-      var {groups,groupDictionary} = getState();
-      let result = [];
-      for(let i = 0; i < groups.length; i++){
-        let group = groups[i];
-        let {title,active = true,toggle = true} = group;
-        if(!title){console.error('aio table => missing group title property'); continue;}
-        groupDictionary[title] = groupDictionary[title] === undefined?active:groupDictionary[title];
-        if(groupDictionary[title]){result.push(group);}
-        if(toggle){
-          toolbar.show = true;
-          toolbar.groupBy.push({
-            text:title,checked:groupDictionary[title],
-            onClick:()=>{
-              groupDictionary[title] = !groupDictionary[title]; 
-              if(id){
-                localStorage.setItem('aio table group' + id,JSON.stringify(groupDictionary))
+    getCellValue:(row,getValue)=>{
+      try{
+        if(typeof getValue === 'function'){return getValue(row);}
+        if(typeof getValue === 'string'){
+          let result;
+          eval('result = row.' + getValue);
+          return result;
+        }
+        return; 
+      }
+      catch{return;}
+    },
+    async onChangeSort(obj,colIndex){
+      let {columns} = getState(); 
+      columns = [...columns];
+      let column = {...columns[colIndex]}
+      column.sort = {...column.sort,...obj}                  
+      let newColumns = columns.map((o,i)=>i === colIndex?column:o)
+      let approve = true;
+      if(column.sort.onChange){
+        let {active = true,dir = 'inc'} = column.sort;
+        approve = await column.sort.onChange({active,dir})          
+      }
+      if(approve !== false){
+        setState({columns:newColumns})
+      }
+    },
+    getSorts({column,sorts,sortOptions,columnTitle,colIndex}){
+      let {sort} = column;
+      let {title = columnTitle || '',getValue = column.getValue,type,active = true,toggle = true,dir = 'inc',onChange} = sort;
+      if(type === 'date'){
+        getValue = (row)=>{
+          let {sort} = column;
+          let {getValue = column.getValue} = sort;
+          let value = $$.getCellValue(row,getValue);
+          if(typeof value !== 'string'){return 0}
+          return $$.getDateNumber(value)
+        }  
+      }
+      sorts.push({title,dir,active,toggle,getValue,type,onChange});
+      if(toggle){
+        sortOptions.push({
+          text:title,checked:!!active,
+          onClick:()=>$$.onChangeSort({active:!active},colIndex),
+          after:(
+            <div style={{width:'30px',display:'flex',justifyContent:'flex-end'}}>
+              {
+                aioTableGetSvg(
+                  dir === 'dec'?'arrowDown':'arrowUp',
+                  {
+                    onClick:(e)=>{
+                      e.stopPropagation();
+                      $$.onChangeSort({dir:dir === 'dec'?'inc':'dec'},colIndex)
+                    }
+                  }
+                )
               }
-              setState({groupDictionary});
-            }
-          })
-        }
-      }
-      return result;
-    },
-    setColumnByStorage(column){
-      if(column.storageKey && !column._readStorage){
-        column._readStorage = true;
-        let storageStr = localStorage.getItem('aio-table-column-storage-' + column.storageKey);
-        if(!storageStr || storageStr === null){
-          column._storageObj = {};
-          localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
-        }
-        else{
-          column._storageObj = JSON.parse(storageStr);
-        }
-        if(column._storageObj.show !== undefined){column.show = column._storageObj.show;}
-        else{column.show = column.show === undefined?true:column.show}
-        if(column._storageObj.width !== undefined){column.width = column._storageObj.width;}
-        else{column.width = column.width || 'auto'}
-      }
-      else {
-        column.show = column.show === undefined?true:column.show;
-        column.width = column.width || 'auto';
-      }
-    },
-    getFreezes(index,columnDetails,toolbar){
-      let {columns} = getState()
-      let column = columns[index];
-      if(column.freeze){columnDetails.freeze.active = true; columnDetails.freeze.freezeColumns.push(column)}
-      else{columnDetails.freeze.unFreezeColumns.push(column)}
-      if(column.toggleFreeze){
-        toolbar.show = true;
-        toolbar.freeze.push({
-          text:column.title,checked:column.freeze === true,
-          onClick:()=>{
-            let state = columns[index].freeze === true?true:false;
-            let column = {...columns[index],freeze:!state}
-            setState({columns:columns.map((c,i)=>{
-              if(i === index){return column}
-              return c
-            })});
-          }
+            </div>
+          )
         })
       }
     },
-    getToggleShows(index,toolbar){
+    getToggles(obj){
+      let {column,toggleOptions,colIndex,columnTitle} = obj;
       let {columns} = getState();
-      let column = columns[index];
-      let {show,storageKey} = column;
-      let title = typeof column.title === 'function'?column.title():column.title;
-      toolbar.show = true;
-      toolbar.toggle.push({
-        text:title,checked:show !== false,
+      toggleOptions.push({
+        text:columnTitle,checked:column.show !== false,
         onClick:()=>{
           //change columns imutable(prevent change columns directly)
-          let {columns} = getState();
-          let column = columns[index];
-          let newColumn;
-          if(storageKey){
-            let newShow = !column._storageObj.show;
-            let newStorageObj = {...column._storageObj,show:newShow};
-            newColumn = {...column,_storageObj:newStorageObj,show:newShow};
-            localStorage.setItem('aio-table-column-storage-' + newColumn.storageKey,JSON.stringify(newColumn._storageObj));
+          let column = {...obj.column,show:!obj.column.show};
+          if(column.storageKey){
+            column = {...column,_storageObj:{...column._storageObj,show:column.show}}
+            localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
           }
-          else{
-            newColumn = {...column,show:!column.show};
-          }
-          setState({columns:columns.map((c,i)=>{
-            if(i === index){return newColumn}
-            return c;
-          })});
+          setState({columns:columns.map((o,i)=>i === column.realIndex?column:o)});
         }
       })
+    },
+    getFreezes({column,colIndex,columnTitle,freezeOptions,freezeColumns,unFreezeColumns}){
+      (column.freeze?freezeColumns:unFreezeColumns).push(column)
+      if(!column.toggleFreeze){return}
+      freezeOptions.push({
+        text:columnTitle,checked:column.freeze === true,
+        onClick:()=>{
+          let {columns} = getState();
+          columns = [...columns];
+          let column = {...columns[colIndex]};
+          column.freeze = !column.freeze;
+          setState({columns:columns.map((o,i)=>i === colIndex?column:o)});
+        }
+      })
+    },
+    updateColumnByStorage(column){
+      let {storageKey,_readStorage} = column;
+      if(storageKey && !_readStorage){
+        column._readStorage = true;
+        let storageStr = localStorage.getItem('aio-table-column-storage-' + column.storageKey);
+        let storageObj;
+        if(!storageStr || storageStr === null){
+          storageObj = {};
+          localStorage.setItem('aio-table-column-storage-' + column.storageKey,'{}');
+        }
+        else{storageObj = JSON.parse(storageStr);}
+        if(storageObj.show !== undefined){column.show = storageObj.show;}
+        if(storageObj.width !== undefined){column.width = storageObj.width;}
+        column._storageObj = storageObj;
+      }
+    },
+    getDetails(){
+      let {columns,groups} = getState();
+      columns = [...columns]
+      let sorts = [];
+      let freezeColumns = [],unFreezeColumns = [],freezeOptions = [],sortOptions = [],toggleOptions = [],groupOptions = [];
+      let excelColumns = [],visibleColumns = [],search = false;
+      let groupTitles = groups.map((o)=>o.title)
+      let renderIndex = 0;
+      for(let i = 0; i < columns.length; i++){
+        columns[i].realIndex = i;
+        if(columns[i].sort === true){columns[i].sort = {}}
+        if(columns[i].filter === true){columns[i].filter = {items:[],booleanType:'or',type:'text'}}
+        if(columns[i].group === true){columns[i].group = {}} 
+        columns[i].width = columns[i].width || 'auto';
+        let column = {...columns[i]};
+        column.realIndex = i;
+        $$.updateColumnByStorage(column);
+        let {title:columnTitle,show = true,sort,toggleShow,excel} = column;
+        columnTitle = typeof columnTitle === 'function'?columnTitle():columnTitle; 
+        column.show = typeof show === 'function'?show():show;  
+        if(column.search){search = true}
+        if(column.group && groupTitles.indexOf(columnTitle) === -1){
+          let {title = columnTitle,active = true,toggle = true,storageKey = column.storageKey,getValue = column.getValue } = column.group;
+          groups.push({title,active,toggle,storageKey,getValue})
+        }
+        if(column.show){
+          column.renderIndex = renderIndex;
+          columns[i].renderIndex = renderIndex;
+          renderIndex++;
+          visibleColumns.push(column);
+          if(excel){excelColumns.push(column)}
+          if(sort){$$.getSorts({column,columnTitle,sorts,sortOptions,colIndex:i})}
+          $$.getFreezes({column,colIndex:i,columnTitle,freezeOptions,freezeColumns,unFreezeColumns})
+        }
+        if(toggleShow){$$.getToggles({column,columnTitle,toggleOptions,colIndex:i})}
+      }
+      $$.getGroups(groupOptions)
+      return {sorts,sortOptions,freezeColumns,unFreezeColumns,freezeOptions,toggleOptions,groupOptions,excelColumns,columns:visibleColumns,search}
+    },
+    getGroups(groupOptions){
+      var {groups} = getState();
+      for(let i = 0; i < groups.length; i++){
+        let group = groups[i];
+        let {title,active = true,toggle = true,storageKey,_readStorage} = group;
+        if(storageKey && !_readStorage){
+          group._readStorage = true;
+          let storageActive = localStorage.getItem('aio table group' + storageKey);
+          if(storageActive === null){
+            storageActive = true;
+            localStorage.setItem('aio table group' + storageKey,JSON.stringify(storageAtive))
+          }
+          else {storageActive = JSON.parse(storageActive)}
+          active = storageActive;
+        }
+        group.active = active;
+        if(toggle){
+          groupOptions.push({
+            text:title,checked:active === true,
+            onClick:()=>{
+              let {groups} = getState();
+              let group = groups[i];
+              group.active = !group.active;
+              if(storageKey){
+                localStorage.setItem('aio table group' + storageKey,JSON.stringify(group.active))
+              }
+              setState({groups});
+            }
+          })
+        }
+      }
     },
     isContain(text,subtext){return text.toString().toLowerCase().indexOf(subtext.toString().toLowerCase()) !== -1},
     isEqual(a,b){return a.toString().toLowerCase() === b.toString().toLowerCase()},
@@ -1486,11 +1476,9 @@ function ATFN({getProps,getState,setState}){
       return false;
     },
     getFilterResult(column,value){
-      let {filterDictionary} = getState();
-      let filters = filterDictionary[column._index].items;
-      if(filters.length){
-        let booleanType = filterDictionary[column._index].booleanType;
-        return $$['getFilterResult_' + booleanType](filters,value);
+      let {items = [],booleanType = 'or'} = column.filter;
+      if(items.length){
+        return $$['getFilterResult_' + booleanType](items,value);
       }
       return true;
     },
@@ -1520,14 +1508,6 @@ function ATFN({getProps,getState,setState}){
       }
       return <div className='aio-table-loading'>{$$.cubes2({thickness:[6,40]})}</div>;
     },
-    getBodyStyle(Toolbar){
-      let {paging} = getState();
-      let {padding} = getProps();
-      var def = padding,top = 0;
-      if(paging){def += 36}
-      if(Toolbar !== null){def += 36; top+=36;}
-      return {height:`calc(100% - ${def}px)`,top}
-    },
     toggleRow(row){
       var {openDictionary} = getState();
       var {id} = getProps();
@@ -1536,46 +1516,39 @@ function ATFN({getProps,getState,setState}){
       if(id !== undefined){localStorage.setItem('aio table ' + id,JSON.stringify(openDictionary))}
       setState({openDictionary});
     },
-    getRow(row,columnDetails){
-      let {visibleColumns:columns,freeze} = columnDetails;
-      var {onChangeFilter,search} = getProps();
-      let {filterDictionary,searchText,getCellValue} = getState();
+    getRow(row){
+      let {searchText} = getState();
+      let {columns} = getContext().details
       row._values = {};
+      let searchShow;
       let show = true,lastColumn,isThereAutoColumn = false,cells = [],freezeCells = [],unFreezeCells = [];
       for(let i = 0; i < columns.length; i++){
-        let column = columns[i],
-            value = getCellValue(row,column.getValue,column.field);
-        row._values[column._index] = value;
-        filterDictionary[column._index] = filterDictionary[column._index] || {items:[],booleanType:'or'};
-        if(show && search){
-          if(searchText === ''){show = true}
-          else {
-            try{show = search(row,searchText)}
-            catch{show = false}
-          }
+        let column = columns[i];
+        let value = $$.getCellValue(row,column.getValue);
+        row._values[column.realIndex] = value;
+        if(show && column.search && searchText){
+          if(searchShow === undefined){searchShow = false}
+          searchShow = searchShow || JSON.stringify(value).toLowerCase().indexOf(searchText.toLowerCase()) !== -1
         }
-        if(show && !onChangeFilter){show = show && $$.getFilterResult(column,value)}
-        let obj = {key:row._index + ',' + column._index,column,value,freeze:column.freeze};
-        if(freeze.active){
+        if(show && column.filter && !column.filter.onChange){show = show && $$.getFilterResult(column,value)}
+        let obj = {key:row._index + ',' + column.realIndex,column,value,freeze:column.freeze};
+        if($$.freezeMode){
           if(column.freeze){
-            column._renderIndex = freezeCells.length;
             freezeCells.push(obj);
           }
           else{
-            column._renderIndex = unFreezeCells.length;
             lastColumn = column;
             unFreezeCells.push(obj);
             if(column.width === 'auto'){isThereAutoColumn = true;}
           }  
         }
         else{
-          column._renderIndex = i;
           cells.push(obj);
           lastColumn = column;
           if(column.width === 'auto'){isThereAutoColumn = true;}
         }
       }
-      row._show = show;
+      row._show = show && searchShow !== false;
       if(show){
         let parents = row._getParents();
         for(let i = 0; i < parents.length; i++){
@@ -1605,14 +1578,6 @@ function ATFN({getProps,getState,setState}){
       }
       if(id !== undefined){localStorage.setItem('aio table ' + id,JSON.stringify(openDictionary))}
       return {openDictionary,groupsOpen,toggleAllState:!toggleAllState};
-    },
-    showColumnRelativeGroups(column){
-      var {groups} = getState();
-      if(!groups){return true}
-      if(!groups.length){return true}
-      if(!column.groupName){return true}
-      var {groupDictionary} = getState();
-      return groupDictionary[column.groupName] !== true;
     },
     getClient(e){return getState().touch?[e.changedTouches[0].clientX,e.changedTouches[0].clientY]:[e.clientX,e.clientY];},
     getRowsReq(model,rows,_level,parents,nestedIndex){
@@ -1645,10 +1610,10 @@ function ATFN({getProps,getState,setState}){
         row._childsLength = 0;
         let childs = [];
         if(getRowChilds){
-          childs = getRowChilds(row) || [];
+          childs = $$.getCellValue(row,getRowChilds) || [];
           row._childsLength = childs.length;
         }
-        let Row = $$.getRow(row,$$.columnDetails);
+        let Row = $$.getRow(row);
         if(row._level === 0){rows.push([])}
         rows[rows.length - 1].push({...Row,row});
         if(row._opened && row._childsLength){
@@ -1678,25 +1643,23 @@ function ATFN({getProps,getState,setState}){
       return result;
     },
     getRowsBySort(rows,sorts){
-      let {getCellValue} = getState();
       if(!sorts.length){return rows}
-      if(getProps().onChangeSort){return rows}
       return rows.sort((a,b)=>{
         for (let i = 0; i < sorts.length; i++){
-          let {getValue,dir,field} = sorts[i];
-          let aValue = getCellValue(a,getValue,field),bValue = getCellValue(b,getValue,field);
+          let {getValue,dir,onChange} = sorts[i];
+          if(onChange){continue}
+          let aValue = $$.getCellValue(a,getValue),bValue = $$.getCellValue(b,getValue);
           if ( aValue < bValue ){return -1 * (dir === 'dec'?-1:1);}
           if ( aValue > bValue ){return 1 * (dir === 'dec'?-1:1);}
-          if(i !== sorts.length - 1){continue;}
-          return 0;
+          if(i === sorts.length - 1){return 0;}
         }
         return 0;
       });
     },
-    getRows(model,columnDetails){
+    getRows(model,freezeMode){
       let rows = [];
       $$.realIndex = 0; 
-      $$.columnDetails = columnDetails;
+      $$.freezeMode = freezeMode;
       $$.getRowsReq(model,rows,0,[],[]);
       let result = [];
       for(let i = 0; i < rows.length; i++){
@@ -1726,7 +1689,7 @@ function ATFN({getProps,getState,setState}){
     },
     getRootsByGroup(roots,groups){
       if(!groups.length){return roots}
-      var {groupsOpen,getCellValue} = getState();
+      var {groupsOpen} = getState();
       function msf(obj,_level,parents){
         if(Array.isArray(obj)){
           groupedRows = groupedRows.concat(obj);
@@ -1752,7 +1715,7 @@ function ATFN({getProps,getState,setState}){
       for(let i = 0; i < roots.length; i++){
         let root = roots[i];
         var obj = newModel;
-        let values = groups.map((group)=>getCellValue(root[0].row,group.getValue,group.field));
+        let values = groups.map((group)=>$$.getCellValue(root[0].row,group.getValue,group.field));
         for(let j = 0; j < values.length; j++){
           let value = values[j];
           if(j === values.length - 1){
@@ -1788,6 +1751,7 @@ function ATFN({getProps,getState,setState}){
   }
   return {
     exportToExcel:$$.exportToExcel,
+    getDetails:$$.getDetails,
     getSliderCell:$$.getSliderCell,
     getOptionsCell:$$.getOptionsCell,
     getGanttCell:$$.getGanttCell,
@@ -1795,23 +1759,17 @@ function ATFN({getProps,getState,setState}){
     onScroll:$$.onScroll,
     getCardRowCount:$$.getCardRowCount,
     getOpenDictionary:$$.getOpenDictionary,
-    getGroupDictionaty:$$.getGroupDictionaty,
-    getSorts:$$.getSorts,
     getRowsBySort:$$.getRowsBySort,
     getGroups:$$.getGroups,
     getRootsByGroup:$$.getRootsByGroup,
     setColumnByStorage:$$.setColumnByStorage,
-    getFreezes:$$.getFreezes,
-    getToggleShows:$$.getToggleShows,
     getFilterResult:$$.getFilterResult,
     getLoading:$$.getLoading,
     cubes2:$$.cubes2,
-    getBodyStyle:$$.getBodyStyle,
     getRow:$$.getRow,
     getRowById:$$.getRowById,
     getClient:$$.getClient,
     getStateByToggleAll:$$.getStateByToggleAll,
-    showColumnRelativeGroups:$$.showColumnRelativeGroups,
     getRootsByPaging:$$.getRootsByPaging,
     getRowsReq:$$.getRowsReq,
     getRowsNested:$$.getRowsNested,
@@ -1820,7 +1778,10 @@ function ATFN({getProps,getState,setState}){
     getRowsByRoots:$$.getRowsByRoots,
     toggleRow:$$.toggleRow,
     getFullCellStyle:$$.getFullCellStyle,
-    getNoData:$$.getNoData
+    getNoData:$$.getNoData,
+    getSortsFromColumns:$$.getSortsFromColumns,
+    getCellValue:$$.getCellValue,
+    setCellValue:$$.setCellValue
   }
 }
 function aioTableGetSvg(type,conf = {}){

@@ -19,7 +19,11 @@
     display: flex;
     width:100%;
     flex:1;
+    padding:12px;
+    box-sizing:border-box;
     overflow:hidden;
+    flex-basis: 0;
+    height:100%;
 }
 .aio-table-unit{
     display: grid; 
@@ -184,7 +188,6 @@ select.aio-table-input{
   justify-content: center;
   flex-shrink:0;
   border-top:1px solid #ddd;
-  background:#eaecf0;
 }
 .aio-table-paging-button{
   background:#fff;
@@ -206,6 +209,11 @@ select.aio-table-paging-button{
 }
 .aio-table-paging-number{
   padding:0 6px;
+  background:#fff;
+  height:24px;
+  margin:0 3px;
+  line-height:24px;
+  border-radius:24px;
 }
 .aio-table-toggle{
   height:24px;
@@ -251,7 +259,7 @@ select.aio-table-paging-button{
    }
   }
   .aio-table-loading{
-    z-index:100;
+    z-index:10000000000000000000000;
     position: absolute;
     width:100%;
     height:100%;
@@ -358,11 +366,11 @@ select.aio-table-paging-button{
     white-space: pre-wrap;
   }
   .aio-table-toolbar{
-    padding:0 6px;
     display:flex;
     align-items: center;
     flex-shrink:0;
-    height:36px;
+    padding:0 6px;
+    border-bottom:1px solid #ddd;
   }
   @media print{
     .aio-table-toolbar{
@@ -375,7 +383,7 @@ select.aio-table-paging-button{
     height:30px;
     border-radius:36px;
     width:30px;
-    margin:0 3px;
+    margin:6px 3px;
   }
 
   .aio-table-splitter{
@@ -409,6 +417,7 @@ select.aio-table-paging-button{
     border:1px solid #eee;
     padding:0 6px;
     box-sizing: border-box;
+    margin:6px 3px;
   }
   .aio-table-search-input{
     flex:1;
@@ -524,4 +533,10 @@ select.aio-table-paging-button{
     opacity:0.7;
     flex:1;
     position:relative;
+  }
+  .aio-table-popup-header{
+    font-size:12px;
+    border-bottom:1px dashed;
+    font-weight:bold;
+    padding:6px;
   }
