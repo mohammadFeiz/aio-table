@@ -121,6 +121,9 @@ class AIOTable extends _react.Component {
     let {
       freezeSize
     } = this.state;
+    let {
+      cardTemplate
+    } = this.props;
     let freezeMode = freezeColumns.length !== 0 && unFreezeColumns.length !== 0;
     let rows = this.getRows(sorts, freezeMode);
     this.rows = rows;
@@ -151,7 +154,9 @@ class AIOTable extends _react.Component {
       columns: unFreezeColumns,
       tableIndex: 1,
       type: "unFreezeCells"
-    })));
+    })), cardTemplate && /*#__PURE__*/_react.default.createElement(AIOTableUnit, {
+      rows: rows
+    }));
   }
 
   getRows(sorts, freezeMode) {
@@ -617,7 +622,26 @@ class AIOTableUnit extends _react.Component {
     this.dom = /*#__PURE__*/(0, _react.createRef)();
   }
 
+  getCardStyle() {
+    let {
+      columnGap,
+      rowGap
+    } = this.context;
+    return {
+      gridColumnGap: columnGap,
+      gridRowGap: rowGap
+    };
+  }
+
   getStyle() {
+    if (this.context.cardTemplate) {
+      return this.getCardStyle();
+    }
+
+    return this.getGridStyle();
+  }
+
+  getGridStyle() {
     var {
       rowGap,
       columnGap
@@ -804,7 +828,8 @@ class AIOTableUnit extends _react.Component {
       cardTemplate,
       cardRowCount,
       search,
-      searchText
+      searchText,
+      indent
     } = this.context;
     var {
       tableIndex,
@@ -855,7 +880,21 @@ class AIOTableUnit extends _react.Component {
       return /*#__PURE__*/_react.default.createElement("div", {
         key: rowIndex + '-' + tableIndex,
         className: "aio-table-card"
-      }, cardTemplate(row.row, () => fn.toggleRow(row.row)));
+      }, row.row._level !== 0 && /*#__PURE__*/_react.default.createElement("div", {
+        style: {
+          width: row.row._level * indent,
+          border: '1px solid',
+          height: '100%',
+          position: 'relative'
+        }
+      }, /*#__PURE__*/_react.default.createElement("svg", {
+        style: {
+          background: 'yellow',
+          width: '100%',
+          positon: 'absolute',
+          height: '100%'
+        }
+      })), cardTemplate(row.row, () => fn.toggleRow(row.row)));
     }), rows && rows.length === 0 && fn.getNoData(columns), !rows && fn.getLoading());
   }
 
@@ -1282,6 +1321,9 @@ class AIOTableCell extends _react.Component {
       rowHeight,
       getCellAttrs
     } = this.context;
+    let {
+      striped
+    } = this.props;
     var style = {
       height: rowHeight,
       overflow: template ? undefined : 'hidden',
@@ -1290,6 +1332,13 @@ class AIOTableCell extends _react.Component {
 
     if (column.template && column.template.type === 'gantt') {
       style.padding = 0;
+    }
+
+    if (typeof striped === 'string') {
+      style.background = striped;
+    } else if (Array.isArray(striped)) {
+      style.background = striped[0];
+      style.color = striped[1];
     }
 
     let attrs = getCellAttrs(row, column);
@@ -1308,7 +1357,7 @@ class AIOTableCell extends _react.Component {
     } = this.props;
     let attrs = getCellAttrs(row, column);
 
-    if (striped) {
+    if (striped === true) {
       className += ' striped';
     }
 
@@ -1415,12 +1464,12 @@ class AIOTableCell extends _react.Component {
       return value;
     }
 
-    if (!template.type) {
-      return template;
-    }
-
     if (template.type === 'slider') {
       return fn.getSliderCell(template, value);
+    }
+
+    if (template.type === 'checkbox') {
+      return fn.getCheckboxCell(template, value, row);
     }
 
     if (template.type === 'options') {
@@ -1440,6 +1489,8 @@ class AIOTableCell extends _react.Component {
     if (template.type === 'gantt') {
       return fn.getGanttCell(row, template);
     }
+
+    return template;
   }
 
   getContent(row, column, value) {
@@ -2207,9 +2258,8 @@ function ATFN({
     },
 
     getOptionsCell({
-      options,
-      row
-    }) {
+      options
+    }, row) {
       return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
         type: "select",
         caret: false,
@@ -2227,6 +2277,42 @@ function ATFN({
           };
         })
       });
+    },
+
+    getCheckboxCell(template, value, row) {
+      let {
+        color,
+        onChange,
+        size = 24
+      } = template;
+      let style = {
+        width: size,
+        height: size
+      };
+
+      if (!!value) {
+        return /*#__PURE__*/_react.default.createElement("svg", {
+          style: style,
+          viewBox: `0,0,24,24`,
+          className: "aio-table-checkbox checked",
+          onClick: () => onChange(row, false)
+        }, /*#__PURE__*/_react.default.createElement("path", {
+          fill: color,
+          d: "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"
+        }));
+      } else {
+        return /*#__PURE__*/_react.default.createElement("svg", {
+          style: style,
+          viewBox: `0,0,24,24`,
+          className: "aio-table-checkbox",
+          onClick: () => onChange(row, true)
+        }, /*#__PURE__*/_react.default.createElement("path", {
+          fill: color,
+          "ng-attr-fill": "{{icon.color}}",
+          "ng-attr-d": "{{icon.data}}",
+          d: "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"
+        }));
+      }
     },
 
     getGanttCell(row, template) {
@@ -3605,6 +3691,7 @@ function ATFN({
     getSliderCell: $$.getSliderCell,
     getOptionsCell: $$.getOptionsCell,
     getGanttCell: $$.getGanttCell,
+    getCheckboxCell: $$.getCheckboxCell,
     handleOutsideClick: $$.handleOutsideClick,
     onScroll: $$.onScroll,
     getCardRowCount: $$.getCardRowCount,

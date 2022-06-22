@@ -58,6 +58,7 @@ export default class AIOTable extends Component{
   }
   getTable({sorts,freezeColumns,unFreezeColumns,columns}){
     let {freezeSize} = this.state;
+    let {cardTemplate} = this.props;
     let freezeMode = freezeColumns.length !== 0 && unFreezeColumns.length !== 0;
     let rows = this.getRows(sorts,freezeMode);
     this.rows = rows;
@@ -71,6 +72,10 @@ export default class AIOTable extends Component{
             <div className='aio-table-splitter' onMouseDown={(e)=>this.resizeDown(e)} onTouchStart={(e)=>this.resizeDown(e)}></div>
             <AIOTableUnit key={1} id='aio-table-second-split' rows={rows} columns={unFreezeColumns} tableIndex={1} type='unFreezeCells'/>
           </>
+        }
+        {
+          cardTemplate && 
+          <AIOTableUnit rows={rows}/>
         }
        </div> 
     )
@@ -303,7 +308,17 @@ class AIOTableUnit extends Component{
     super(props);
     this.dom = createRef();
   }
+  getCardStyle(){
+    let {columnGap,rowGap} = this.context;
+    return {gridColumnGap:columnGap,gridRowGap:rowGap}
+  }
   getStyle(){
+    if(this.context.cardTemplate){
+      return this.getCardStyle()
+    }
+    return this.getGridStyle()
+  }
+  getGridStyle(){
     var {rowGap,columnGap} = this.context;
     var {columns,style} = this.props;
     var gridTemplateColumns = '';
@@ -399,7 +414,7 @@ class AIOTableUnit extends Component{
   }
   getCellIndex(cell){return [parseInt(cell.attr('data-row-index')),parseInt(cell.attr('data-col-index'))];}
   card(props){
-    var {rowHeight,fn,cardTemplate,cardRowCount,search,searchText} = this.context;
+    var {rowHeight,fn,cardTemplate,cardRowCount,search,searchText,indent} = this.context;
     var {tableIndex,columns} = this.props;
     var groupStyle = {gridColumnStart:1,gridColumnEnd:cardRowCount + 1,height:rowHeight};
     if(cardRowCount === 'auto'){groupStyle.gridColumnStart = undefined; groupStyle.gridColumnEnd = undefined;}
@@ -416,7 +431,19 @@ class AIOTableUnit extends Component{
       <div {...props} style={{...props.style,gridTemplateColumns:cardRowCount === 'auto'?undefined:`repeat(${cardRowCount},auto)`}}>
         {rows && rows.length !== 0 && rows.map((row,rowIndex)=>{
           if(row._groupId){return <AIOTableGroup {...{row,rowIndex,tableIndex}}/>}
-          return <div key={rowIndex + '-' + tableIndex} className='aio-table-card'>{cardTemplate(row.row,()=>fn.toggleRow(row.row))}</div> 
+          return (
+            <div key={rowIndex + '-' + tableIndex} className='aio-table-card'>
+              {
+                row.row._level !== 0 && 
+                <div style={{width:row.row._level * indent,border:'1px solid',height:'100%',position:'relative'}}>
+                  <svg style={{background:'yellow',width:'100%',positon:'absolute',height:'100%'}}>
+
+                  </svg>
+                </div>
+              }
+              {cardTemplate(row.row,()=>fn.toggleRow(row.row))}  
+            </div>
+          ) 
         })}
         {rows && rows.length === 0 && fn.getNoData(columns)}
         {!rows && fn.getLoading()}
@@ -651,9 +678,15 @@ class AIOTableCell extends Component{
   getStyle(column,row){
     var {template,minWidth = '30px'} = column;
     var {rowHeight,getCellAttrs} = this.context;
+    let {striped} = this.props;
     var style = {height:rowHeight,overflow:template?undefined:'hidden',minWidth}
     if(column.template && column.template.type === 'gantt'){
       style.padding = 0
+    }
+    if(typeof striped === 'string'){style.background = striped}
+    else if(Array.isArray(striped)){
+      style.background = striped[0];
+      style.color = striped[1];
     }
     let attrs = getCellAttrs(row,column);
     return {...style,...attrs.style}
@@ -663,7 +696,7 @@ class AIOTableCell extends Component{
     var className = 'aio-table-cell';
     let {striped} = this.props;
     let attrs = getCellAttrs(row,column);
-    if(striped){className += ' striped'}
+    if(striped === true){className += ' striped'}
     if(column.selectable !== false){className += ' aio-table-cell-selectable';}
     if(column.template && column.template.type === 'gantt'){className += ' aio-table-cell-gantt'}
     if(attrs.className){className += ' ' + attrs.className;}
@@ -711,8 +744,8 @@ class AIOTableCell extends Component{
     let {fn} = this.context;
     let template = typeof column.template === 'function'?column.template(row,column):column.template;
     if(!template){return value}
-    if(!template.type){return template}
     if(template.type === 'slider'){return fn.getSliderCell(template,value)}
+    if(template.type === 'checkbox'){return fn.getCheckboxCell(template,value,row)}
     if(template.type === 'options'){return fn.getOptionsCell(template,row)}
     if(template.type === 'split'){
       let newValue = this.splitNumber(value)
@@ -720,6 +753,7 @@ class AIOTableCell extends Component{
       return newValue
     }
     if(template.type === 'gantt'){return fn.getGanttCell(row,template)} 
+    return template
   }
   getContent(row,column,value){
     let {focused} = this.context;
@@ -1108,7 +1142,7 @@ function ATFN({getProps,getState,setState,getContext}){
         </div>
       )
     },
-    getOptionsCell({options,row}){
+    getOptionsCell({options},row){
       return (
         <AIOButton
           type='select' caret={false}
@@ -1119,6 +1153,25 @@ function ATFN({getProps,getState,setState,getContext}){
           })}
         />
       )
+    },
+    getCheckboxCell(template,value,row){
+      let {color,onChange,size = 24} = template;
+      let style = {width:size,height:size}
+      if(!!value){
+        return (
+          <svg style={style} viewBox={`0,0,24,24`} className='aio-table-checkbox checked' onClick={()=>onChange(row,false)}>
+            <path fill={color} d="M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"></path>
+          </svg>
+        )
+      }
+      else{
+        return (
+          <svg style={style} viewBox={`0,0,24,24`} className='aio-table-checkbox' onClick={()=>onChange(row,true)}>
+            <path fill={color} ng-attr-fill="{{icon.color}}" ng-attr-d="{{icon.data}}" d="M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"></path>
+          </svg>
+        )
+      }
+    
     },
     getGanttCell(row,template){
       let {rtl} = getProps();
@@ -1755,6 +1808,7 @@ function ATFN({getProps,getState,setState,getContext}){
     getSliderCell:$$.getSliderCell,
     getOptionsCell:$$.getOptionsCell,
     getGanttCell:$$.getGanttCell,
+    getCheckboxCell:$$.getCheckboxCell,
     handleOutsideClick:$$.handleOutsideClick,
     onScroll:$$.onScroll,
     getCardRowCount:$$.getCardRowCount,
