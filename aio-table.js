@@ -499,7 +499,10 @@ class AIOTableUnit extends Component{
                       setTimeout(()=>fn.handleOutsideClick(),5)
                     }
                     SetState({focused:cellId},'cellonClick');
-                    setTimeout(()=>$('.aio-table-input:focus').select(),10)
+                    setTimeout(()=>{
+                      let dom = $(`[data-cell-id = ${cellId}]`).find('.aio-table-input');
+                      dom.focus().select();
+                    },10)
                   }
                 }}
                 striped={this.renderIndex % 2 === 0 && striped}
@@ -742,7 +745,7 @@ class AIOTableCell extends Component{
   }
   getContentByTemplate(row,column,value){
     let {fn} = this.context;
-    let template = typeof column.template === 'function'?column.template(row,column):column.template;
+    let template = typeof column.template === 'function'?column.template(row,column,value):column.template;
     if(!template){return value}
     if(template.type === 'slider'){return fn.getSliderCell(template,value)}
     if(template.type === 'checkbox'){return fn.getCheckboxCell(template,value,row)}

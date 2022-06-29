@@ -992,7 +992,10 @@ class AIOTableUnit extends _react.Component {
               SetState({
                 focused: cellId
               }, 'cellonClick');
-              setTimeout(() => (0, _jquery.default)('.aio-table-input:focus').select(), 10);
+              setTimeout(() => {
+                let dom = (0, _jquery.default)(`[data-cell-id = ${cellId}]`).find('.aio-table-input');
+                dom.focus().select();
+              }, 10);
             }
           },
           striped: this.renderIndex % 2 === 0 && striped,
@@ -1458,7 +1461,7 @@ class AIOTableCell extends _react.Component {
     let {
       fn
     } = this.context;
-    let template = typeof column.template === 'function' ? column.template(row, column) : column.template;
+    let template = typeof column.template === 'function' ? column.template(row, column, value) : column.template;
 
     if (!template) {
       return value;
