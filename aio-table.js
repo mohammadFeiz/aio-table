@@ -451,9 +451,8 @@ class AIOTableUnit extends Component{
     )
   
   }
-  getPropValue(row,column,prop){return typeof prop === 'function'?prop(row,column):prop;}
   render(){
-    var {onScroll,onSwap,onDrop,onDrag,fn,focused,SetState,striped,getCellAttrs} = this.context;
+    var {onScroll,onSwap,onDrop,onDrag,fn,focused,SetState,striped,getCellAttrs,fn} = this.context;
     var {rows,id,tableIndex,type,columns} = this.props;
     let props = {
       id,tabIndex:0,className:'aio-table-unit',style:this.getStyle(),ref:this.dom,
@@ -472,7 +471,7 @@ class AIOTableUnit extends Component{
           return o[type].map(({value,column},j)=>{
             let row = o.row;
             let cellId = i + '-' + j + '-' + tableIndex;
-            let inlineEdit = this.getPropValue(row,column,column.inlineEdit);
+            let inlineEdit = fn.getValueByField(row,column,column.inlineEdit);
             let attrs = getCellAttrs(row,column)
             return (
               <AIOTableCell 
@@ -510,8 +509,8 @@ class AIOTableUnit extends Component{
                 column={column}
                 row={row}
                 inlineEdit={inlineEdit}
-                before={this.getPropValue(row,column,column.before)}
-                after={this.getPropValue(row,column,column.after)}
+                before={fn.getValueByField(row,column,column.before)}
+                after={fn.getValueByField(row,column,column.after)}
                 justify={column.justify !== false && !column.treeMode}
               />
             )
@@ -566,14 +565,11 @@ class AIOTableTitle extends Component{
     $(window).unbind(touch?'touchmove':'mousemove',this.resizeMove);
     $(window).unbind(touch?'touchend':'mouseup',this.resizeUp);
     if(!this.resized){return;}
-    var {touch,columns,SetState} = this.context;
+    var {touch,columns,SetState,fn} = this.context;
     var {newWidth} = this.resizeDetails;
     let {column} = this.props;
     column = {...column,width:newWidth}
-    if(column.storageKey){
-      column = {...column,_storageObj:{...column._storageObj,width:newWidth}};
-      localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
-    }
+    column = fn.updateStorageByColumn(column,{width:newWidth})
     columns = columns.map((c,i)=>i === column.realIndex?column:c)
     SetState({columns});
   }
@@ -755,11 +751,11 @@ class AIOTableCell extends Component{
       if(template.editValue){newValue = template.editValue(newValue)}
       return newValue
     }
-    if(template.type === 'gantt'){return fn.getGanttCell(row,template)} 
+    if(template.type === 'gantt'){return fn.getGanttCell(row,template,column)} 
     return template
   }
   getContent(row,column,value){
-    let {focused} = this.context;
+    let {focused,fn} = this.context;
     let {inlineEdit} = this.props;
     let template = this.getContentByTemplate(row,column,value);
     var content = '';
@@ -767,7 +763,7 @@ class AIOTableCell extends Component{
     else{content = template;}
     if(column.subText){
       let subText;
-      try{subText = column.subText(row);} catch{subText = ''}
+      try{subText = fn.getValueByField(row,column,column.subText);} catch{subText = ''}
       return (
         <div className='aio-table-cell-has-subtext'>
           <div style={{flex:1}}></div>
@@ -796,7 +792,7 @@ class AIOTableCell extends Component{
     let {attrs,inlineEdit} = this.props;
     let {type,getValue,disabled = ()=>false,options} = inlineEdit;
     let {value} = this.state;
-    if(getValue){value = fn.getCellValue(row,getValue)}
+    if(getValue){value = fn.getValueByField(row,column,getValue)}
     if(disabled(row)){
       if(typeof value === 'boolean'){return JSON.stringify(value)}
       return value
@@ -1176,7 +1172,7 @@ function ATFN({getProps,getState,setState,getContext}){
       }
     
     },
-    getGanttCell(row,template){
+    getGanttCell(row,template,column){
       let {rtl} = getProps();
       let {getKeys,getColor = ()=>'#fff',getBackgroundColor = ()=>'#69bedb',getFlags = ()=>[],getProgress = ()=>false,getText = ()=>false,getStart,getEnd,padding = 36} = template;
       let keys = getKeys();
@@ -1184,12 +1180,12 @@ function ATFN({getProps,getState,setState,getContext}){
         console.error('aio table => gantt column => column getKeys property must return an array of strings');
         return '';
       }
-      let color = $$.getCellValue(row,getColor);
-      let backgroundColor = $$.getCellValue(row,getBackgroundColor);
-      let progress = $$.getCellValue(row,getProgress);
-      let text = $$.getCellValue(row,getText);
-      let startIndex = keys.indexOf($$.getCellValue(row,getStart));
-      let endIndex = keys.indexOf($$.getCellValue(row,getEnd));
+      let color = $$.getValueByField(row,column,getColor);
+      let backgroundColor = $$.getValueByField(row,column,getBackgroundColor);
+      let progress = $$.getValueByField(row,column,getProgress);
+      let text = $$.getValueByField(row,column,getText);
+      let startIndex = keys.indexOf($$.getValueByField(row,column,getStart));
+      let endIndex = keys.indexOf($$.getValueByField(row,column,getEnd));
       let background = progress === false?color:`linear-gradient(to ${rtl?'left':'right'},rgba(0,0,0,.2) 0%,rgba(0,0,0,.2) ${progress}% ,transparent ${progress}%,transparent 100%)`
       let flags = getFlags();
       return <Slider
@@ -1314,15 +1310,22 @@ function ATFN({getProps,getState,setState,getContext}){
       eval(evalText);
       return model;
     },
-    getCellValue:(row,getValue)=>{
+    getValueByField:(row,column,getValue)=>{
+      let props = getProps();
+      let type = typeof getValue;
       try{
-        if(typeof getValue === 'function'){return getValue(row);}
-        if(typeof getValue === 'string'){
-          let result;
-          eval('result = row.' + getValue);
-          return result;
+        if(type === 'function'){return getValue(row,column);}
+        if(type === 'string'){
+          if(getValue.indexOf('.') !== -1 && 
+          (getValue.indexOf('row') !== -1) || getValue.indexOf('column') !== -1 || getValue.indexOf('props') !== -1){
+            let result;
+            eval('result = ' + getValue);
+            return result;
+          }
+          return getValue
+          
         }
-        return; 
+        return getValue; 
       }
       catch{return;}
     },
@@ -1330,7 +1333,10 @@ function ATFN({getProps,getState,setState,getContext}){
       let {columns} = getState(); 
       columns = [...columns];
       let column = {...columns[colIndex]}
-      column.sort = {...column.sort,...obj}                  
+      column.sort = {...column.sort,...obj}
+      if(!column.sort.onChange && column.storageKey){
+        column = $$.updateStorageByColumn(column,{sort:column.sort})
+      }
       let newColumns = columns.map((o,i)=>i === colIndex?column:o)
       let approve = true;
       if(column.sort.onChange){
@@ -1348,7 +1354,7 @@ function ATFN({getProps,getState,setState,getContext}){
         getValue = (row)=>{
           let {sort} = column;
           let {getValue = column.getValue} = sort;
-          let value = $$.getCellValue(row,getValue);
+          let value = $$.getValueByField(row,column,getValue);
           if(typeof value !== 'string'){return 0}
           return $$.getDateNumber(value)
         }  
@@ -1384,10 +1390,7 @@ function ATFN({getProps,getState,setState,getContext}){
         onClick:()=>{
           //change columns imutable(prevent change columns directly)
           let column = {...obj.column,show:!obj.column.show};
-          if(column.storageKey){
-            column = {...column,_storageObj:{...column._storageObj,show:column.show}}
-            localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
-          }
+          column = $$.updateStorageByColumn(column,{show:column.show})
           setState({columns:columns.map((o,i)=>i === column.realIndex?column:o)});
         }
       })
@@ -1419,8 +1422,16 @@ function ATFN({getProps,getState,setState,getContext}){
         else{storageObj = JSON.parse(storageStr);}
         if(storageObj.show !== undefined){column.show = storageObj.show;}
         if(storageObj.width !== undefined){column.width = storageObj.width;}
+        if(storageObj.sort !== undefined){column.sort = storageObj.sort;}
         column._storageObj = storageObj;
       }
+    },
+    updateStorageByColumn(column,obj){
+      if(column.storageKey){
+        column = {...column,_storageObj:{...column._storageObj,...obj}};
+        localStorage.setItem('aio-table-column-storage-' + column.storageKey,JSON.stringify(column._storageObj));
+      }
+      return column;
     },
     getDetails(){
       let {columns,groups} = getState();
@@ -1471,7 +1482,7 @@ function ATFN({getProps,getState,setState,getContext}){
           let storageActive = localStorage.getItem('aio table group' + storageKey);
           if(storageActive === null){
             storageActive = true;
-            localStorage.setItem('aio table group' + storageKey,JSON.stringify(storageAtive))
+            localStorage.setItem('aio table group' + storageKey,JSON.stringify(storageActive))
           }
           else {storageActive = JSON.parse(storageActive)}
           active = storageActive;
@@ -1580,7 +1591,7 @@ function ATFN({getProps,getState,setState,getContext}){
       let show = true,lastColumn,isThereAutoColumn = false,cells = [],freezeCells = [],unFreezeCells = [];
       for(let i = 0; i < columns.length; i++){
         let column = columns[i];
-        let value = $$.getCellValue(row,column.getValue);
+        let value = $$.getValueByField(row,column,column.getValue);
         row._values[column.realIndex] = value;
         if(show && column.search && searchText){
           if(searchShow === undefined){searchShow = false}
@@ -1666,7 +1677,7 @@ function ATFN({getProps,getState,setState,getContext}){
         row._childsLength = 0;
         let childs = [];
         if(getRowChilds){
-          childs = $$.getCellValue(row,getRowChilds) || [];
+          childs = $$.getValueByField(row,undefined,getRowChilds) || [];
           row._childsLength = childs.length;
         }
         let Row = $$.getRow(row);
@@ -1704,7 +1715,7 @@ function ATFN({getProps,getState,setState,getContext}){
         for (let i = 0; i < sorts.length; i++){
           let {getValue,dir,onChange} = sorts[i];
           if(onChange){continue}
-          let aValue = $$.getCellValue(a,getValue),bValue = $$.getCellValue(b,getValue);
+          let aValue = $$.getValueByField(a,undefined,getValue),bValue = $$.getValueByField(b,undefined,getValue);
           if ( aValue < bValue ){return -1 * (dir === 'dec'?-1:1);}
           if ( aValue > bValue ){return 1 * (dir === 'dec'?-1:1);}
           if(i === sorts.length - 1){return 0;}
@@ -1725,7 +1736,6 @@ function ATFN({getProps,getState,setState,getContext}){
         if(arr.length){
           result.push(arr);
         }
-        
       }
       return result;
     },
@@ -1755,15 +1765,8 @@ function ATFN({getProps,getState,setState,getContext}){
             let newParents = parents.concat(prop);
             let _groupId = newParents.toString();
             groupsOpen[_groupId] = groupsOpen[_groupId] === undefined?true:groupsOpen[_groupId];
-            groupedRows.push({
-              _groupValue:prop,
-              _groupId,
-              _level,
-              _opened:groupsOpen[_groupId],
-            });
-            if(groupsOpen[_groupId]){
-              msf(obj[prop],_level + 1,newParents);
-            }
+            groupedRows.push({_groupValue:prop,_groupId,_level,_opened:groupsOpen[_groupId]});
+            if(groupsOpen[_groupId]){msf(obj[prop],_level + 1,newParents);}
           } 
         }
       }
@@ -1771,7 +1774,7 @@ function ATFN({getProps,getState,setState,getContext}){
       for(let i = 0; i < roots.length; i++){
         let root = roots[i];
         var obj = newModel;
-        let values = groups.map((group)=>$$.getCellValue(root[0].row,group.getValue,group.field));
+        let values = groups.map((group)=>$$.getValueByField(root[0].row,undefined,group.getValue));
         for(let j = 0; j < values.length; j++){
           let value = values[j];
           if(j === values.length - 1){
@@ -1837,8 +1840,9 @@ function ATFN({getProps,getState,setState,getContext}){
     getFullCellStyle:$$.getFullCellStyle,
     getNoData:$$.getNoData,
     getSortsFromColumns:$$.getSortsFromColumns,
-    getCellValue:$$.getCellValue,
-    setCellValue:$$.setCellValue
+    getValueByField:$$.getValueByField,
+    setCellValue:$$.setCellValue,
+    updateStorageByColumn:$$.updateStorageByColumn
   }
 }
 function aioTableGetSvg(type,conf = {}){
