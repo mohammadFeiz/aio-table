@@ -2570,9 +2570,9 @@ function ATFN({
       let evalText;
 
       if (typeof value === 'string') {
-        evalText = `row.${getValue} = "${value}"`;
+        evalText = `${getValue} = "${value}"`;
       } else {
-        evalText = 'row.' + getValue + ' = ' + JSON.stringify(value);
+        evalText = getValue + ' = ' + JSON.stringify(value);
       }
 
       eval(evalText);
