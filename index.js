@@ -3,326 +3,1332 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = exports.AIOTableFilterPopup = void 0;
-
+exports.convertFlatModel = convertFlatModel;
+exports.default = void 0;
 var _react = _interopRequireWildcard(require("react"));
-
+var _react2 = require("@mdi/react");
+var _js = require("@mdi/js");
 var _aioButton = _interopRequireDefault(require("aio-button"));
-
+var _reactVirtualDom = _interopRequireDefault(require("react-virtual-dom"));
 var _jquery = _interopRequireDefault(require("jquery"));
-
-var _rRangeSlider = _interopRequireDefault(require("r-range-slider"));
-
 require("./index.css");
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 function _getRequireWildcardCache(nodeInterop) { if (typeof WeakMap !== "function") return null; var cacheBabelInterop = new WeakMap(); var cacheNodeInterop = new WeakMap(); return (_getRequireWildcardCache = function (nodeInterop) { return nodeInterop ? cacheNodeInterop : cacheBabelInterop; })(nodeInterop); }
-
 function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(nodeInterop); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (key !== "default" && Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
-
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _extends() { _extends = Object.assign ? Object.assign.bind() : function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
-
-var AioTableContext = /*#__PURE__*/(0, _react.createContext)();
-
-class AIOTable extends _react.Component {
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+let TableContext = /*#__PURE__*/(0, _react.createContext)();
+let TableCLS = {
+  row: 'row',
+  header: 'table-header',
+  title: 'table-title',
+  resizeHandle: 'title-resize-handle',
+  rows: 'rows',
+  table: 'table',
+  toolbarIconButton: 'toolbar-icon',
+  searchBox: 'aio-table-search',
+  toolbar: 'table-toolbar',
+  rowToggle: 'table-toggle',
+  cellBefore: 'cell-before',
+  cellAfter: 'cell-after',
+  cellContent: 'cell-content',
+  cellSubtext: 'cell-subtext',
+  cell: 'cell',
+  filterPopup: 'table-filter-popup',
+  loading: 'table-loading',
+  addFilter: 'table-filter-add',
+  filterOperator: 'table-filter-operator',
+  filterItem: 'table-filter-item',
+  filterValue: 'table-filter-value',
+  filterRemove: 'table-filter-remove',
+  groupRow: 'table-group-row',
+  inlineEditInput: 'table-inline-edit-input',
+  freezeContainer: 'table-freeze-container',
+  unfreezeContainer: 'table-unfreeze-container',
+  splitter: 'table-splitter',
+  paging: 'table-paging',
+  toolbarPopupHeader: 'toolbar-popup-header',
+  rowTemplate: 'row-template',
+  toolbarItem: 'table-toolbar-item'
+};
+class Table extends _react.Component {
   constructor(props) {
     super(props);
-    this.fn = new ATFN({
-      getProps: () => this.props,
-      getState: () => this.state,
-      setState: (obj, caller) => this.SetState(obj, caller),
-      getContext: () => this.context
-    });
-    let touch = ('ontouchstart' in document.documentElement);
     this.dom = /*#__PURE__*/(0, _react.createRef)();
-    var {
-      freezeSize,
-      paging,
-      columns,
-      groups = []
-    } = this.props;
-    let cardRowCount = this.fn.getCardRowCount();
-    let openDictionary = this.fn.getOpenDictionary();
-    let copiedColumns = [...columns];
-    this.state = {
-      touch,
-      openDictionary,
-      cardRowCount,
-      groups,
-      groupsOpen: {},
-      searchText: '',
-      freezeSize,
-      startIndex: 0,
-      //make imutable to prevent change of props.paging because that will compaire with next input props.paging
-      paging: paging ? { ...paging
-      } : false,
-      prevPaging: JSON.stringify(paging),
-      columns: copiedColumns,
-      prevColumns: JSON.stringify(copiedColumns),
-      focused: false,
-      toggleAllState: true
-    };
-  }
-
-  resizeDown(e) {
-    var {
-      touch
-    } = this.state;
-    (0, _jquery.default)(window).bind(touch ? 'touchmove' : 'mousemove', _jquery.default.proxy(this.resizeMove, this));
-    (0, _jquery.default)(window).bind(touch ? 'touchend' : 'mouseup', _jquery.default.proxy(this.resizeUp, this));
-    this.resizeDetails = {
-      client: this.fn.getClient(e),
-      width: this.state.freezeSize
-    };
-  }
-
-  resizeMove(e) {
-    var {
-      rtl
-    } = this.props;
-    var Client = this.fn.getClient(e);
-    var {
-      client,
-      width
-    } = this.resizeDetails;
-    var offset = Client[0] - client[0];
-    let newWidth = width + offset * (rtl ? -1 : 1);
-
-    if (newWidth < 10) {
-      newWidth = 10;
-    }
-
-    this.resizeDetails.newWidth = newWidth;
-    (0, _jquery.default)('#aio-table-first-split').css({
-      width: newWidth
+    (0, _jquery.default)('body').on('focus', '.' + TableCLS.inlineEditInput, e => {
+      (0, _jquery.default)(e.target).select();
     });
-  }
-
-  resizeUp() {
-    var {
-      touch
-    } = this.state;
-    (0, _jquery.default)(window).unbind(touch ? 'touchmove' : 'mousemove', this.resizeMove);
-    (0, _jquery.default)(window).unbind(touch ? 'touchend' : 'mouseup', this.resizeUp);
-    this.setState({
-      freezeSize: this.resizeDetails.newWidth
-    });
-  }
-
-  getTable({
-    sorts,
-    freezeColumns,
-    unFreezeColumns,
-    columns
-  }) {
-    let {
-      freezeSize
-    } = this.state;
-    let {
-      cardTemplate
-    } = this.props;
-    let freezeMode = freezeColumns.length !== 0 && unFreezeColumns.length !== 0;
-    let rows = this.getRows(sorts, freezeMode);
-    this.rows = rows;
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: 'aio-table-body'
-    }, !freezeMode && columns.length !== 0 && /*#__PURE__*/_react.default.createElement(AIOTableUnit, {
-      rows: rows,
-      columns: columns,
-      type: "cells"
-    }), freezeMode && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement(AIOTableUnit, {
-      key: 0,
-      id: "aio-table-first-split",
-      rows: rows,
-      columns: freezeColumns,
-      tableIndex: 0,
-      type: "freezeCells",
-      style: {
-        width: freezeSize
+    this.getSearchs = functions.getSearchs.bind(this);
+    this.getFilterResult = functions.getFilterResult.bind(this);
+    this.isRowOpen = functions.isRowOpen.bind(this);
+    this.onScroll = functions.onScroll.bind(this);
+    let openDictionary = {};
+    if (props.getRowId && props.tableId) {
+      openDictionary = localStorage.getItem('tableopendic' + props.tableId);
+      if (!openDictionary || openDictionary === null) {
+        localStorage.setItem('tableopendic' + props.tableId, '{}');
+      } else {
+        openDictionary = JSON.parse(openDictionary);
       }
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-splitter",
-      onMouseDown: e => this.resizeDown(e),
-      onTouchStart: e => this.resizeDown(e)
-    }), /*#__PURE__*/_react.default.createElement(AIOTableUnit, {
-      key: 1,
-      id: "aio-table-second-split",
-      rows: rows,
-      columns: unFreezeColumns,
-      tableIndex: 1,
-      type: "unFreezeCells"
-    })), cardTemplate && /*#__PURE__*/_react.default.createElement(AIOTableUnit, {
-      rows: rows
-    }));
+    }
+    this.state = {
+      openDictionary,
+      filters: [],
+      searchText: '',
+      touch: 'ontouchstart' in document.documentElement,
+      groupsOpen: {},
+      rowHeight: props.rowHeight,
+      freezeSize: 240,
+      paging: props.paging,
+      getValueByField: functions.getValueByField,
+      Excel: Excel(() => this.props),
+      Sort: Sort(() => this.props, () => this.state, this.setColumns.bind(this)),
+      Group: Group(() => this.props, () => this.state, this.setColumns.bind(this)),
+      columns: (props.columns || []).map(c => {
+        return {
+          ...c
+        };
+      }),
+      prevColumns: JSON.stringify(props.columns),
+      saveColumnInStorage: this.saveColumnInStorage.bind(this),
+      setColumn: this.setColumn.bind(this)
+    };
+    this.updateColumnsByStorageKey();
   }
-
-  getRows(sorts, freezeMode) {
-    var {
-      model
+  translate(text) {
+    let {
+      translate = o => o,
+      lang
     } = this.props;
+    if (lang) {
+      if (lang === 'farsi') {
+        text = {
+          'Search': 'جستجو',
+          'Contain': 'شامل',
+          'Not Contain': 'غیر شامل',
+          'Equal': 'برابر',
+          'Not Equal': 'مخالف',
+          'Greater Than': 'بزرگتر از',
+          'Less Than': 'کوچکتر از',
+          'and': 'و',
+          'or': 'یا',
+          'add': 'افزودن',
+          'Inter Excel File Name': 'نام فایل اکسل را وارد کنید',
+          'Sort By': 'مرتب سازی بر اساس',
+          'Show Columns': 'نمایش ستون ها',
+          'Group By': 'گروه بندی بر اساس'
+        }[text];
+      } else if (lang === 'english') {} else {
+        console.error('aio-table => lang props should be "english" or "farsi"');
+      }
+    }
+    return translate(text) || text;
+  }
+  updateColumnsByStorageKey() {
+    let {
+      columns = []
+    } = this.state;
+    for (let i = 0; i < columns.length; i++) {
+      let column = columns[i];
+      let {
+        storageKey
+      } = column;
+      if (!storageKey) {
+        continue;
+      }
+      let storageObj = localStorage.getItem('tablecolumnstorage' + storageKey) || '{}';
+      storageObj = JSON.parse(storageObj);
+      storageObj = {
+        ...storageObj,
+        group: column.group ? storageObj.group : undefined,
+        sort: column.sort ? storageObj.sort : undefined,
+        show: column.toggleShow ? storageObj.show : column.show,
+        //اگر تاگل نداشت از استوریج نمی خونیم چون ممکنه تاگل حذف شده باشه و دیگه نشه ستون رو ویزیبل کرد
+        width: column.resizable !== false ? storageObj.width : column.width //اگر ریسایزبل نبود از استوریج نمی خونیم چون ممکنه ریسایزبل فالس شده باشه و دیگه نشه اندازه ستون رو کنترل کرد
+      };
 
-    if (!model) {
+      localStorage.setItem('tablecolumnstorage' + storageKey, JSON.stringify(storageObj));
+      this.setColumn(column, {
+        _storageObj: storageObj
+      });
+      for (let prop in storageObj) {
+        column[prop] = storageObj[prop];
+      }
+    }
+  }
+  saveColumnInStorage(column, key, value) {
+    if (!column.storageKey) {
+      return;
+    }
+    let storageObj = {
+      ...column._storageObj
+    };
+    storageObj[key] = value;
+    this.setColumn(column, {
+      _storageObj: storageObj
+    });
+    localStorage.setItem('tablecolumnstorage' + column.storageKey, JSON.stringify(column._storageObj));
+  }
+  setColumns(columns) {
+    this.setState({
+      columns
+    });
+  }
+  setColumn(column, obj) {
+    for (let prop in obj) {
+      column[prop] = obj[prop];
+    }
+  }
+  getRowById(id) {
+    return {
+      ...this.rows_object[id],
+      _detail: this.details_object[id]
+    };
+  }
+  getRowDetailById(id) {
+    if (id === undefined) {
       return false;
     }
-
-    let {
-      groups
-    } = this.state;
-    this.index = {
-      render: 0,
-      real: 0
-    };
-    let rows;
-    rows = this.fn.getRowsNested([...model], '_childs');
-    rows = this.fn.getRowsBySort(rows, sorts.filter(({
-      active = true
-    }) => active));
-    rows = this.fn.getRows(rows, freezeMode);
-    rows = this.fn.getRootsByPaging(rows, this.index);
-    rows = this.fn.getRootsByGroup(rows, groups.filter(({
-      active = true
-    }) => active));
-    return this.fn.getRowsByRoots(rows);
+    return this.details_object[id];
   }
-
-  handleIncomingProps() {
+  getRowDetailsByColumns(row, id) {
     let {
-      paging
-    } = this.props;
-    let {
-      prevPaging
+      columns = [],
+      getValueByField
     } = this.state;
-    let p = JSON.stringify(paging);
-
-    if (p !== prevPaging) {
-      setTimeout(() => this.setState({
-        paging: { ...paging
-        },
-        prevPaging: p
-      }), 0);
+    let cells = [];
+    let freezeCells = [];
+    let unfreezeCells = [];
+    let values = {};
+    let json = {};
+    for (let j = 0; j < columns.length; j++) {
+      let column = columns[j];
+      if (column.show === false) {
+        continue;
+      }
+      let value = getValueByField(row, column);
+      values[column.dataColumnId] = value;
+      json[column.title] = value === undefined ? '' : value;
+      let cell = striped => {
+        let {
+          _show
+        } = this.getRowDetailById(id);
+        if (_show === false) {
+          return null;
+        }
+        if (!this.isRowOpen(id)) {
+          return null;
+        }
+        let {
+          width,
+          flex,
+          minWidth = 36,
+          dataColumnId
+        } = column;
+        if (width === undefined && flex === undefined) {
+          flex = 1;
+        }
+        return {
+          html: /*#__PURE__*/_react.default.createElement(Cell, {
+            striped: striped,
+            key: id + dataColumnId + column.freeze,
+            colId: j,
+            rowId: id,
+            column: column,
+            value: value
+          }),
+          size: width,
+          flex,
+          minWidth,
+          attrs: {
+            'data-column-id': dataColumnId
+          }
+        };
+      };
+      if (column.freeze) {
+        this.freezeMode = true;
+        freezeCells.push(cell);
+      } else {
+        unfreezeCells.push(cell);
+      }
+      cells.push(cell);
+    }
+    return {
+      cells,
+      freezeCells,
+      unfreezeCells,
+      values,
+      json
+    };
+  }
+  getRowId(row) {
+    if (row._id === undefined) {
+      let {
+        getRowId
+      } = this.props;
+      if (getRowId) {
+        let {
+          getValueByField
+        } = this.state;
+        return getValueByField(row, undefined, getRowId);
+      } else {
+        return 'row' + Math.random();
+      }
+    } else {
+      return row._id;
     }
   }
-
-  getCellAttrs(row, column) {
+  getModelDetails_req(model = [], parents) {
     let {
-      cellAttrs = {}
-    } = column;
-    return (typeof cellAttrs === 'function' ? cellAttrs(row) : cellAttrs) || {};
-  }
-
-  SetState(obj, caller) {
-    this.setState(obj);
-  }
-
-  render() {
-    this.handleIncomingProps();
-    var {
-      rowHeight,
-      headerHeight,
-      toolbarHeight,
-      rowGap,
-      className,
-      columnGap,
-      rtl,
-      style,
-      attrs = {},
-      cardTemplate,
-      onSwap,
-      translate
+      rowChilds
     } = this.props;
+    let {
+      getValueByField
+    } = this.state;
+    for (let i = 0; i < model.length; i++) {
+      let detail = {};
+      let row = model[i];
+      let id = this.getRowId(row);
+      row._id = id;
+      detail._id = id;
+      let {
+        cells,
+        freezeCells,
+        unfreezeCells,
+        values,
+        json
+      } = this.getRowDetailsByColumns(row, id);
+      detail._json = json;
+      detail._cells = cells;
+      detail._freezeCells = freezeCells;
+      detail._unfreezeCells = unfreezeCells;
+      detail._values = values;
+      detail._show = this.getFilterResult(row, detail);
+      this.rows_object[id] = row;
+      this.rows_array.push(row);
+      this.details_object[id] = detail;
+      if (rowChilds) {
+        let childs = getValueByField(row, undefined, rowChilds) || [];
+        detail._childs = childs;
+        detail._parentIds = parents.map(o => o._id);
+        detail._parentId = detail._parentIds[detail._parentIds.length - 1];
+        if (detail._show) {
+          for (let j = 0; j < detail._parentIds.length; j++) {
+            let parentId = detail._parentIds[j];
+            let parentRowDetail = this.details_object[parentId];
+            if (parentRowDetail._show === false) {
+              parentRowDetail._show = 'relative';
+            }
+          }
+        }
+        if (childs.length) {
+          this.getModelDetails_req(childs, parents.concat(row));
+        }
+      }
+    }
+  }
+  getTreeDetails(model = [], level, parents, nestedIndex) {
+    let childIndex = 0;
+    let {
+      openDictionary
+    } = this.state;
+    for (let i = 0; i < model.length; i++) {
+      let row = model[i];
+      let detail = this.details_object[row._id];
+      let parentDetail = this.details_object[detail._parentId];
+      detail._level = level;
+      detail._open = openDictionary[row._id] === undefined ? true : openDictionary[row._id];
+      detail._nestedIndex = nestedIndex.concat(i);
+      detail._getParents = () => parents;
+      detail._isLastChild = () => {
+        let detail = this.details_object[row._id];
+        let {
+          _parentId,
+          _id
+        } = detail;
+        let res = false;
+        if (_parentId !== undefined) {
+          let {
+            _lastChildId
+          } = this.details_object[_parentId];
+          res = _lastChildId === _id;
+        }
+        return res;
+      };
+      if (detail._show !== false) {
+        detail._childIndex = childIndex;
+        detail._isFirstChild = () => detail._childIndex === 0;
+        childIndex++;
+        detail._renderIndex = this.rowRenderIndex;
+        this.rowRenderIndex++;
+        if (parentDetail) {
+          parentDetail._lastChildId = detail._id;
+        }
+      }
+      if (detail._childs.length) {
+        this.getTreeDetails(detail._childs, level + 1, parents.concat(row), detail._nestedIndex);
+      }
+    }
+  }
+  getModelDetails(model) {
+    let {
+      paging,
+      Group
+    } = this.state;
+    let {
+      rowChilds
+    } = this.props;
+    if (paging) {
+      let {
+        number = 1,
+        sizes = [1, 5, 10, 15, 20, 30, 40, 50, 70, 100, 150, 200],
+        size = sizes[0],
+        length = model.length,
+        onChange
+      } = paging;
+      let pages = Math.ceil(length / size);
+      paging.sizes = sizes;
+      paging.pages = pages;
+      paging.size = size;
+      paging.number = number;
+      if (!onChange) {
+        let start = (paging.number - 1) * paging.size;
+        let end = start + paging.size;
+        if (end > length) {
+          end = length;
+        }
+        model = model.slice(start, end);
+      }
+    }
+    this.details_object = {};
+    this.rows_object = {};
+    this.rows_array = [];
+    this.getModelDetails_req(model, []);
+    this.rowRenderIndex = 0;
+    if (rowChilds) {
+      this.getTreeDetails(model, 0, [], []);
+    }
+    this.groups = Group.get();
+    if (this.groups.length) {
+      this.rows_array = Group.groupBy(this.rows_array.filter(o => this.details_object[o._id]._show), this.groups.filter(o => o.active));
+    }
+  }
+  toggleRow(id) {
+    let {
+      getRowId,
+      tableId
+    } = this.props;
+    let {
+      openDictionary
+    } = this.state;
+    if (this.details_object[id]._show === 'relative') {
+      return;
+    }
+    openDictionary[id] = openDictionary[id] === undefined ? true : openDictionary[id];
+    openDictionary[id] = !openDictionary[id];
+    this.setState({
+      openDictionary
+    });
+    if (getRowId && tableId) {
+      localStorage.setItem('tableopendic' + tableId, JSON.stringify(openDictionary));
+    }
+  }
+  toggle_layout(id, gap) {
+    let icon;
+    let {
+      getToggleIcon,
+      rtl,
+      indent
+    } = this.props;
+    let {
+      _childs,
+      _open,
+      _show
+    } = this.details_object[id];
+    if (getToggleIcon) {
+      icon = getToggleIcon(!!_open);
+    } else if (!_childs.length) {
+      icon = /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiCircleMedium,
+        size: 0.8
+      });
+    } else {
+      icon = /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _open ? _js.mdiChevronDown : rtl ? _js.mdiChevronLeft : _js.mdiChevronRight,
+        size: 0.8
+      });
+    }
+    return {
+      row: [{
+        size: indent,
+        className: TableCLS.rowToggle,
+        html: icon,
+        align: 'v',
+        style: {
+          cursor: _show === 'relative' ? 'not-allowed' : 'pointer',
+          background: 'rgba(0,0,0,0.03)',
+          height: '100%'
+        },
+        attrs: {
+          onClick: () => {
+            if (_show === 'relative') {
+              return;
+            }
+            this.toggleRow(id);
+          }
+        }
+      }, {
+        size: 6
+      }]
+    };
+  }
+  indent_layout(rowId) {
+    let {
+      indent,
+      rowGap,
+      rowHeight,
+      indentColor = 'lightblue'
+    } = this.props;
+    let detail = this.getRowDetailById(rowId);
+    if (!detail._level) {
+      return false;
+    }
+    let getPath = () => {
+      let dasharray = [1, 3];
+      let {
+        _level: level,
+        _parentIds,
+        _isLastChild
+      } = detail;
+      let isLastChild = _isLastChild();
+      let x0 = indent * (level - 1) + indent / 2,
+        x1 = x0 + indent / 2,
+        y0 = 0,
+        y1 = rowHeight / 2 + rowGap,
+        y2 = rowHeight + rowGap;
+      let pathes = [];
+      pathes.push( /*#__PURE__*/_react.default.createElement("path", {
+        d: `M${x0} ${y0} L${x0} ${isLastChild ? y1 : y2} Z`,
+        stroke: indentColor,
+        strokeWidth: 1,
+        strokeDasharray: dasharray
+      }));
+      pathes.push( /*#__PURE__*/_react.default.createElement("path", {
+        d: `M${x0} ${y1} L${x1} ${y1} Z`,
+        stroke: indentColor,
+        strokeWidth: 1,
+        strokeDasharray: dasharray
+      }));
+      for (let i = 1; i < _parentIds.length; i++) {
+        let {
+          _isLastChild
+        } = this.getRowDetailById(_parentIds[i]);
+        if (_isLastChild()) {
+          continue;
+        }
+        let x = (i - 0.5) * indent;
+        pathes.push( /*#__PURE__*/_react.default.createElement("path", {
+          d: `M${x} ${y0} L${x} ${y2} Z`,
+          stroke: indentColor,
+          strokeWidth: 1,
+          strokeDasharray: dasharray
+        }));
+      }
+      return pathes;
+    };
+    return {
+      size: detail._level * indent,
+      style: {
+        height: '100%',
+        overflow: 'visible'
+      },
+      html: /*#__PURE__*/_react.default.createElement("div", {
+        style: {
+          width: detail._level * indent,
+          height: '100%',
+          position: 'relative'
+        }
+      }, /*#__PURE__*/_react.default.createElement("svg", {
+        width: 20,
+        height: 20,
+        style: {
+          height: `calc(100% + ${rowGap}px)`,
+          width: '100%',
+          position: 'absolute',
+          top: -rowGap
+        }
+      }, getPath(indent, detail)))
+    };
+  }
+  getContext() {
+    let {
+      details_object,
+      rows_object,
+      rows_array
+    } = this;
+    let {
+      openDictionary
+    } = this.state;
+    return {
+      ...this.props,
+      openDictionary,
+      state: this.state,
+      details_object,
+      rows_object,
+      rows_array,
+      getRowById: this.getRowById.bind(this),
+      getRowDetailById: this.getRowDetailById.bind(this),
+      isRowOpen: this.isRowOpen.bind(this),
+      SetState: obj => this.setState(obj),
+      setColumns: this.setColumns.bind(this),
+      getSearchs: this.getSearchs.bind(this),
+      toggleRow: this.toggleRow.bind(this),
+      indent_layout: this.indent_layout.bind(this),
+      toggle_layout: this.toggle_layout.bind(this),
+      translate: this.translate.bind(this),
+      groups: this.groups
+    };
+  }
+  keyDown(e) {
+    if (e.keyCode === 27) {
+      (0, _jquery.default)('.' + TableCLS.inlineEditInput).blur();
+    }
+    //else if([37,38,39,40].indexOf(e.keyCode) !== -1){this.arrow(e);}
+  }
+
+  arrow(e) {
+    var container = (0, _jquery.default)(this.dom.current);
     var {
+      rtl
+    } = this.context;
+    let inputs = container.find('.' + TableCLS.inlineEditInput);
+    if (inputs.length === 0) {
+      return;
+    }
+    let focusedInput = inputs.filter(':focus');
+    if (!focusedInput.length) {
+      inputs.eq(1).focus().select();
+      return;
+    }
+    let rowId = focusedInput.attr('data-row-id');
+    let colId = focusedInput.attr('data-col-id');
+    if (e.keyCode === 40 || e.keyCode === 38) {
+      let sign = e.keyCode === 40 ? 'next' : 'prev';
+      e.preventDefault();
+      let next = inputs[sign](`[data-col-id='${colId}']`);
+      if (next.length) {
+        next.focus().select();
+      }
+    } else if (e.keyCode === 39 || e.keyCode === 37) {
+      e.preventDefault();
+      let sign = (e.keyCode === 37 ? -1 : 1) * (rtl ? -1 : 1) === 1 ? 'next' : 'prev';
+      let next = focusedInput[sign](`[data-row-id='${rowId}']`);
+      console.log(next.length);
+      if (next.length) {
+        next.focus().select();
+      }
+    }
+  }
+  toolbar_layout() {
+    return {
+      html: /*#__PURE__*/_react.default.createElement(Toolbar, null)
+    };
+  }
+  async componentDidMount() {
+    this.state.Sort.set();
+  }
+  units_layout() {
+    let {
+      columns
+    } = this.state;
+    if (this.freezeMode) {
+      let {
+        freezeSize
+      } = this.state;
+      return {
+        flex: 1,
+        gap: 8,
+        row: [{
+          gapAttrs: {
+            className: TableCLS.splitter
+          },
+          size: freezeSize,
+          onResize: freezeSize => this.setState({
+            freezeSize
+          }),
+          html: /*#__PURE__*/_react.default.createElement(TableUnit, {
+            onScroll: () => this.onScroll(0),
+            cellsType: "freezeCells",
+            columns: columns.filter(({
+              freeze
+            }) => freeze)
+          })
+        }, {
+          flex: 1,
+          html: /*#__PURE__*/_react.default.createElement(TableUnit, {
+            cellsType: "unfreezeCells",
+            columns: columns.filter(({
+              freeze
+            }) => !freeze),
+            onScroll: () => this.onScroll(1)
+          })
+        }]
+      };
+    }
+    return {
+      flex: 1,
+      html: /*#__PURE__*/_react.default.createElement(TableUnit, {
+        cellsType: "cells",
+        columns: columns,
+        onScroll: e => this.onScroll()
+      })
+    };
+  }
+  async changePaging(type, value) {
+    let {
       paging
     } = this.state;
-    this.rh = rowHeight;
-    this.hh = headerHeight;
-    this.th = toolbarHeight;
-    this.rg = rowGap;
-    this.cg = columnGap;
-    let details = this.fn.getDetails();
-    var context = { ...this.props,
-      ...this.state,
-      details,
-      onDrag: obj => this.dragStart = obj,
-      onDrop: obj => {
-        if (!this.dragStart) {
-          return;
+    let {
+      pages,
+      number,
+      size,
+      onChange
+    } = paging;
+    let newNumber = number;
+    let newSize = size;
+    if (type === 'prev') {
+      newNumber = number - 1;
+    } else if (type === 'next') {
+      newNumber = number + 1;
+    } else if (type === 'first') {
+      newNumber = 1;
+    } else if (type === 'last') {
+      newNumber = pages;
+    } else if (type === 'size') {
+      newSize = value;
+    }
+    if (newNumber < 1) {
+      newNumber = 1;
+    }
+    if (newNumber > pages) {
+      newNumber = pages;
+    }
+    let newPaging = {
+      ...paging,
+      number: newNumber,
+      size: newSize
+    };
+    if (onChange) {
+      let res = await onChange(newPaging);
+      if (res !== false) {
+        this.setState({
+          paging: newPaging
+        });
+      }
+    } else {
+      this.setState({
+        paging: newPaging
+      });
+    }
+  }
+  paging_layout() {
+    let {
+      paging
+    } = this.state;
+    if (!paging) {
+      return false;
+    }
+    let {
+      rtl,
+      model
+    } = this.props;
+    let {
+      number = 1,
+      sizes = [1, 5, 10, 15, 20, 30, 40, 50, 70, 100, 150, 200],
+      size = sizes[0],
+      length = model.length
+    } = paging;
+    let pages = Math.ceil(length / size);
+    paging.sizes = sizes;
+    paging.pages = pages;
+    paging.size = size;
+    paging.number = number;
+    return {
+      className: TableCLS.paging,
+      style: {
+        direction: 'ltr'
+      },
+      row: [{
+        flex: 1
+      }, {
+        html: /*#__PURE__*/_react.default.createElement("button", {
+          className: TableCLS.toolbarIconButton
+        }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: _js.mdiChevronDoubleLeft,
+          size: 0.8
+        })),
+        attrs: {
+          onClick: () => this.changePaging(rtl ? 'last' : 'first')
         }
-
-        if (this.dragStart._level !== obj._level) {
-          return;
+      }, {
+        html: /*#__PURE__*/_react.default.createElement("button", {
+          className: TableCLS.toolbarIconButton
+        }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: _js.mdiChevronLeft,
+          size: 0.8
+        })),
+        attrs: {
+          onClick: () => this.changePaging(rtl ? 'next' : 'prev')
         }
-
-        if (this.dragStart._level === 0) {
-          onSwap(this.dragStart, obj);
-        } else {
-          let startParents = this.dragStart._getParents().map(o => o._index).toString();
-
-          let endParents = obj._getParents().map(o => o._index).toString();
-
-          if (startParents !== endParents) {
+      }, {
+        html: rtl ? pages + ' / ' + number : number + ' / ' + pages,
+        style: {
+          fontSize: 12,
+          padding: '0 12px'
+        },
+        align: 'vh'
+      }, {
+        html: /*#__PURE__*/_react.default.createElement("button", {
+          className: TableCLS.toolbarIconButton
+        }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: _js.mdiChevronRight,
+          size: 0.8
+        })),
+        attrs: {
+          onClick: () => this.changePaging(rtl ? 'prev' : 'next')
+        }
+      }, {
+        html: /*#__PURE__*/_react.default.createElement("button", {
+          className: TableCLS.toolbarIconButton
+        }, /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: _js.mdiChevronDoubleRight,
+          size: 0.8
+        })),
+        attrs: {
+          onClick: () => this.changePaging(rtl ? 'first' : 'last')
+        }
+      }, {
+        html: /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+          className: TableCLS.toolbarIconButton,
+          type: "select",
+          options: sizes,
+          optionValue: "option",
+          optionText: "option",
+          search: false,
+          caret: false,
+          text: size,
+          optionStyle: "{height:24}",
+          onChange: value => this.changePaging('size', value)
+        })
+      }, {
+        flex: 1
+      }]
+    };
+  }
+  setColumnIds() {
+    let {
+      columns = []
+    } = this.state;
+    for (let i = 0; i < columns.length; i++) {
+      if (!columns[i].dataColumnId) {
+        columns[i].dataColumnId = 'col' + Math.random();
+      }
+    }
+  }
+  render() {
+    let {
+      model,
+      columns,
+      className,
+      style
+    } = this.props;
+    let {
+      prevColumns
+    } = this.state;
+    let columnsStr = JSON.stringify(columns);
+    if (columnsStr !== prevColumns) {
+      let newColumns = JSON.parse(columnsStr);
+      setTimeout(() => this.setState({
+        columns: newColumns,
+        prevColumns: columnsStr
+      }, () => this.updateColumnsByStorageKey()), 0);
+    }
+    this.setColumnIds();
+    //پیجینگ را زود تر می سازیم که دیفالت هاش محاسبه بشه
+    let pagingLayout = this.paging_layout();
+    this.getModelDetails(model);
+    let context = this.getContext();
+    return /*#__PURE__*/_react.default.createElement(TableContext.Provider, {
+      value: context
+    }, /*#__PURE__*/_react.default.createElement(_reactVirtualDom.default, {
+      layout: {
+        className: TableCLS.table + (className ? ' ' + className : ''),
+        attrs: {
+          ref: this.dom,
+          onKeyDown: e => this.keyDown(e)
+        },
+        style,
+        column: [this.toolbar_layout(), this.units_layout(), pagingLayout]
+      }
+    }));
+  }
+}
+exports.default = Table;
+Table.defaultProps = {
+  indent: 16,
+  columnGap: 1,
+  rowGap: 1,
+  headerHeight: 48
+};
+class TableUnit extends _react.Component {
+  constructor(props) {
+    super(props);
+    this.rowsRef = /*#__PURE__*/(0, _react.createRef)();
+    this.resizeDown = functions.resizeDown;
+    this.resizeMove = functions.resizeMove;
+    this.resizeUp = functions.resizeUp;
+    this.getClient = functions.getClient;
+  }
+  title_layout(column, setFlex) {
+    if (column.show === false) {
+      return false;
+    }
+    let resizable = column.resizable !== false && column.width && !column.flex;
+    let {
+      rowHeight,
+      headerHeight
+    } = this.context;
+    let {
+      width,
+      flex,
+      minWidth = 36,
+      titleAttrs = {}
+    } = column;
+    if (setFlex) {
+      width = undefined;
+      flex = 1;
+    }
+    if (width === undefined && flex === undefined) {
+      flex = 1;
+    }
+    return {
+      size: width,
+      align: 'vh',
+      flex,
+      style: {
+        minWidth,
+        height: headerHeight || rowHeight,
+        ...titleAttrs.style
+      },
+      attrs: {
+        ...titleAttrs,
+        'data-column-id': column.dataColumnId,
+        className: undefined,
+        style: undefined,
+        draggable: column.swap !== false,
+        onDragStart: e => {
+          if (this.downOnResizeHandle) {
+            e.stopPropagation();
+            e.preventDefault();
+          }
+          this.startColumnSwap = column;
+        },
+        onDragOver: e => {
+          e.preventDefault();
+        },
+        onDrop: () => {
+          this.endColumnSwap = column;
+          let {
+            setColumns,
+            state
+          } = this.context;
+          let {
+            columns
+          } = state;
+          if (column.swap === false) {
             return;
           }
-
-          onSwap(this.dragStart, obj);
+          if (this.startColumnSwap === undefined || this.startColumnSwap.dataColumnId === this.endColumnSwap.dataColumnId) {
+            return;
+          }
+          let newColumns = columns.map((c, j) => {
+            if (c.dataColumnId === this.startColumnSwap.dataColumnId) {
+              return this.endColumnSwap;
+            }
+            if (c.dataColumnId === this.endColumnSwap.dataColumnId) {
+              return this.startColumnSwap;
+            }
+            return c;
+          });
+          setColumns(newColumns);
         }
       },
-      SetState: this.SetState.bind(this),
-      onScroll: index => this.fn.onScroll(this.dom, index),
-      getCellAttrs: this.getCellAttrs.bind(this),
-      fn: this.fn,
-      rows: this.rows
+      className: TableCLS.title + (titleAttrs.className ? ' ' + titleAttrs.className : ''),
+      row: [this.resize_layout(column, resizable, 'start'), {
+        html: column.title || '',
+        flex: 1,
+        align: column.titleJustify !== false ? 'h' : undefined
+      }, this.filter_layout(column), this.resize_layout(column, resizable, 'end')]
     };
-    this.context = context;
-    let table = this.getTable(details);
-    return /*#__PURE__*/_react.default.createElement(AioTableContext.Provider, {
-      value: context
-    }, /*#__PURE__*/_react.default.createElement("div", _extends({
-      className: 'aio-table' + (className ? ' ' + className : '') + (rtl ? ' rtl' : ''),
-      tabIndex: 0,
-      ref: this.dom,
-      style: { ...style
+  }
+  resize_layout(column, resizable, type) {
+    if (!resizable) {
+      return {
+        size: 12
+      };
+    }
+    return {
+      size: 12,
+      className: TableCLS.resizeHandle,
+      style: {
+        cursor: 'col-resize',
+        height: '100%'
+      },
+      attrs: {
+        onMouseDown: e => this.resizeDown(e, column, type),
+        onTouchStart: e => this.resizeDown(e, column, type),
+        draggable: false
       }
-    }, attrs), /*#__PURE__*/_react.default.createElement(AIOTableToolbar, details), table, paging && /*#__PURE__*/_react.default.createElement(AIOTablePaging, {
-      rtl: rtl,
-      translate: translate,
-      paging: paging,
-      onChange: obj => {
-        this.setState({
-          paging: obj
-        });
-
-        if (paging.onChange) {
-          paging.onChange(obj);
+    };
+  }
+  filter_layout(column) {
+    let {
+      translate,
+      rtl,
+      state,
+      setColumns
+    } = this.context;
+    let {
+      setColumn
+    } = state;
+    let {
+      filter,
+      type = 'text'
+    } = column;
+    if (!filter) {
+      return false;
+    }
+    if (filter === true) {
+      filter = {};
+      setColumn(column, {
+        filter: {}
+      });
+    }
+    let {
+      items = [],
+      booleanType = 'or',
+      add,
+      operators,
+      valueOptions
+    } = filter;
+    return {
+      html: /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+        style: {
+          background: 'none',
+          color: 'inherit'
+        },
+        type: "button",
+        rtl: rtl,
+        caret: false,
+        text: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: items.length ? _js.mdiFilterMenu : _js.mdiFilter,
+          size: 0.6
+        }),
+        popOver: () => {
+          let {
+            columns
+          } = this.props;
+          return /*#__PURE__*/_react.default.createElement(AIOTableFilterPopup, {
+            translate: translate,
+            type: type,
+            items: items,
+            booleanType: booleanType,
+            add: add,
+            operators: operators,
+            valueOptions: valueOptions,
+            onChangeBooleanType: booleanType => {
+              let {
+                filter
+              } = column;
+              filter.booleanType = booleanType;
+              setColumn(column, {
+                filter
+              });
+              state.saveColumnInStorage(column, 'filter', column.filter);
+              setColumns(columns);
+              if (column.onChangeFilter) {
+                column.onChangeFilter(column);
+              }
+            },
+            onChange: async items => {
+              let {
+                filter
+              } = column;
+              filter.items = items;
+              setColumn(column, {
+                filter
+              });
+              state.saveColumnInStorage(column, 'filter', column.filter);
+              setColumns(columns);
+              if (column.onChangeFilter) {
+                column.onChangeFilter(column);
+              }
+            }
+          });
+        }
+      })
+    };
+  }
+  group_layout(o) {
+    let {
+      groupHeight,
+      rowHeight,
+      indent,
+      rtl,
+      editGroupName = o => o
+    } = this.context;
+    let {
+      cellsType
+    } = this.props;
+    return {
+      style: {
+        position: 'sticky',
+        [rtl ? 'right' : 'left']: 0,
+        height: groupHeight || rowHeight
+      },
+      className: TableCLS.groupRow,
+      row: cellsType === 'unfreezeCells' ? [{
+        flex: 1
+      }] : [{
+        size: 12
+      }, {
+        size: o.groupLevel * indent
+      }, this.groupToggle_layout(o), {
+        html: editGroupName(o.value),
+        align: 'v'
+      }]
+    };
+  }
+  getGroupToggleIcon(open) {
+    let {
+      getToggleIcon,
+      rtl
+    } = this.context;
+    if (getToggleIcon) {
+      return getToggleIcon(!!open);
+    }
+    return /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+      path: open ? _js.mdiChevronDown : rtl ? _js.mdiChevronLeft : _js.mdiChevronRight,
+      size: 0.8
+    });
+  }
+  groupToggle_layout(o) {
+    let {
+      state,
+      SetState
+    } = this.context;
+    let {
+      groupsOpen
+    } = state;
+    return {
+      align: 'vh',
+      row: [{
+        className: TableCLS.rowToggle,
+        html: this.getGroupToggleIcon(o.groupOpen),
+        align: 'vh',
+        attrs: {
+          onClick: () => SetState({
+            groupsOpen: {
+              ...groupsOpen,
+              [o.id]: !groupsOpen[o.id]
+            }
+          })
+        }
+      }, {
+        size: 6
+      }]
+    };
+  }
+  row_layout(rowId, striped) {
+    let {
+      isRowOpen,
+      getRowDetailById,
+      columnGap,
+      rowTemplate,
+      getRowById,
+      toggleRow,
+      rowChilds,
+      indent_layout,
+      toggle_layout,
+      rowHeight
+    } = this.context;
+    if (!isRowOpen(rowId)) {
+      return false;
+    }
+    let rowDetail = getRowDetailById(rowId);
+    if (rowDetail._show === false) {
+      return false;
+    }
+    if (rowTemplate) {
+      let row = getRowById(rowId);
+      if (rowChilds) {
+        return {
+          style: {
+            overflow: 'visible'
+          },
+          size: rowHeight,
+          row: [indent_layout(rowId), toggle_layout(rowId, false), {
+            flex: 1,
+            html: rowTemplate(row, rowDetail),
+            className: TableCLS.rowTemplate,
+            style: {
+              overflow: 'visible'
+            }
+          }, {
+            size: 6
+          }]
+        };
+      }
+      return {
+        html: rowTemplate(row, rowDetail, () => toggleRow(rowId))
+      };
+    }
+    let {
+      cellsType
+    } = this.props;
+    let cells = rowDetail['_' + cellsType];
+    let isThereAnyFlex = false;
+    return {
+      className: TableCLS.row + (rowDetail._show === 'relative' ? ' row-relative-filter' : ''),
+      gap: columnGap,
+      style: {
+        overflow: 'visible'
+      },
+      row: cells.map((cell, i) => {
+        let res = cell(striped);
+        let {
+          html,
+          size,
+          flex,
+          minWidth = 36,
+          attrs
+        } = res;
+        if (size === undefined && flex === undefined) {
+          flex = 1;
+        }
+        if (flex !== undefined) {
+          isThereAnyFlex = true;
+        }
+        if (i === cells.length - 1 && !isThereAnyFlex) {
+          size = undefined;
+          flex = 1;
+        }
+        return {
+          style: {
+            height: '100%',
+            minWidth,
+            overflow: 'visible'
+          },
+          html,
+          size,
+          flex,
+          attrs
+        };
+      })
+    };
+  }
+  onSwap(f, t) {
+    debugger;
+  }
+  render() {
+    let {
+        rowGap
+      } = this.context,
+      {
+        cellsType,
+        onScroll
+      } = this.props;
+    let headerLayout = this.header_layout();
+    let rowsLayout = this.rows_layout();
+    let className = TableCLS.rows;
+    if (cellsType === 'freezeCells') {
+      className += ' ' + TableCLS.freezeContainer;
+    } else if (cellsType === 'unfreezeCells') {
+      className += ' ' + TableCLS.unfreezeContainer;
+    }
+    return /*#__PURE__*/_react.default.createElement(_reactVirtualDom.default, {
+      onSwap: (f, t) => this.onSwap(f, t),
+      layout: {
+        className,
+        column: [headerLayout, ...rowsLayout],
+        scroll: 'vh',
+        gap: rowGap,
+        flex: 1,
+        attrs: {
+          onScroll: () => onScroll(),
+          ref: this.rowsRef
         }
       }
-    }), this.fn.getLoading(true)));
+    });
   }
-
+  header_layout() {
+    let {
+      rowTemplate,
+      columnGap,
+      showHeader
+    } = this.context;
+    let {
+      columns = []
+    } = this.props;
+    if (rowTemplate || showHeader === false) {
+      return false;
+    }
+    let isThereAnyFlex = false;
+    return {
+      gap: columnGap,
+      className: TableCLS.header,
+      row: columns.map((column, i) => {
+        let {
+          width,
+          flex
+        } = column;
+        if (width === undefined && flex === undefined) {
+          flex = 1;
+        }
+        if (flex !== undefined) {
+          isThereAnyFlex = true;
+        }
+        let setFlex = false;
+        if (i === columns.length - 1 && !isThereAnyFlex) {
+          setFlex = true;
+        }
+        return this.title_layout(column, setFlex);
+      })
+    };
+  }
+  rows_layout() {
+    let {
+      rows_array,
+      striped
+    } = this.context;
+    let index = -1;
+    return rows_array.map((o, i) => {
+      if (o._isGroup_) {
+        return this.group_layout(o);
+      }
+      index++;
+      return this.row_layout(o._id, index % 2 === 0 ? striped : undefined);
+    });
+  }
 }
-
-exports.default = AIOTable;
-AIOTable.defaultProps = {
-  columns: [],
-  toolbarHeight: 36,
-  rowGap: 6,
-  indent: 16,
-  translate: text => text,
-  freezeSize: 300,
-  groups: []
-};
-
-class AIOTableToolbar extends _react.Component {
+_defineProperty(TableUnit, "contextType", TableContext);
+class Toolbar extends _react.Component {
   constructor(...args) {
     super(...args);
-
     _defineProperty(this, "state", {
       searchText: ''
     });
   }
-
   changeSearch(value, time = 1000) {
     clearTimeout(this.searchTimeout);
     this.setState({
@@ -332,1848 +1338,1272 @@ class AIOTableToolbar extends _react.Component {
       searchText: value
     }), time);
   }
-
-  getSearch() {
+  getSearchbox() {
     let {
-      translate
+      translate,
+      getSearchs
     } = this.context;
-    let {
-      search
-    } = this.props;
+    let searchs = getSearchs();
     let {
       searchText
     } = this.state;
-
-    if (!search) {
-      return /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          flex: 1
-        },
-        key: "search"
-      });
+    if (!searchs.length) {
+      return false;
     }
-
     return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-search",
+      className: TableCLS.searchBox,
       key: "search"
     }, /*#__PURE__*/_react.default.createElement("input", {
-      className: "aio-table-search-input",
       type: "text",
       value: searchText,
       placeholder: translate('Search'),
       onChange: e => this.changeSearch(e.target.value)
-    }), aioTableGetSvg(searchText ? 'close' : 'magnify', {
+    }), /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+      path: searchText ? _js.mdiClose : _js.mdiMagnify,
+      size: 0.7,
       onClick: () => {
         if (!searchText) {
           return;
         }
-
         this.changeSearch('', 0);
       }
     }));
   }
-
-  render() {
+  getToggleButton() {
     let {
-      fn,
-      rows,
-      translate,
-      rtl,
-      toggleAllState,
-      toolbarItems = [],
-      SetState,
-      toolbarAttrs = {},
-      toggleAll,
-      groups
+      state,
+      translate
     } = this.context;
     let {
-      toggleOptions,
-      freezeOptions,
-      groupOptions,
-      excelColumns,
-      sortOptions
-    } = this.props;
-    let buttonProps = {
-      type: 'select',
-      rtl,
+      columns,
+      setColumn
+    } = state;
+    if (!columns || !columns.length) {
+      return false;
+    }
+    let options = columns.filter(({
+      toggle
+    }) => toggle).map(column => {
+      return {
+        column,
+        text: column.title,
+        checked: column.show !== false
+      };
+    });
+    if (!options.length) {
+      return false;
+    }
+    return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+      popupHeader: /*#__PURE__*/_react.default.createElement("div", {
+        className: TableCLS.toolbarPopupHeader
+      }, translate('Show Columns')),
+      key: "togglebutton",
       caret: false,
-      className: 'aio-table-toolbar-button',
-      animate: true,
-      popupAttrs: {
-        style: {
-          maxHeight: 500
-        }
+      type: "select",
+      options: options,
+      className: TableCLS.toolbarIconButton,
+      text: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiEye,
+        size: 0.7
+      }),
+      onChange: (value, obj) => {
+        let {
+          state,
+          setColumns
+        } = this.context;
+        let {
+          columns
+        } = state;
+        let {
+          column
+        } = obj.option;
+        let {
+          show = true
+        } = column;
+        setColumn(column, {
+          show: !show
+        });
+        state.saveColumnInStorage(column, 'show', obj.option.column.show);
+        setColumns(columns);
       }
-    };
-    let Sort, Toggle, Group, Freeze, Excel, ToggleAll;
-
-    if (sortOptions.length) {
-      let title = translate('Sort');
-      let props = { ...buttonProps,
-        options: sortOptions,
-        title,
-        key: 'sort',
-        text: aioTableGetSvg('sort'),
-        popupHeader: /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-popup-header"
-        }, title)
-      };
-      Sort = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
+    });
+  }
+  getSortButton() {
+    let {
+      state,
+      model = [],
+      translate
+    } = this.context;
+    let sorts = state.Sort.get();
+    if (!sorts.length || !model.length) {
+      return false;
     }
-
-    if (toggleOptions.length) {
-      let title = translate('Show Columns');
-      let props = { ...buttonProps,
-        options: toggleOptions,
-        title,
-        key: 'toggle',
-        text: aioTableGetSvg('eye'),
-        popupHeader: /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-popup-header"
-        }, title)
-      };
-      Toggle = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
-    }
-
-    if (groupOptions.length) {
-      let title = translate('Group By');
-      let props = { ...buttonProps,
-        options: groupOptions,
-        title,
-        key: 'group',
-        text: aioTableGetSvg('group', {
-          flip: rtl === true
-        }),
-        popupHeader: /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-popup-header"
-        }, title),
-        onSwap: (start, end, swap) => SetState({
-          groups: swap(groups, start, end)
+    let options = sorts.map((sort, i) => {
+      return {
+        text: sort.title,
+        checked: !!sort.active,
+        after: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+          path: sort.dir === 'dec' ? _js.mdiArrowDown : _js.mdiArrowUp,
+          size: 0.8,
+          onClick: e => {
+            e.stopPropagation();
+            sorts[i].dir = sort.dir === 'dec' ? 'inc' : 'dec';
+            state.Sort.set(sorts);
+          }
         })
       };
-      Group = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
-    }
-
-    if (freezeOptions.length) {
-      let title = translate('Freeze');
-      let props = { ...buttonProps,
-        options: freezeOptions,
-        title,
-        key: 'freeze',
-        text: aioTableGetSvg('freeze'),
-        popupHeader: /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-popup-header"
-        }, title)
-      };
-      Freeze = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
-    }
-
-    if (toggleAll) {
-      let title = translate('Toggle All');
-      let props = { ...buttonProps,
-        title,
-        key: 'toggleAll',
-        type: 'button',
-        text: !toggleAllState ? aioTableGetSvg('toggleAllMinus') : aioTableGetSvg('toggleAllPlus'),
-        onclick: () => SetState(fn.getStateByToggleAll(rows))
-      };
-      ToggleAll = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
-    }
-
-    if (excelColumns.length) {
-      let title = translate('Export To Excel');
-      let props = { ...buttonProps,
-        title,
-        key: 'excel',
-        type: 'button',
-        text: aioTableGetSvg('excel'),
-        onClick: () => fn.exportToExcel(excelColumns, rows)
-      };
-      Excel = /*#__PURE__*/_react.default.createElement(_aioButton.default, props);
-    }
-
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: 'aio-table-toolbar' + (toolbarAttrs.className ? ' ' + toolbarAttrs.className : ''),
-      style: { ...toolbarAttrs.style
-      }
-    }, ToggleAll, Excel, toolbarItems.map((o, i) => /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({
-      type: "button",
-      rtl: rtl,
-      className: "aio-table-toolbar-button",
-      animate: true
-    }, o, {
-      key: 'ti' + i
-    }))), this.getSearch(), Group, Sort, Toggle, Freeze);
-  }
-
-}
-
-_defineProperty(AIOTableToolbar, "contextType", AioTableContext);
-
-class AIOTablePaging extends _react.Component {
-  getPageNumber(type) {
-    let {
-      paging
-    } = this.props;
-    let {
-      pages = 1,
-      number
-    } = paging;
-    let newNumber;
-
-    if (type === 'prev') {
-      newNumber = number - 1;
-    } else if (type === 'next') {
-      newNumber = number + 1;
-    } else if (type === 'first') {
-      newNumber = 1;
-    } else if (type === 'last') {
-      newNumber = pages;
-    }
-
-    if (newNumber < 1) {
-      newNumber = 1;
-    }
-
-    if (newNumber > pages) {
-      newNumber = pages;
-    }
-
-    return newNumber;
-  }
-
-  changePage(type) {
-    let {
-      paging,
-      onChange
-    } = this.props;
-    let {
-      number
-    } = paging;
-    let newNumber = this.getPageNumber(type);
-
-    if (newNumber === number) {
-      return;
-    }
-
-    onChange({ ...paging,
-      number: newNumber
     });
-  }
-
-  render() {
-    var {
-      paging,
-      onChange,
-      rtl,
-      translate = str => str
-    } = this.props;
-    var {
-      number,
-      sizes = [1, 5, 10, 20, 30, 40, 50, 60, 70, 80],
-      size,
-      pages = 1
-    } = paging;
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging",
-      style: {
-        direction: 'ltr'
-      }
-    }, /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging-button",
-      onClick: () => this.changePage(rtl ? 'last' : 'first'),
-      title: translate(rtl ? 'Last Page' : 'First Page')
-    }, aioTableGetSvg('doubleChevronRight', {
-      flip: true
-    })), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging-button",
-      onClick: () => this.changePage(rtl ? 'next' : 'prev'),
-      title: translate(rtl ? 'Next Page' : 'Previous Page')
-    }, aioTableGetSvg('chevronRight', {
-      flip: true
-    })), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging-number"
-    }, rtl ? pages + ' / ' + number : number + ' / ' + pages), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging-button",
-      onClick: () => this.changePage(rtl ? 'prev' : 'next'),
-      title: translate(rtl ? 'Previous Page' : 'Next Page')
-    }, aioTableGetSvg('chevronRight')), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-paging-button",
-      onClick: () => this.changePage(rtl ? 'first' : 'last'),
-      title: translate(rtl ? 'First Page' : 'Last Page')
-    }, aioTableGetSvg('doubleChevronRight')), /*#__PURE__*/_react.default.createElement("select", {
-      className: "aio-table-paging-button",
-      value: size,
-      onChange: e => onChange({ ...paging,
-        size: parseInt(e.target.value)
+    return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+      popupHeader: /*#__PURE__*/_react.default.createElement("div", {
+        className: TableCLS.toolbarPopupHeader
+      }, translate('Sort By')),
+      key: "sortbutton",
+      caret: false,
+      type: "select",
+      options: options,
+      className: TableCLS.toolbarIconButton,
+      text: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiSort,
+        size: 0.7
       }),
-      title: translate('Rows Count Per Page')
-    }, sizes.map((s, i) => /*#__PURE__*/_react.default.createElement("option", {
-      key: i,
-      value: s
-    }, s))));
+      onChange: (value, obj) => {
+        sorts[obj.realIndex].active = !sorts[obj.realIndex].active;
+        state.Sort.set(sorts);
+      },
+      onSwap: (from, to, swap) => state.Sort.set(swap(sorts, from, to))
+    });
   }
-
-}
-
-class AIOTableUnit extends _react.Component {
-  constructor(props) {
-    super(props);
-    this.dom = /*#__PURE__*/(0, _react.createRef)();
-  }
-
-  getCardStyle() {
+  getExcelButton() {
     let {
-      columnGap,
-      rowGap
+      state,
+      rows_array,
+      getRowDetailById
     } = this.context;
-    return {
-      gridColumnGap: columnGap,
-      gridRowGap: rowGap
-    };
-  }
-
-  getStyle() {
-    if (this.context.cardTemplate) {
-      return this.getCardStyle();
-    }
-
-    return this.getGridStyle();
-  }
-
-  getGridStyle() {
-    var {
-      rowGap,
-      columnGap
-    } = this.context;
-    var {
-      columns,
-      style
-    } = this.props;
-    var gridTemplateColumns = '';
-    this.gridTemplateColumns = [];
-
-    for (let i = 0; i < columns.length; i++) {
-      let {
-        width = 'auto'
-      } = columns[i];
-      width = width.toString();
-
-      if (width !== 'auto' && width.indexOf('px') === -1) {
-        width += 'px';
-      }
-
-      this.gridTemplateColumns.push(width);
-      gridTemplateColumns += width + (i < columns.length - 1 ? ' ' : '');
-    }
-
-    return {
-      gridTemplateColumns,
-      gridRowGap: rowGap,
-      gridColumnGap: columnGap,
-      ...style
-    };
-  }
-
-  setStyle(gridTemplateColumns) {
-    (0, _jquery.default)(this.dom.current).css({
-      gridTemplateColumns: gridTemplateColumns.join(' ')
+    return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+      key: "excelbutton",
+      caret: false,
+      type: "button",
+      className: TableCLS.toolbarIconButton,
+      text: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiFileExcel,
+        size: 0.7
+      }),
+      onClick: () => state.Excel.export(rows_array.filter(({
+        _isGroup_
+      }) => !_isGroup_).map(({
+        _id
+      }) => getRowDetailById(_id)._json))
     });
   }
-
-  getTitles() {
+  getGroupButton() {
     var {
-      columns
-    } = this.props;
-    return columns.map((column, i) => {
-      return /*#__PURE__*/_react.default.createElement(AIOTableTitle, {
-        isLast: i === columns.length - 1,
-        key: 'title' + i,
-        column: column,
-        gridTemplateColumns: this.gridTemplateColumns,
-        setStyle: this.setStyle.bind(this),
-        onDragStart: index => this.startColumnSwap = index,
-        onDragOver: (e, index) => {
-          e.preventDefault();
-          this.endColumnSwap = index;
-        },
-        onDrop: column => {
-          let {
-            SetState,
-            columns
-          } = this.context;
-
-          if (column.movable === false) {
-            return;
-          }
-
-          if (this.startColumnSwap === undefined || this.startColumnSwap === this.endColumnSwap) {
-            return;
-          }
-
-          let startColumn = columns[this.startColumnSwap];
-          let endColumn = columns[this.endColumnSwap];
-          let newColumns = columns.map((c, j) => {
-            if (j === this.startColumnSwap) {
-              return endColumn;
-            }
-
-            if (j === this.endColumnSwap) {
-              return startColumn;
-            }
-
-            return c;
-          });
-          SetState({
-            columns: newColumns
-          });
-        }
-      });
+      model,
+      state,
+      groups,
+      translate
+    } = this.context;
+    if (!groups.length || !model.length) {
+      return false;
+    }
+    let options = groups.map(group => {
+      return {
+        text: group.title,
+        checked: !!group.active
+      };
+    });
+    return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+      popupHeader: /*#__PURE__*/_react.default.createElement("div", {
+        className: TableCLS.toolbarPopupHeader
+      }, translate('Group By')),
+      key: "groupbutton",
+      caret: false,
+      type: "select",
+      options: options,
+      className: TableCLS.toolbarIconButton,
+      text: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiFileTree,
+        size: 0.7
+      }),
+      onChange: (value, obj) => {
+        groups[obj.realIndex].active = !groups[obj.realIndex].active;
+        state.Group.set(groups);
+      },
+      onSwap: (from, to, swap) => state.Group.set(swap(groups, from, to))
     });
   }
-
-  keyDown(e) {
+  getToolbarItems() {
     var {
-      SetState
+      toolbarItems = []
     } = this.context;
-
-    if (e.keyCode === 27) {
-      (0, _jquery.default)('.aio-table-input').blur();
-      SetState({
-        focused: false
-      }, 'keyDown');
-    } else if ([37, 38, 39, 40].indexOf(e.keyCode) !== -1) {
-      this.arrow(e);
-    }
+    return toolbarItems.map(o => {
+      return /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({}, o, {
+        className: TableCLS.toolbarItem + (o.className ? ' ' + o.className : '')
+      }));
+    });
   }
-
-  arrow(e) {
-    var container = (0, _jquery.default)(this.dom.current);
-    var {
-      rtl,
-      focused,
-      SetState
+  getItems() {
+    let {
+      excel
     } = this.context;
-    var {
-      columns
-    } = this.props;
-    let inputs = container.find('.aio-table-input');
-
-    if (inputs.length === 0) {
-      return;
+    let items = [];
+    let searchBox = this.getSearchbox();
+    if (searchBox) {
+      items.push(searchBox);
     }
-
-    let focusedInput = inputs.filter(':focus');
-
-    if (focused === false) {
-      let inputCells = (0, _jquery.default)('.aio-table-cell-input');
-
-      if (inputCells.length) {
-        let cell = inputCells.eq(0);
-        SetState({
-          focused: cell.attr('data-cell-id')
-        });
-        setTimeout(() => {
-          cell.find('.aio-table-input').focus().select();
-        }, 10);
-      }
-
-      return;
+    let toggleButton = this.getToggleButton();
+    if (toggleButton) {
+      items.push(toggleButton);
     }
-
-    let [rowIndex, colIndex] = this.getCellIndex(focusedInput.parents('.aio-table-cell'));
-    console.log(rowIndex, colIndex);
-
-    if (e.keyCode === 40 || e.keyCode === 38) {
-      let sign = e.keyCode === 40 ? 1 : -1;
-      e.preventDefault();
-      rowIndex += sign;
-      let next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
-
-      while (rowIndex < this.renderIndex && rowIndex > 0 && next.length === 0) {
-        rowIndex += sign;
-        next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
-      }
-
-      if (next.length) {
-        next.focus();
-        setTimeout(() => next.select(), 5);
-      }
-    } else if (e.keyCode === 39 || e.keyCode === 37) {
-      e.preventDefault();
-      let sign = (e.keyCode === 37 ? -1 : 1) * (rtl ? -1 : 1);
-      colIndex += sign;
-      let next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
-
-      while (colIndex > 0 && colIndex < columns.length && next.length === 0) {
-        colIndex += sign;
-        next = inputs.filter(`[data-row-index=${rowIndex}][data-col-index=${colIndex}]`);
-      }
-
-      if (next.length) {
-        next.focus();
-        setTimeout(() => next.select(), 5);
-      }
+    let sortButton = this.getSortButton();
+    if (sortButton) {
+      items.push(sortButton);
     }
+    let groupButton = this.getGroupButton();
+    if (groupButton) {
+      items.push(groupButton);
+    }
+    if (excel) {
+      items.push(this.getExcelButton());
+    }
+    let toolbarItems = this.getToolbarItems();
+    items = items.concat(toolbarItems);
+    return items;
   }
-
-  getCellIndex(cell) {
-    return [parseInt(cell.attr('data-row-index')), parseInt(cell.attr('data-col-index'))];
-  }
-
-  card(props) {
-    var {
-      rowHeight,
-      fn,
-      cardTemplate,
-      cardRowCount,
-      search,
-      searchText,
-      indent
-    } = this.context;
-    var {
-      tableIndex,
-      columns
-    } = this.props;
-    var groupStyle = {
-      gridColumnStart: 1,
-      gridColumnEnd: cardRowCount + 1,
-      height: rowHeight
-    };
-
-    if (cardRowCount === 'auto') {
-      groupStyle.gridColumnStart = undefined;
-      groupStyle.gridColumnEnd = undefined;
-    }
-
-    let rows;
-
-    if (search) {
-      rows = this.props.rows.filter(o => {
-        if (searchText === '') {
-          return true;
-        }
-
-        try {
-          return search(o.row, searchText);
-        } catch {
-          return false;
-        }
-      });
-    } else {
-      rows = this.props.rows;
-    }
-
-    return /*#__PURE__*/_react.default.createElement("div", _extends({}, props, {
-      style: { ...props.style,
-        gridTemplateColumns: cardRowCount === 'auto' ? undefined : `repeat(${cardRowCount},auto)`
-      }
-    }), rows && rows.length !== 0 && rows.map((row, rowIndex) => {
-      if (row._groupId) {
-        return /*#__PURE__*/_react.default.createElement(AIOTableGroup, {
-          row,
-          rowIndex,
-          tableIndex
-        });
-      }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        key: rowIndex + '-' + tableIndex,
-        className: "aio-table-card"
-      }, row.row._level !== 0 && /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          width: row.row._level * indent,
-          border: '1px solid',
-          height: '100%',
-          position: 'relative'
-        }
-      }, /*#__PURE__*/_react.default.createElement("svg", {
-        style: {
-          background: 'yellow',
-          width: '100%',
-          positon: 'absolute',
-          height: '100%'
-        }
-      })), cardTemplate(row.row, () => fn.toggleRow(row.row)));
-    }), rows && rows.length === 0 && fn.getNoData(columns), !rows && fn.getLoading());
-  }
-
   render() {
-    var {
-      onScroll,
-      onSwap,
-      onDrop,
-      onDrag,
-      fn,
-      focused,
-      SetState,
-      striped,
-      getCellAttrs,
-      fn
-    } = this.context;
-    var {
-      rows,
-      id,
-      tableIndex,
-      type,
-      columns
-    } = this.props;
-    let props = {
-      id,
-      tabIndex: 0,
-      className: 'aio-table-unit',
-      style: this.getStyle(),
-      ref: this.dom,
-      onKeyDown: this.keyDown.bind(this),
-      onScroll: e => onScroll(tableIndex)
-    };
-
-    if (this.context.cardTemplate) {
-      return this.card(props);
+    let items = this.getItems();
+    if (!items.length) {
+      return null;
     }
-
-    this.renderIndex = -1;
-    return /*#__PURE__*/_react.default.createElement("div", props, this.getTitles(), rows && rows.length !== 0 && rows.map((o, i) => {
-      if (o._groupId) {
-        return /*#__PURE__*/_react.default.createElement(AIOTableGroup, {
-          tableIndex,
-          row: o,
-          columns: columns,
-          key: 'group' + i + '-' + tableIndex
-        });
-      }
-
-      this.renderIndex++;
-      return o[type].map(({
-        value,
-        column
-      }, j) => {
-        let row = o.row;
-        let cellId = i + '-' + j + '-' + tableIndex;
-        let inlineEdit = fn.getValueByField(row, column, column.inlineEdit);
-        let attrs = getCellAttrs(row, column);
-        return /*#__PURE__*/_react.default.createElement(AIOTableCell, {
-          key: cellId,
-          attrs: {
-            'data-row-index': this.renderIndex,
-            'data-col-index': column.renderIndex,
-            'data-real-row-index': row._index,
-            'data-real-col-index': column.realIndex,
-            'data-child-index': row._childIndex,
-            'data-childs-length': row._childsLength,
-            'data-lavel': row._level,
-            'data-cell-id': cellId,
-            tabIndex: 0,
-            draggable: typeof onSwap === 'function' && column.swap,
-            onDrop: () => onDrop(row),
-            onDragOver: e => e.preventDefault(),
-            onDragStart: () => onDrag(row),
-            onClick: () => {
-              var {
-                focused,
-                SetState
-              } = this.context;
-
-              if (attrs.onClick) {
-                attrs.onClick(row);
-              }
-
-              if (!inlineEdit || focused === cellId) {
-                return;
-              }
-
-              if (focused === false) {
-                setTimeout(() => fn.handleOutsideClick(), 5);
-              }
-
-              SetState({
-                focused: cellId
-              }, 'cellonClick');
-              setTimeout(() => {
-                let dom = (0, _jquery.default)(`[data-cell-id = ${cellId}]`).find('.aio-table-input');
-                dom.focus().select();
-              }, 10);
-            }
-          },
-          striped: this.renderIndex % 2 === 0 && striped,
-          value: value,
-          column: column,
-          row: row,
-          inlineEdit: inlineEdit,
-          before: fn.getValueByField(row, column, column.before),
-          after: fn.getValueByField(row, column, column.after),
-          justify: column.justify !== false && !column.treeMode
-        });
-      });
-    }), rows && rows.length === 0 && fn.getNoData(columns), !rows && fn.getLoading());
-  }
-
-}
-
-_defineProperty(AIOTableUnit, "contextType", AioTableContext);
-
-class AIOTableTitle extends _react.Component {
-  constructor(props) {
-    super(props);
-    this.dom = /*#__PURE__*/(0, _react.createRef)();
-  }
-
-  getStyle(style) {
-    let {
-      headerHeight,
-      columnGap
-    } = this.context;
-    return {
-      height: headerHeight,
-      top: 0,
-      borderLeft: columnGap ? 'none' : undefined,
-      borderRight: columnGap ? 'none' : undefined,
-      ...style
-    };
-  }
-
-  mouseDown(e, column) {
-    if (!column.resizable) {
-      return;
-    }
-
-    this.resizeDown(e, column);
-  }
-
-  resizeDown(e, column) {
-    var {
-      touch,
-      fn
-    } = this.context;
-    var {
-      gridTemplateColumns
-    } = this.props;
-    this.resized = false;
-    (0, _jquery.default)(window).bind(touch ? 'touchmove' : 'mousemove', _jquery.default.proxy(this.resizeMove, this));
-    (0, _jquery.default)(window).bind(touch ? 'touchend' : 'mouseup', _jquery.default.proxy(this.resizeUp, this));
-    this.resizeDetails = {
-      client: fn.getClient(e),
-      width: parseInt(gridTemplateColumns[column.renderIndex]),
-      column
-    };
-  }
-
-  resizeMove(e) {
-    this.resized = true;
-    var {
-      rtl,
-      fn
-    } = this.context;
-    var {
-      setStyle,
-      gridTemplateColumns
-    } = this.props;
-    var Client = fn.getClient(e);
-    var {
-      client,
-      width,
-      column
-    } = this.resizeDetails;
-    var offset = Client[0] - client[0];
-    let newWidth = width + offset * (rtl ? -1 : 1);
-
-    if (newWidth < parseInt(column.minWidth || 36)) {
-      newWidth = parseInt(column.minWidth || 36);
-    }
-
-    this.resizeDetails.newWidth = newWidth + 'px';
-    gridTemplateColumns[column.renderIndex] = this.resizeDetails.newWidth;
-    setStyle(gridTemplateColumns);
-  }
-
-  resizeUp() {
-    (0, _jquery.default)(window).unbind(touch ? 'touchmove' : 'mousemove', this.resizeMove);
-    (0, _jquery.default)(window).unbind(touch ? 'touchend' : 'mouseup', this.resizeUp);
-
-    if (!this.resized) {
-      return;
-    }
-
-    var {
-      touch,
-      columns,
-      SetState,
-      fn
-    } = this.context;
-    var {
-      newWidth
-    } = this.resizeDetails;
-    let {
-      column
-    } = this.props;
-    column = { ...column,
-      width: newWidth
-    };
-    column = fn.updateStorageByColumn(column, {
-      width: newWidth
-    });
-    columns = columns.map((c, i) => i === column.realIndex ? column : c);
-    SetState({
-      columns
-    });
-  }
-
-  getGanttTitle(column) {
-    var {
-      headerHeight,
-      columnGap
-    } = this.context;
-    var {
-      template
-    } = column;
-    let {
-      padding = 36
-    } = template;
-    var keys = template.getKeys();
     return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-title aio-table-title-gantt",
-      style: {
-        padding: `0 ${+padding}px`,
-        height: headerHeight,
-        top: 0,
-        borderLeft: columnGap ? 'none' : undefined,
-        borderRight: columnGap ? 'none' : undefined
-      },
-      key: column.realIndex + 'title'
-    }, /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
-      start: 0,
-      end: keys.length - 1,
-      labelStep: 1,
-      editLabel: value => keys[value],
-      labelStyle: () => {
-        return {
-          top: 0
-        };
-      },
-      pointStyle: () => {
-        return {
-          display: 'none'
-        };
-      },
-      lineStyle: () => {
-        return {
-          display: 'none'
-        };
-      }
-    }));
+      className: TableCLS.toolbar
+    }, items);
   }
-
-  render() {
+}
+_defineProperty(Toolbar, "contextType", TableContext);
+class Cell extends _react.Component {
+  constructor(props) {
+    super(props);
+    this.dataUniqId = 'cell' + Math.random();
+  }
+  getContent(row, column, value) {
+    let {
+      rows_object,
+      details_object,
+      verticalTabIndex
+    } = this.context;
+    let {
+      rowId,
+      colId
+    } = this.props;
+    if (this.inlineEdit) {
+      if (this.inlineEdit.type === 'text' || this.inlineEdit.type === 'number') {
+        let props = {
+          type: column.type,
+          className: TableCLS.inlineEditInput,
+          defaultValue: value,
+          tabIndex: verticalTabIndex ? colId : 0,
+          style: {
+            textAlign: column.justify ? 'center' : undefined
+          },
+          'data-col-id': colId,
+          'data-row-id': rowId,
+          onBlur: e => this.onChange(e.target.value)
+        };
+        return /*#__PURE__*/_react.default.createElement("input", props);
+      }
+      if (this.inlineEdit.type === 'select') {
+        return /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({
+          attrs: {
+            'data-col-id': colId,
+            'data-row-id': rowId,
+            tabIndex: verticalTabIndex ? colId : 0
+          }
+        }, this.inlineEdit, {
+          className: TableCLS.inlineEditInput,
+          onChange: value => this.onChange(value),
+          text: value
+        }));
+      }
+      if (this.inlineEdit.type === 'checkbox') {
+        return /*#__PURE__*/_react.default.createElement(_aioButton.default, _extends({
+          attrs: {
+            'data-col-id': colId,
+            'data-row-id': rowId,
+            tabIndex: verticalTabIndex ? colId : 0
+          }
+        }, this.inlineEdit, {
+          className: TableCLS.inlineEditInput,
+          value: value,
+          style: {
+            padding: 0
+          },
+          onChange: value => this.onChange(!value)
+        }));
+      }
+    }
+    let {
+      templates = {}
+    } = this.context;
+    if (column.template && templates[column.template]) {
+      return templates[column.template](rows_object[rowId], details_object[rowId]);
+    } else {
+      return value;
+    }
+  }
+  async onChange(value) {
     let {
       column,
-      onDragStart,
-      onDragOver,
-      onDrop,
-      isLast
+      rowId
     } = this.props;
     let {
-      rtl
+      rows_object,
+      setModel
     } = this.context;
-
-    if (column.template && column.template.type === 'gantt') {
-      return this.getGanttTitle(column);
+    let row = rows_object[rowId];
+    this.setState({
+      loading: true
+    });
+    if (this.inlineEdit.type === 'number' && !isNaN(+value)) {
+      value = +value;
     }
-
-    let title = typeof column.title === 'function' ? column.title() : column.title;
-    let attrs = { ...this.context.titleAttrs,
-      ...column.titleAttrs
-    };
-    let dataUniqId = 'aiotabletitle' + Math.round(Math.random() * 10000000);
-    return /*#__PURE__*/_react.default.createElement("div", {
-      ref: this.dom,
-      "data-uniq-id": dataUniqId,
-      style: this.getStyle(attrs.style),
-      draggable: false,
-      className: 'aio-table-title' + (attrs.className ? ' ' + attrs.className : '') + (isLast ? ' last-child' : '') + (rtl ? ' rtl' : ' ltr')
-    }, /*#__PURE__*/_react.default.createElement(AIOTableFilter, {
-      column: column,
-      dataUniqId: dataUniqId
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-title-text",
-      style: {
-        justifyContent: column.titleJustify !== false ? 'center' : undefined,
-        cursor: column.movable === false ? undefined : 'move'
-      },
-      draggable: column.movable !== false,
-      onDragStart: () => onDragStart(column.realIndex),
-      onDragOver: e => onDragOver(e, column.realIndex),
-      onDrop: () => onDrop(column)
-    }, title), column.width !== 'auto' && /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-resize",
-      style: {
-        cursor: column.resizable ? 'col-resize' : 'default'
-      },
-      draggable: false,
-      onTouchStart: e => this.mouseDown(e, column),
-      onMouseDown: e => this.mouseDown(e, column)
-    }));
-  }
-
-}
-
-_defineProperty(AIOTableTitle, "contextType", AioTableContext);
-
-class AIOTableGroup extends _react.Component {
-  getStyle() {
-    let {
-      rowHeight,
-      fn
-    } = this.context;
-    let {
-      columns
-    } = this.props;
-    return { ...fn.getFullCellStyle(columns),
-      height: rowHeight
-    };
-  }
-
-  getIcon(row) {
-    let {
-      rtl
-    } = this.context;
-
-    if (row._opened) {
-      return aioTableGetSvg('chevronDown', {
-        box: '2 1 20 20'
-      });
+    if (this.inlineEdit.onChange) {
+      await this.inlineEdit.onChange(row, value);
+    } else {
+      setModel(this.setCellValue(row, column.field, value));
     }
-
-    return aioTableGetSvg('chevronRight', {
-      flip: rtl === true
+    this.setState({
+      loading: false
     });
   }
-
-  click(row) {
+  setCellValue(row, field, value) {
+    //row is used in eval
     let {
-      SetState,
-      groupsOpen
+      model
     } = this.context;
-    var {
-      _groupId
-    } = row;
-    groupsOpen[_groupId] = !groupsOpen[_groupId];
-    SetState({
-      groupsOpen
-    });
+    let evalText;
+    if (typeof value === 'string') {
+      evalText = `${field} = "${value}"`;
+    } else {
+      evalText = field + ' = ' + JSON.stringify(value);
+    }
+    eval(evalText);
+    return model;
   }
-
+  getInlineEdit(row, column) {
+    let inlineEdit = typeof column.inlineEdit === 'function' ? column.inlineEdit(row) : column.inlineEdit;
+    if (!inlineEdit) {
+      return false;
+    }
+    if (inlineEdit === true) {
+      inlineEdit = {};
+    }
+    let {
+      disabled = () => false,
+      type = column.type || 'text'
+    } = inlineEdit;
+    if (disabled(row)) {
+      return false;
+    }
+    return {
+      ...inlineEdit,
+      type
+    };
+  }
   render() {
     let {
-      indent
+      getRowById,
+      rowHeight
     } = this.context;
     let {
-      row,
-      tableIndex
-    } = this.props;
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-group",
-      style: this.getStyle()
-    }, tableIndex !== 1 && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      style: {
-        width: indent * row._level,
-        flexShrink: 0
-      }
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-toggle",
-      onClick: () => this.click(row)
-    }, this.getIcon(row)), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-cell-gap"
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-group-text"
-    }, row._groupValue)));
-  }
-
-}
-
-_defineProperty(AIOTableGroup, "contextType", AioTableContext);
-
-class AIOTableCell extends _react.Component {
-  constructor(props) {
-    super(props);
-    this.dom = /*#__PURE__*/(0, _react.createRef)();
-    var {
-      value
-    } = this.props;
-    this.state = {
+      column,
+      rowId,
       value,
-      error: false,
-      prevValue: value
-    };
-  }
-
-  getStyle(column, row) {
-    var {
-      template,
-      minWidth = '30px'
-    } = column;
-    var {
-      rowHeight,
-      getCellAttrs
-    } = this.context;
-    let {
       striped
     } = this.props;
-    var style = {
-      height: rowHeight,
-      overflow: template ? undefined : 'hidden',
-      minWidth
-    };
-
-    if (column.template && column.template.type === 'gantt') {
-      style.padding = 0;
+    let row = getRowById(rowId);
+    let attrs = {},
+      style = {
+        overflow: 'visible'
+      };
+    if (column.cellAttrs) {
+      attrs = column.cellAttrs(row) || {};
+      if (attrs.style) {
+        style = attrs.style;
+      }
     }
-
+    if (rowHeight) {
+      style.height = rowHeight;
+    }
     if (typeof striped === 'string') {
       style.background = striped;
     } else if (Array.isArray(striped)) {
       style.background = striped[0];
       style.color = striped[1];
     }
-
-    let attrs = getCellAttrs(row, column);
-    return { ...style,
-      ...attrs.style
+    style = {
+      justifyContent: column.justify ? 'center' : undefined,
+      ...style
     };
-  }
-
-  getClassName(row, column) {
-    let {
-      getCellAttrs
-    } = this.context;
-    var className = 'aio-table-cell';
-    let {
-      striped
-    } = this.props;
-    let attrs = getCellAttrs(row, column);
-
-    if (striped === true) {
-      className += ' striped';
-    }
-
-    if (column.selectable !== false) {
-      className += ' aio-table-cell-selectable';
-    }
-
-    if (column.template && column.template.type === 'gantt') {
-      className += ' aio-table-cell-gantt';
-    }
-
-    if (attrs.className) {
-      className += ' ' + attrs.className;
-    }
-
-    if (column.inlineEdit) {
-      className += ' aio-table-cell-input';
-    }
-
-    if (row._show === 'relativeFilter') {
-      className += ' aio-table-relative-filter';
-    }
-
-    if (row._show === false) {
-      className += ' aio-table-cell-hidden';
-    }
-
-    if (row._isFirstChild) {
-      className += ' first-child';
-    }
-
-    if (row._isLastChild) {
-      className += ' last-child';
-    }
-
-    return className;
-  }
-
-  getToggleIcon(row) {
-    let {
-      rtl,
-      fn
-    } = this.context;
-    let icon;
-
-    if (row._opened) {
-      icon = aioTableGetSvg('chevronDown');
-    } else {
-      icon = aioTableGetSvg('chevronRight', {
-        flip: rtl === true
-      });
-    }
-
-    return /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-toggle",
-      onClick: () => fn.toggleRow(row),
-      style: {
-        opacity: row._childsLength ? 1 : 0
-      }
-    }, icon), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-cell-gap"
-    }));
-  }
-
-  splitNumber(num) {
-    if (!num) {
-      return num;
-    }
-
-    let str = num.toString();
-    let dotIndex = str.indexOf('.');
-
-    if (dotIndex !== -1) {
-      str = str.slice(0, dotIndex);
-    }
-
-    let res = '';
-    let index = 0;
-
-    for (let i = str.length - 1; i >= 0; i--) {
-      res = str[i] + res;
-
-      if (index === 2) {
-        index = 0;
-
-        if (i > 0) {
-          res = ',' + res;
-        }
-      } else {
-        index++;
-      }
-    }
-
-    return res;
-  }
-
-  getContentByTemplate(row, column, value) {
-    let {
-      fn
-    } = this.context;
-    let template = typeof column.template === 'function' ? column.template(row, column, value) : column.template;
-
-    if (!template) {
-      return value;
-    }
-
-    if (template.type === 'slider') {
-      return fn.getSliderCell(template, value);
-    }
-
-    if (template.type === 'checkbox') {
-      return fn.getCheckboxCell(template, value, row);
-    }
-
-    if (template.type === 'options') {
-      return fn.getOptionsCell(template, row);
-    }
-
-    if (template.type === 'split') {
-      let newValue = this.splitNumber(value);
-
-      if (template.editValue) {
-        newValue = template.editValue(newValue);
-      }
-
-      return newValue;
-    }
-
-    if (template.type === 'gantt') {
-      return fn.getGanttCell(row, template, column);
-    }
-
-    return template;
-  }
-
-  getContent(row, column, value) {
-    let {
-      focused,
-      fn
-    } = this.context;
-    let {
-      inlineEdit
-    } = this.props;
-    let template = this.getContentByTemplate(row, column, value);
-    var content = '';
-
-    if (inlineEdit && focused) {
-      content = this.getInput(row, column);
-    } else {
-      content = template;
-    }
-
-    if (column.subText) {
-      let subText;
-
-      try {
-        subText = fn.getValueByField(row, column, column.subText);
-      } catch {
-        subText = '';
-      }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-cell-has-subtext"
-      }, /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          flex: 1
-        }
-      }), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-cell-uptext"
-      }, content), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-cell-subtext"
-      }, subText), /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          flex: 1
-        }
-      }));
-    }
-
-    return content;
-  }
-
-  async changeCell(value) {
-    let {
-      row,
-      column,
-      inlineEdit
-    } = this.props;
-    let {
-      fn
-    } = this.context;
-    let res;
-    this.setState({
-      loading: true
-    });
-
-    if (inlineEdit.onChange) {
-      res = await inlineEdit.onChange(row, value);
-    } else if (typeof column.getValue === 'string') {
-      res = await this.context.onChange(fn.setCellValue(row, column.getValue, value));
-    }
-
-    this.setState({
-      loading: false
-    });
-    return res;
-  }
-
-  getInput(row, column) {
-    let {
-      fn
-    } = this.context;
-    let {
-      attrs,
-      inlineEdit
-    } = this.props;
-    let {
-      type,
-      getValue,
-      disabled = () => false,
-      options
-    } = inlineEdit;
-    let {
-      value
-    } = this.state;
-
-    if (getValue) {
-      value = fn.getValueByField(row, column, getValue);
-    }
-
-    if (disabled(row)) {
-      if (typeof value === 'boolean') {
-        return JSON.stringify(value);
-      }
-
-      return value;
-    }
-
-    let props = { ...inlineEdit,
-      className: 'aio-table-input',
-      'data-row-index': attrs['data-row-index'],
-      'data-col-index': attrs['data-col-index'],
-      value: value === null || value === undefined ? '' : value
-    };
-
-    if (type === 'text' || type === 'number') {
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: 'aio-table-input-container'
-      }, /*#__PURE__*/_react.default.createElement("input", _extends({}, props, {
-        style: {
-          textAlign: column.justify || type === 'number' ? 'center' : undefined
+    this.inlineEdit = this.getInlineEdit(row, column);
+    return /*#__PURE__*/_react.default.createElement(_reactVirtualDom.default, {
+      layout: {
+        className: TableCLS.cell + (attrs.className ? ' ' + attrs.className : '') + (striped === true ? ' striped' : ''),
+        attrs: {
+          ...attrs,
+          'data-uniq-id': this.dataUniqId,
+          style: undefined,
+          className: undefined,
+          onClick: attrs.onClick ? () => attrs.onClick(row) : undefined
         },
-        onChange: e => this.setState({
-          value: e.target.value
-        }),
-        onBlur: async e => {
-          let {
-            value
-          } = this.state;
-
-          if (value === this.props.value) {
-            return;
-          }
-
-          let newValue = value;
-
-          if (type === 'number') {
-            newValue = parseFloat(newValue);
-
-            if (isNaN(newValue)) {
-              newValue = 0;
-            }
-          }
-
-          let res = await this.changeCell(newValue);
-
-          if (typeof res === 'string') {
-            this.setState({
-              error: res
-            });
-          } else {
-            this.setState({
-              value: this.props.value
-            });
-          }
-        }
-      })), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-input-border"
-      }));
-    }
-
-    if (type === 'select') {
-      if (!options) {
-        console.error('aio table => missing options property of column inlineEdit with type="select"');
-        return '';
+        style,
+        row: [this.indent_layout(column.treeMode, rowId), this.toggle_layout(), this.before_layout(row, column), this.content_layout(row, column, value), this.after_layout(row, column)]
       }
-
-      if (!Array.isArray(options)) {
-        console.error('aio table => options property of column inlineEdit with type="select" must be an array of objects . each object must have text and value property!!!');
-        return '';
-      }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-input-container"
-      }, /*#__PURE__*/_react.default.createElement("select", _extends({}, props, {
-        onFocus: () => this.focus = true,
-        onBlur: () => this.focus = false,
-        onChange: async e => {
-          let value = e.target.value;
-
-          if (value === 'true') {
-            value = true;
-          }
-
-          if (value === 'false') {
-            value = false;
-          }
-
-          this.setState({
-            value
-          });
-          let res = await this.changeCell(value);
-
-          if (typeof res === 'string') {
-            this.setState({
-              error: res
-            });
-          } else if (res === false) {
-            this.setState({
-              value: this.props.value
-            });
-          }
-        }
-      }), options.map((o, i) => /*#__PURE__*/_react.default.createElement("option", {
-        key: i,
-        value: o.value
-      }, o.text))), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-input-border"
-      }));
-    }
-
-    if (type === 'checkbox') {
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: 'aio-table-input-container',
-        tabIndex: 0,
-        onKeyDown: async e => {
-          if (e.keyCode === 13) {
-            value = value === true ? true : false;
-            await this.changeCell(!value);
-          }
-        }
-      }, /*#__PURE__*/_react.default.createElement("input", _extends({}, props, {
-        onFocus: () => this.focus = true,
-        onBlur: () => this.focus = false,
-        checked: value === true ? true : false,
-        onChange: async e => {
-          let value = e.target.checked;
-          this.setState({
-            loading: true
-          });
-          await this.changeCell(value);
-          this.setState({
-            loading: false
-          });
-        }
-      })), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-input-border"
-      }));
-    }
-
-    console.error('aio table => missing type property of column input');
-    return '';
+    });
   }
-
-  componentDidUpdate() {
-    let {
-      inlineEdit
-    } = this.props;
-
-    if (inlineEdit && this.focus) {
-      if (inlineEdit.type === 'select' || inlineEdit.type === 'checkbox') {
-        (0, _jquery.default)(this.dom.current).find('.aio-table-input').focus();
-      }
+  indent_layout(treeMode, rowId) {
+    if (!treeMode) {
+      return false;
     }
+    return this.context.indent_layout(rowId);
   }
-
-  getProps(row, column, content) {
-    let attrs = this.context.getCellAttrs(row, column);
-    let title = typeof content === 'string' ? content : undefined;
-    return {
-      ref: this.dom,
-      title,
-      ...attrs,
-      style: this.getStyle(column, row),
-      className: this.getClassName(row, column)
-    };
-  }
-
-  render() {
+  toggle_layout() {
     let {
-      indent,
-      fn
-    } = this.context;
-    let {
-      row,
       column,
-      value,
-      before,
-      after,
-      justify,
-      attrs
+      rowId
     } = this.props;
-
-    if (this.state.prevValue !== value) {
-      setTimeout(() => this.setState({
-        value,
-        prevValue: value
-      }), 0);
+    if (!column.treeMode) {
+      return false;
     }
-
     let {
-      error,
-      loading
-    } = this.state;
-    let content = this.getContent(row, column, value);
-
-    if (column.affix) {
-      content = content + ' ' + column.affix;
-    }
-
-    let cell;
-
-    if (loading) {
-      return fn.cubes2();
-    }
-
-    if (error) {
-      cell = /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-error",
-        onClick: () => {
-          this.setState({
-            value: this.props.value,
-            error: false
-          });
-        }
-      }, error);
-    } else {
-      cell = /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, column.treeMode && /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          width: row._level * indent,
-          flexShrink: 0
-        }
-      }), column.treeMode && this.getToggleIcon(row), before !== undefined && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-icon"
-      }, before), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-cell-gap"
-      })), content !== undefined && /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-cell-content",
-        style: {
-          justifyContent: justify ? 'center' : undefined
-        }
-      }, content), after !== undefined && /*#__PURE__*/_react.default.createElement(_react.default.Fragment, null, /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          flex: 1
-        }
-      }), /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-icon"
-      }, after)));
-    }
-
-    return /*#__PURE__*/_react.default.createElement("div", _extends({}, attrs, this.getProps(row, column, content)), cell);
-  }
-
-}
-
-_defineProperty(AIOTableCell, "contextType", AioTableContext);
-
-class AIOTableFilter extends _react.Component {
-  constructor(...args) {
-    super(...args);
-
-    _defineProperty(this, "dom", /*#__PURE__*/(0, _react.createRef)());
-  }
-
-  async change(obj) {
-    let {
-      SetState,
-      columns
+      toggle_layout
     } = this.context;
+    return toggle_layout(rowId);
+  }
+  before_layout(row, column) {
+    if (!column.before) {
+      return false;
+    }
     let {
-      column
-    } = this.props;
-    column = { ...column,
-      filter: { ...column.filter,
-        ...obj
-      }
+      state
+    } = this.context;
+    let html = state.getValueByField(row, undefined, column.before);
+    return {
+      row: [{
+        className: TableCLS.cellBefore,
+        html
+      }, {
+        size: 6
+      }]
     };
-    let approve = true;
-
-    if (column.filter.onChange) {
-      let loading = (0, _jquery.default)(this.dom.current).parents('.aio-table').find('.aio-table-main-loading');
-      loading.css({
-        display: 'flex'
-      });
-      approve = await newFilter.onChange(column.filter);
-      loading.css({
-        display: 'none'
-      });
-    }
-
-    if (approve !== false) {
-      SetState({
-        columns: columns.map(o => o.realIndex === column.realIndex ? column : o)
-      });
-    }
   }
-
-  render() {
-    var {
-      rtl,
-      translate
-    } = this.context;
-    var {
-      column
-    } = this.props;
-
-    if (!column.filter || column.search) {
-      return null;
-    }
-
+  content_layout(row, column, value) {
     let {
-      items = [],
-      booleanType = 'or',
-      type = 'text'
-    } = column.filter;
-    let icon = items.length ? aioTableGetSvg('filterActive', {
-      className: 'has-filter'
-    }) : aioTableGetSvg('filter');
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-filter-icon",
-      ref: this.dom,
-      onClick: () => {
-        (0, _jquery.default)('.aio-table-title').css({
-          zIndex: 100
-        });
-        (0, _jquery.default)(`[data-uniq-id = ${this.props.dataUniqId}]`).css({
-          zIndex: 1000
-        });
-      }
-    }, /*#__PURE__*/_react.default.createElement(_aioButton.default, {
-      type: "button",
-      rtl: rtl,
-      caret: false,
-      openRelatedTo: ".aio-table",
-      text: icon,
-      popOver: () => {
-        return /*#__PURE__*/_react.default.createElement(AIOTableFilterPopup, {
-          translate,
-          type,
-          items,
-          booleanType,
-          onChange: obj => this.change(obj)
-        });
-      }
-    }));
+      state
+    } = this.context;
+    let subtext = state.getValueByField(row, undefined, column.subtext);
+    if (subtext) {
+      return {
+        className: TableCLS.cellContent,
+        style: {
+          height: '100%'
+        },
+        align: 'v',
+        flex: 1,
+        column: [{
+          html: this.getContent(row, column, value),
+          align: column.justify ? 'vh' : 'v',
+          style: {
+            overflow: 'visible'
+          }
+        }, {
+          size: 3
+        }, {
+          html: subtext,
+          className: TableCLS.cellSubtext,
+          align: column.justify ? 'vh' : 'v'
+        }]
+      };
+    } else {
+      return {
+        className: TableCLS.cellContent,
+        align: column.justify ? 'vh' : 'v',
+        flex: 1,
+        html: this.getContent(row, column, value),
+        style: {
+          height: '100%'
+        }
+      };
+    }
   }
-
+  after_layout(row, column) {
+    if (!column.after) {
+      return false;
+    }
+    let {
+      state
+    } = this.context;
+    let html = state.getValueByField(row, undefined, column.after);
+    return {
+      row: [{
+        className: TableCLS.cellAfter,
+        html
+      }]
+    };
+  }
 }
-
-_defineProperty(AIOTableFilter, "contextType", AioTableContext);
-
+_defineProperty(Cell, "contextType", TableContext);
+function FilterResult(items = [], booleanType = 'or', value, reverse) {
+  let fn = {
+    and() {
+      if (value === undefined) {
+        return false;
+      }
+      for (let i = 0; i < items.length; i++) {
+        let {
+          operator: o,
+          value: v,
+          type
+        } = items[i];
+        if (v === '' || v === undefined) {
+          continue;
+        }
+        let a, b;
+        if (reverse) {
+          a = v;
+          b = value;
+        } else {
+          a = value;
+          b = v;
+        }
+        if (o === 'contain') {
+          if (!this.isContain(a, b)) {
+            return false;
+          }
+          continue;
+        }
+        if (o === 'notContain') {
+          if (this.isContain(a, b)) {
+            return false;
+          }
+          continue;
+        }
+        if (o === 'equal') {
+          if (!this.isEqual(a, b)) {
+            return false;
+          }
+          continue;
+        }
+        if (o === 'notEqual') {
+          if (this.isEqual(a, b)) {
+            return false;
+          }
+          continue;
+        }
+        if (o === 'greater') {
+          if (!this.isGreater(a, b, type)) {
+            return false;
+          }
+          continue;
+        }
+        if (o === 'less') {
+          if (!this.isLess(a, b, type)) {
+            return false;
+          }
+          continue;
+        }
+      }
+      return true;
+    },
+    or() {
+      if (value === undefined) {
+        return false;
+      }
+      for (let i = 0; i < items.length; i++) {
+        let {
+          operator: o,
+          value: v,
+          type
+        } = items[i];
+        if (v === '' || v === undefined) {
+          return true;
+        }
+        let a, b;
+        if (reverse) {
+          a = v;
+          b = value;
+        } else {
+          a = value;
+          b = v;
+        }
+        if (o === 'contain') {
+          if (this.isContain(a, b)) {
+            return true;
+          }
+          continue;
+        }
+        if (o === 'notContain') {
+          if (!this.isContain(a, b)) {
+            return true;
+          }
+          continue;
+        }
+        if (o === 'equal') {
+          if (this.isEqual(a, b)) {
+            return true;
+          }
+          continue;
+        }
+        if (o === 'notEqual') {
+          if (!this.isEqual(a, b)) {
+            return true;
+          }
+          continue;
+        }
+        if (o === 'greater') {
+          if (this.isGreater(a, b, type)) {
+            return true;
+          }
+          continue;
+        }
+        if (o === 'less') {
+          if (this.isLess(a, b, type)) {
+            return true;
+          }
+          continue;
+        }
+      }
+      return false;
+    },
+    isContain(text, subtext) {
+      return text.toString().toLowerCase().indexOf(subtext.toString().toLowerCase()) !== -1;
+    },
+    isEqual(a, b) {
+      return a.toString().toLowerCase() === b.toString().toLowerCase();
+    },
+    isGreater(a, b, type) {
+      if (type === 'date') {
+        return this.getDateNumber(a) > this.getDateNumber(b);
+      }
+      return parseFloat(a) > parseFloat(b);
+    },
+    getDateNumber(value) {
+      let splitter;
+      for (let i = 0; i < value.length; i++) {
+        if (isNaN(parseInt(value[i]))) {
+          splitter = value[i];
+          break;
+        }
+      }
+      let [year, month = '01', day = '01'] = value.split(splitter);
+      let list = [year, month, day];
+      return parseInt(list.map(o => o.length === 1 ? '0' + o : o).join(''));
+    },
+    isLess(a, b, type) {
+      if (type === 'date') {
+        return this.getDateNumber(a) < this.getDateNumber(b);
+      }
+      return parseFloat(a) < parseFloat(b);
+    }
+  };
+  if (items.length) {
+    return fn[booleanType]();
+  }
+  return true;
+}
 class AIOTableFilterPopup extends _react.Component {
-  render() {
-    var {
+  items_layout() {
+    let {
+      items
+    } = this.props;
+    return {
+      column: items.map((item, i) => {
+        return {
+          column: [this.item_layout(item, i), this.boolean_layout(i)]
+        };
+      })
+    };
+  }
+  item_layout(item, itemIndex) {
+    let {
       type,
       items,
-      booleanType,
       onChange,
-      translate = str => str
+      translate = str => str,
+      add,
+      operators,
+      valueOptions
     } = this.props;
-    var filterItems = items.map((item, i) => {
-      return /*#__PURE__*/_react.default.createElement(_react.Fragment, {
-        key: i
-      }, /*#__PURE__*/_react.default.createElement(AIOTableFilterItem, {
-        item: item,
+    return {
+      html: /*#__PURE__*/_react.default.createElement(AIOfilterItem, {
+        operator: item.operator,
+        value: item.value,
         type: type,
-        onChange: (key, value) => onChange({
-          items: items.map((o, index) => {
-            if (i === index) {
-              return { ...o,
+        translate: translate,
+        operators: operators,
+        operatorOptions: this.operatorOptions,
+        valueOptions: valueOptions,
+        add: add,
+        onChange: (key, value) => {
+          onChange(items.map((o, i) => {
+            if (itemIndex === i) {
+              return {
+                ...o,
                 [key]: value
               };
             }
-
             return o;
-          })
-        }),
-        onRemove: () => onChange({
-          items: items.filter((o, index) => index !== i)
-        }),
-        translate: translate
-      }), i < items.length - 1 && /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-boolean",
-        onClick: () => onChange({
-          booleanType: booleanType === 'or' ? 'and' : 'or'
-        })
-      }, translate(booleanType)));
-    });
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-filter-popup",
-      style: {
-        minWidth: 250
-      }
-    }, filterItems, /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-filter-footer"
-    }, /*#__PURE__*/_react.default.createElement("button", {
-      className: "aio-table-filter-add",
-      onClick: () => onChange({
-        items: items.concat({
-          operator: 'contain',
-          value: '',
-          type
-        })
+          }));
+        },
+        onRemove: add === false ? undefined : () => onChange(items.filter((o, i) => i !== itemIndex))
       })
-    }, translate('Add'))));
-  }
-
-}
-
-exports.AIOTableFilterPopup = AIOTableFilterPopup;
-
-class AIOTableFilterItem extends _react.Component {
-  constructor(props) {
-    super(props);
-    var {
-      item
-    } = this.props;
-    this.state = {
-      value: item.value,
-      prevValue: item.value
     };
   }
-
-  changeValue(value) {
-    clearTimeout(this.timeout);
-    this.setState({
-      value
-    });
-    this.timeout = setTimeout(() => {
-      var {
-        onChange
-      } = this.props;
-      onChange('value', value);
-    }, 1000);
+  getOperatorOptions() {
+    let {
+      translate,
+      type,
+      operators = ['contain', 'notContain', 'equal', 'notEqual', 'greater', 'less']
+    } = this.props;
+    return [{
+      text: translate('Contain'),
+      value: 'contain',
+      show: type === 'text' && operators.indexOf('contain') !== -1
+    }, {
+      text: translate('Not Contain'),
+      value: 'notContain',
+      show: type === 'text' && operators.indexOf('notContain') !== -1
+    }, {
+      text: translate('Equal'),
+      value: 'equal',
+      show: operators.indexOf('equal') !== -1
+    }, {
+      text: translate('Not Equal'),
+      value: 'notEqual',
+      show: operators.indexOf('notEqual') !== -1
+    }, {
+      text: translate('Greater Than'),
+      value: 'greater',
+      show: (type === 'date' || type === 'number') && operators.indexOf('greater') !== -1
+    }, {
+      text: translate('Less Than'),
+      value: 'less',
+      show: (type === 'date' || type === 'number') && operators.indexOf('less') !== -1
+    }];
   }
-
-  getOptions(type, translate) {
-    let options = [];
-
-    if (type !== 'number' && type !== 'date') {
-      options.push( /*#__PURE__*/_react.default.createElement("option", {
-        key: "contain",
-        value: "contain"
-      }, translate('Contain')));
-      options.push( /*#__PURE__*/_react.default.createElement("option", {
-        key: "notContain",
-        value: "notContain"
-      }, translate('Not Contain')));
+  boolean_layout(index) {
+    let {
+      items,
+      translate = text => text,
+      booleanType,
+      onChangeBooleanType
+    } = this.props;
+    if (index >= items.length - 1) {
+      return false;
     }
-
-    options.push( /*#__PURE__*/_react.default.createElement("option", {
-      key: "equal",
-      value: "equal"
-    }, translate('Equal')));
-    options.push( /*#__PURE__*/_react.default.createElement("option", {
-      key: "notEqual",
-      value: "notEqual"
-    }, translate('Not Equal')));
-
-    if (type !== 'text') {
-      options.push( /*#__PURE__*/_react.default.createElement("option", {
-        key: "greater",
-        value: "greater"
-      }, translate('Greater')));
-      options.push( /*#__PURE__*/_react.default.createElement("option", {
-        key: "less",
-        value: "less"
-      }, translate('Less')));
-    }
-
-    return options;
+    return {
+      html: translate(booleanType),
+      attrs: {
+        onClick: () => onChangeBooleanType(booleanType === 'or' ? 'and' : 'or')
+      },
+      align: 'vh'
+    };
   }
-
-  render() {
+  add_layout() {
     var {
-      item,
+      type,
+      items,
+      onChange,
+      translate = str => str,
+      add
+    } = this.props;
+    if (add === false) {
+      return false;
+    }
+    return {
+      html: /*#__PURE__*/_react.default.createElement("button", {
+        className: TableCLS.addFilter,
+        onClick: () => onChange(items.concat({
+          operator: this.operatorOptions[0].value,
+          value: '',
+          type
+        }))
+      }, translate('Add'))
+    };
+  }
+  render() {
+    this.operatorOptions = this.getOperatorOptions();
+    return /*#__PURE__*/_react.default.createElement(_reactVirtualDom.default, {
+      layout: {
+        className: TableCLS.filterPopup,
+        style: {
+          minWidth: 250
+        },
+        column: [this.items_layout(), this.add_layout()]
+      }
+    });
+  }
+}
+class AIOfilterItem extends _react.Component {
+  constructor(props) {
+    super(props);
+    let {
+      value
+    } = this.props;
+    this.state = {
+      value,
+      prevValue: value
+    };
+  }
+  operator_layout() {
+    let {
+      onChange,
+      operator,
+      operatorOptions,
+      add
+    } = this.props;
+    if (add === false) {
+      return false;
+    }
+    return {
+      size: 90,
+      html: /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+        style: {
+          width: '100%'
+        },
+        type: "select",
+        className: TableCLS.filterOperator,
+        value: operator,
+        options: operatorOptions,
+        onChange: value => onChange('operator', value)
+      })
+    };
+  }
+  value_layout() {
+    let {
       type,
       onChange,
-      onRemove,
-      translate
+      valueOptions
     } = this.props;
-
-    if (this.state.prevValue !== item.value) {
-      setTimeout(() => this.setState({
-        value: item.value,
-        prevValue: item.value
-      }), 0);
-    }
-
-    var {
+    let {
       value
     } = this.state;
-    return /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-filter-item"
-    }, /*#__PURE__*/_react.default.createElement("select", {
-      value: item.operator,
-      onChange: e => onChange('operator', e.target.value)
-    }, this.getOptions(type, translate)), /*#__PURE__*/_react.default.createElement("div", {
-      style: {
-        width: '6px'
-      }
-    }), /*#__PURE__*/_react.default.createElement("input", {
-      type: type === 'date' ? 'text' : type,
-      value: value,
-      onChange: e => this.changeValue(e.target.value)
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      style: {
-        width: '6px'
-      }
-    }), /*#__PURE__*/_react.default.createElement("div", {
-      className: "aio-table-filter-remove",
-      onClick: () => onRemove()
-    }, aioTableGetSvg('close')));
-  }
-
-}
-
-function ATFN({
-  getProps,
-  getState,
-  setState,
-  getContext
-}) {
-  let $$ = {
-    fixPersianAndArabicNumbers(str) {
-      var persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g],
-          arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
-
-      if (typeof str === 'string') {
-        for (var i = 0; i < 10; i++) {
-          str = str.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+    if (valueOptions) {
+      return {
+        flex: 1,
+        html: /*#__PURE__*/_react.default.createElement("select", {
+          className: TableCLS.filterValue,
+          type: type === 'number' ? 'number' : 'text',
+          value: value,
+          onChange: e => {
+            let value = e.target.value;
+            clearTimeout(this.timeout);
+            this.setState({
+              value
+            });
+            onChange('value', value);
+          }
+        }, valueOptions.map(({
+          value,
+          text
+        }) => {
+          return /*#__PURE__*/_react.default.createElement("option", {
+            value: value
+          }, text);
+        }))
+      };
+    }
+    return {
+      flex: 1,
+      html: /*#__PURE__*/_react.default.createElement("input", {
+        className: TableCLS.filterValue,
+        type: type === 'number' ? 'number' : 'text',
+        value: value,
+        onChange: e => {
+          let value = e.target.value;
+          clearTimeout(this.timeout);
+          this.setState({
+            value
+          });
+          this.timeout = setTimeout(() => onChange('value', value), 1000);
         }
+      })
+    };
+  }
+  remove_layout() {
+    let {
+      onRemove
+    } = this.props;
+    if (!onRemove) {
+      return false;
+    }
+    return {
+      size: 24,
+      html: /*#__PURE__*/_react.default.createElement(_react2.Icon, {
+        path: _js.mdiClose,
+        size: 0.6,
+        onClick: () => onRemove()
+      }),
+      align: 'vh',
+      className: TableCLS.filterRemove
+    };
+  }
+  render() {
+    if (this.state.prevValue !== this.props.value) {
+      setTimeout(() => this.setState({
+        value: this.props.value,
+        prevValue: this.props.value
+      }), 0);
+    }
+    return /*#__PURE__*/_react.default.createElement(_reactVirtualDom.default, {
+      layout: {
+        className: TableCLS.filterItem,
+        gap: 3,
+        row: [this.operator_layout(), this.value_layout(), this.remove_layout()]
       }
-
-      return str;
-    },
-
-    getJSON(columns, rows) {
-      let result = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        if (!rows[i].row) {
+    });
+  }
+}
+function Sort(getProps, getState, setColumns) {
+  let o = {
+    get() {
+      let {
+        columns = [],
+        setColumn
+      } = getState();
+      let sorts = [];
+      for (let i = 0; i < columns.length; i++) {
+        if (!columns[i].sort) {
           continue;
         }
-
-        let row = rows[i].row;
-        let obj = {};
-
-        for (let j = 0; j < columns.length; j++) {
-          let {
-            title,
-            realIndex
-          } = columns[j];
-          let res = row._values[realIndex];
-          obj[title] = res !== undefined ? $$.fixPersianAndArabicNumbers(res) : "";
+        if (typeof columns[i].sort !== 'object') {
+          let column = columns[i];
+          setColumn(column, {
+            sort: {}
+          });
         }
-
-        result.push(obj);
+        let {
+          sort,
+          type = 'text',
+          field,
+          dataColumnId,
+          title
+        } = columns[i];
+        let {
+          dir = 'inc',
+          order,
+          active = true,
+          toggle = true
+        } = sort;
+        if (order === undefined) {
+          let newOrder = 0;
+          let orders = columns.filter(({
+            sort
+          }) => sort && sort.order !== undefined).map(({
+            sort
+          }) => sort.order);
+          while (orders.indexOf(newOrder) !== -1) {
+            newOrder++;
+          }
+          sort.order = newOrder;
+        }
+        sorts.push({
+          dir,
+          order: sort.order,
+          type,
+          field,
+          active,
+          toggle,
+          dataColumnId,
+          title
+        });
       }
-
+      sorts = sorts.sort(({
+        order: a
+      }, {
+        order: b
+      }) => a - b);
+      return sorts;
+    },
+    sort(model, sorts) {
+      let {
+        getValueByField
+      } = getState();
+      return model.sort((a, b) => {
+        for (let i = 0; i < sorts.length; i++) {
+          let {
+            field,
+            dir,
+            active
+          } = sorts[i];
+          if (!active) {
+            continue;
+          }
+          let aValue = getValueByField(a, undefined, field),
+            bValue = getValueByField(b, undefined, field);
+          if (aValue < bValue) {
+            return -1 * (dir === 'dec' ? -1 : 1);
+          }
+          if (aValue > bValue) {
+            return 1 * (dir === 'dec' ? -1 : 1);
+          }
+          if (i === sorts.length - 1) {
+            return 0;
+          }
+        }
+        return 0;
+      });
+    },
+    updateColumns(sorts) {
+      let {
+        columns,
+        saveColumnInStorage
+      } = getState();
+      for (let i = 0; i < sorts.length; i++) {
+        let sort = sorts[i];
+        let {
+          dir,
+          active,
+          dataColumnId
+        } = sort;
+        let column = columns.filter(c => c.dataColumnId === dataColumnId)[0];
+        column.sort = {
+          ...column.sort,
+          dir,
+          active,
+          order: i
+        };
+        saveColumnInStorage(column, 'sort', column.sort);
+      }
+      setColumns(columns);
+    },
+    async set(sorts) {
+      sorts = sorts || this.get();
+      if (!sorts.length) {
+        return;
+      }
+      let {
+        model,
+        onChangeSorts,
+        setModel
+      } = getProps();
+      if (onChangeSorts) {
+        let res = await onChangeSorts(sorts, this.sort(model, sorts));
+        if (res !== false) {
+          this.updateColumns(sorts);
+        }
+      } else if (setModel) {
+        setModel(this.sort(model, sorts));
+        this.updateColumns(sorts);
+      } else {
+        console.error('AIOTable Error => you set sort in columns but missing setModel or onChangeSort props.');
+      }
+    }
+  };
+  return {
+    set: o.set.bind(o),
+    get: o.get.bind(o)
+  };
+}
+function Group(getProps, getState, setColumns) {
+  let o = {
+    getGroupModel(model, groups) {
+      let {
+        getValueByField
+      } = getState();
+      let newModel = {};
+      for (let i = 0; i < model.length; i++) {
+        let row = model[i],
+          obj = newModel,
+          values = groups.map(group => getValueByField(row, undefined, group.field));
+        //let show = row._detail._show
+        for (let j = 0; j < values.length; j++) {
+          let value = values[j];
+          if (j === values.length - 1) {
+            obj[value] = obj[value] || [];
+            obj[value].push(row);
+          } else {
+            obj[value] = obj[value] || {};
+            obj = obj[value];
+          }
+        }
+      }
+      return newModel;
+    },
+    getGroupRows(model) {
+      var {
+        groupsOpen
+      } = getState();
+      function msf(obj, level, parents) {
+        if (Array.isArray(obj)) {
+          groupedRows = groupedRows.concat(obj);
+        } else {
+          for (var prop in obj) {
+            let newParents = parents.concat(prop),
+              id = newParents.toString();
+            groupsOpen[id] = groupsOpen[id] === undefined ? true : groupsOpen[id];
+            groupedRows.push({
+              _isGroup_: true,
+              value: prop,
+              id,
+              groupLevel: level,
+              groupOpen: groupsOpen[id]
+            });
+            if (groupsOpen[id]) {
+              msf(obj[prop], level + 1, newParents);
+            }
+          }
+        }
+      }
+      var groupedRows = [],
+        level = 0;
+      msf(model, level, []);
+      return groupedRows;
+    },
+    groupBy(model, groups = []) {
+      if (!groups.length) {
+        return model;
+      }
+      const groupModel = this.getGroupModel(model, groups);
+      return this.getGroupRows(groupModel);
+    },
+    updateColumns(groups) {
+      let {
+        columns = [],
+        saveColumnInStorage
+      } = getState();
+      for (let i = 0; i < groups.length; i++) {
+        let group = groups[i];
+        let {
+          active,
+          dataColumnId
+        } = group;
+        let column = columns.filter(c => c.dataColumnId === dataColumnId)[0];
+        column.group = {
+          ...column.group,
+          active,
+          order: i
+        };
+        saveColumnInStorage(column, 'group', column.group);
+      }
+      setColumns(columns);
+    },
+    get() {
+      let {
+        columns = []
+      } = getState();
+      let groups = [];
+      for (let i = 0; i < columns.length; i++) {
+        if (!columns[i].group) {
+          continue;
+        }
+        if (typeof columns[i].group !== 'object') {
+          columns[i].group = {};
+        }
+        let {
+          group,
+          type = 'text',
+          field,
+          dataColumnId,
+          title
+        } = columns[i];
+        let {
+          order,
+          active = true
+        } = group;
+        if (order === undefined) {
+          let newOrder = 0;
+          let orders = columns.filter(({
+            group
+          }) => group && group.order !== undefined).map(({
+            group
+          }) => group.order);
+          while (orders.indexOf(newOrder) !== -1) {
+            newOrder++;
+          }
+          group.order = newOrder;
+        }
+        groups.push({
+          order: group.order,
+          type,
+          field,
+          active,
+          dataColumnId,
+          title
+        });
+      }
+      groups = groups.sort(({
+        order: a
+      }, {
+        order: b
+      }) => a - b);
+      return groups;
+    },
+    set(groups) {
+      this.updateColumns(groups);
+    }
+  };
+  return {
+    get: o.get.bind(o),
+    set: o.set.bind(o),
+    groupBy: o.groupBy.bind(o)
+  };
+}
+function Excel(getProps) {
+  let o = {
+    fixPersianAndArabicNumbers(str) {
+      if (typeof srt !== 'string') {
+        return str;
+      }
+      var persianNumbers = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g],
+        arabicNumbers = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+      for (var i = 0; i < 10; i++) {
+        str = str.replace(persianNumbers[i], i).replace(arabicNumbers[i], i);
+      }
+      return str;
+    },
+    getJSON(rows) {
+      let result = [];
+      for (let i = 0; i < rows.length; i++) {
+        let json = rows[i],
+          fixedJson = {};
+        for (let prop in json) {
+          fixedJson[prop] = this.fixPersianAndArabicNumbers(json[prop]);
+        }
+        result.push(fixedJson);
+      }
       return result;
     },
-
-    exportToExcel(columns, rows) {
+    export(rows) {
       let {
         translate
       } = getProps();
-      let name = window.prompt(translate('Inter Excel File Name')); // if (name === false || name === undefined || name === null) { return; }
-
+      let name = window.prompt(translate('Inter Excel File Name'));
       if (!name || name === null || !name.length) return;
-      var data = $$.getJSON(columns, rows);
+      var data = this.getJSON(rows);
       var arrData = typeof data != "object" ? JSON.parse(data) : data;
-      var CSV = ""; // CSV += 'title';
-
+      var CSV = "";
+      // CSV += 'title';
       CSV += '\r\n\n';
-
       if (true) {
         let row = "";
-
         for (let index in arrData[0]) {
           row += index + ",";
         }
-
         row = row.slice(0, -1);
         CSV += row + "\r\n";
       }
-
       for (var i = 0; i < arrData.length; i++) {
         let row = "";
-
         for (let index in arrData[i]) {
           row += '"' + arrData[i][index] + '",';
         }
-
         row.slice(0, row.length - 1);
         CSV += row + "\r\n";
       }
-
       if (CSV === "") {
         alert("Invalid data");
         return;
       }
-
       var fileName = name.replace(/ /g, "_");
       var universalBOM = "\uFEFF";
       var uri = "data:text/csv;charset=utf-8," + encodeURIComponent(universalBOM + CSV);
@@ -2184,1715 +2614,257 @@ function ATFN({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    },
-
-    getSliderCell(template, val) {
-      let {
-        colors = ['#eee', 'dodgerblue'],
-        start = 0,
-        end = 100,
-        value = val,
-        editValue = value => value
-      } = template;
-      let {
-        rowHeight,
-        rtl
-      } = getProps();
-      let [clr1 = '#eee', clr2 = 'dodgerblue'] = colors;
-      let points = Array.isArray(value) ? value : [value];
-
-      if (points.length > 2) {
-        points = [points[0], points[1]];
+    }
+  };
+  return {
+    export: o.export.bind(o)
+  };
+}
+let functions = {
+  async onScroll(index) {
+    let {
+      lazyLoad = {}
+    } = this.props;
+    let {
+      onScrollEnd
+    } = lazyLoad;
+    if (onScrollEnd) {
+      // if(index === undefined || index === 0){
+      //   let table = $(this.dom.current).find('.' + TableCLS.rows);
+      //   let scrollTop = table.scrollTop();
+      //   let scrollHeight = table[0].scrollHeight;
+      //   let height = table.height();
+      //   if(scrollTop + height === scrollHeight){
+      //     let {startIndex} = getState();
+      //     let {lazyLength,totalLength} = lazyLoad;
+      //     let from = startIndex + lazyLength;
+      //     if(from > totalLength){return;}
+      //     let to = from + lazyLength;
+      //     if(to > totalLength){to = totalLength;}
+      //     let a = $(dom.current).find('.aio-table-main-loading')
+      //     a.css({display:'flex'})
+      //     let res = await onScrollEnd(from,to);
+      //     a.css({display:'none'})
+      //     if(res !== false){
+      //       setState({startIndex:from})
+      //     }
+      //   }
+      // }
+    }
+    if (index === undefined) {
+      return;
+    }
+    if (!this['scroll' + index]) {
+      let otherIndex = Number(!index);
+      this['scroll' + otherIndex] = true;
+      let c = (0, _jquery.default)(this.dom.current);
+      var units = [c.find('.' + TableCLS.freezeContainer), c.find('.' + TableCLS.unfreezeContainer)];
+      var scrollTop = units[index].scrollTop();
+      units[otherIndex].scrollTop(scrollTop);
+    }
+    this['scroll' + index] = false;
+  },
+  getValueByField(row, column, field) {
+    try {
+      if (field === undefined) {
+        field = column.field;
       }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-slider"
-      }, points.length === 2 && /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 3px'
+      let type = typeof field;
+      if (type === 'function') {
+        return field(row, column);
+      }
+      if (type === 'string') {
+        if (field.indexOf('.') !== -1 && (field.indexOf('row') !== -1 || field.indexOf('column') !== -1 || field.indexOf('props') !== -1)) {
+          let result;
+          eval('result = ' + field);
+          return result;
         }
-      }, editValue(points[0])), /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
-        style: {
-          height: rowHeight
-        },
-        direction: rtl ? 'left' : 'right',
-        start: start,
-        end: end,
-        step: 0.1,
-        pointStyle: () => {
-          return {
-            display: 'none'
-          };
-        },
-        lineStyle: () => {
-          return {
-            height: 5,
-            borderRadius: 6,
-            background: clr1
-          };
-        },
-        fillStyle: (index, obj) => {
-          if (index === (points.length === 2 ? 1 : 0)) {
-            return {
-              height: 5,
-              background: clr2,
-              borderRadius: 6
-            };
-          }
-        },
-        points: points
-      }), /*#__PURE__*/_react.default.createElement("div", {
-        style: {
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 3px'
-        }
-      }, editValue(points[points.length - 1])));
-    },
-
-    getOptionsCell({
-      options
-    }, row) {
-      return /*#__PURE__*/_react.default.createElement(_aioButton.default, {
-        type: "select",
-        caret: false,
-        className: "aio-table-options",
-        text: aioTableGetSvg('dots'),
-        options: options.map(({
-          text,
-          icon,
-          onClick
-        }) => {
-          return {
-            text,
-            before: icon,
-            onClick: () => onClick(row)
-          };
-        })
-      });
-    },
-
-    getCheckboxCell(template, value, row) {
+        return field;
+      }
+      return field;
+    } catch {
+      return;
+    }
+  },
+  getSearchs() {
+    let {
+      columns = []
+    } = this.state;
+    let searchs = [];
+    for (let i = 0; i < columns.length; i++) {
       let {
-        color,
-        onChange,
-        size = 24
-      } = template;
-      let style = {
-        width: size,
-        height: size
-      };
-
-      if (!!value) {
-        return /*#__PURE__*/_react.default.createElement("svg", {
-          style: style,
-          viewBox: `0,0,24,24`,
-          className: "aio-table-checkbox checked",
-          onClick: () => onChange(row, false)
-        }, /*#__PURE__*/_react.default.createElement("path", {
-          fill: color,
-          d: "M10,17L5,12L6.41,10.58L10,14.17L17.59,6.58L19,8M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"
-        }));
-      } else {
-        return /*#__PURE__*/_react.default.createElement("svg", {
-          style: style,
-          viewBox: `0,0,24,24`,
-          className: "aio-table-checkbox",
-          onClick: () => onChange(row, true)
-        }, /*#__PURE__*/_react.default.createElement("path", {
-          fill: color,
-          "ng-attr-fill": "{{icon.color}}",
-          "ng-attr-d": "{{icon.data}}",
-          d: "M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3M19,5V19H5V5H19Z"
-        }));
+        show = true,
+        search,
+        field
+      } = columns[i];
+      if (!show || !search) {
+        continue;
       }
-    },
-
-    getGanttCell(row, template, column) {
-      let {
-        rtl
-      } = getProps();
-      let {
-        getKeys,
-        getColor = () => '#fff',
-        getBackgroundColor = () => '#69bedb',
-        getFlags = () => [],
-        getProgress = () => false,
-        getText = () => false,
-        getStart,
-        getEnd,
-        padding = 36
-      } = template;
-      let keys = getKeys();
-
-      if (!Array.isArray(keys)) {
-        console.error('aio table => gantt column => column getKeys property must return an array of strings');
-        return '';
-      }
-
-      let color = $$.getValueByField(row, column, getColor);
-      let backgroundColor = $$.getValueByField(row, column, getBackgroundColor);
-      let progress = $$.getValueByField(row, column, getProgress);
-      let text = $$.getValueByField(row, column, getText);
-      let startIndex = keys.indexOf($$.getValueByField(row, column, getStart));
-      let endIndex = keys.indexOf($$.getValueByField(row, column, getEnd));
-      let background = progress === false ? color : `linear-gradient(to ${rtl ? 'left' : 'right'},rgba(0,0,0,.2) 0%,rgba(0,0,0,.2) ${progress}% ,transparent ${progress}%,transparent 100%)`;
-      let flags = getFlags();
-      return /*#__PURE__*/_react.default.createElement(_rRangeSlider.default, {
-        attrs: {
-          style: {
-            padding: `0 ${+padding}px`
-          }
-        },
-        start: 0,
-        editValue: value => keys[value],
-        end: keys.length - 1,
-        points: [startIndex, endIndex],
-        fillStyle: index => {
-          if (index === 1) {
-            return {
-              background: backgroundColor,
-              backgroundImage: background
-            };
-          }
-        },
-        getText: index => {
-          if (index === 1 && text) {
-            return text;
-          }
-        },
-        textStyle: () => {
-          return {
-            color
-          };
-        },
-        scaleStep: 1,
-        scaleStyle: value => {
-          let flag = flags.filter(o => keys.indexOf(o.value) === value)[0];
-
-          if (flag) {
-            return {
-              background: flag.color,
-              height: '100%',
-              top: 0,
-              zIndex: 100
-            };
-          }
-
-          return {
-            height: '100%',
-            top: 0,
-            opacity: .4
-          };
-        },
-        lineStyle: () => {
-          return {
-            opacity: .4
-          };
-        }
-      });
-    },
-
-    handleOutsideClick() {
-      (0, _jquery.default)(window).unbind('click', $$.outSideClick);
-      (0, _jquery.default)(window).bind('click', $$.outSideClick);
-    },
-
-    outSideClick(e) {
-      let {
-        focused
-      } = getState();
-
-      if (focused === false) {
-        return;
-      }
-
-      let target = (0, _jquery.default)(e.target);
-
-      if (target.hasClass('aio-table-cell')) {
-        return;
-      }
-
-      if (target.parents('.aio-table-input-container').length) {
-        return;
-      }
-
-      if (target.parents('.aio-table-cell-content').length) {
-        return;
-      }
-
-      if (target.parents('.aio-table-cell').length) {
-        return;
-      }
-
-      (0, _jquery.default)(window).unbind('click', $$.outSideClick);
-      setState({
-        focused: false
-      }, 'outsideClick');
-    },
-
-    getCardRowCount() {
-      var {
-        cardRowCount = 1
-      } = getProps();
-
-      if (typeof cardRowCount !== 'object') {
-        return cardRowCount;
-      }
-
-      let result,
-          matched = false;
-
-      for (let prop in cardRowCount) {
-        let count = cardRowCount[prop];
-        let a = window.matchMedia(`(max-width: ${prop}px)`);
-
-        if (a.matches && !matched) {
-          matched = true;
-          result = count;
-        }
-
-        a.addListener(() => setState({
-          cardRowCount: count
-        }));
-      }
-
-      return result;
-    },
-
-    async onScroll(dom, index) {
-      let {
-        onScrollEnd
-      } = getProps();
-
-      if (onScrollEnd) {
-        if (index === undefined || index === 0) {
-          let table = (0, _jquery.default)(dom.current).find('.aio-table-unit');
-          let scrollTop = table.scrollTop();
-          let scrollHeight = table[0].scrollHeight;
-          let height = table.height();
-
-          if (scrollTop + height === scrollHeight) {
-            let {
-              startIndex
-            } = getState();
-            let {
-              scrollLoadLength,
-              scrollTotalLength
-            } = getProps();
-            let from = startIndex + scrollLoadLength;
-
-            if (from > scrollTotalLength) {
-              return;
-            }
-
-            let to = from + scrollLoadLength;
-
-            if (to > scrollTotalLength) {
-              to = scrollTotalLength;
-            }
-
-            let a = (0, _jquery.default)(dom.current).find('.aio-table-main-loading');
-            a.css({
-              display: 'flex'
-            });
-            let res = await onScrollEnd(from, to);
-            a.css({
-              display: 'none'
-            });
-
-            if (res !== false) {
-              setState({
-                startIndex: from
-              });
-            }
-          }
-        }
-      }
-
-      if (index === undefined) {
-        return;
-      }
-
-      if (!$$['scroll' + index]) {
-        let otherIndex = Number(!index);
-        $$['scroll' + otherIndex] = true;
-        let c = (0, _jquery.default)(dom.current);
-        var units = [c.find('#aio-table-first-split'), c.find('#aio-table-second-split')];
-        var scrollTop = units[index].scrollTop();
-        units[otherIndex].scrollTop(scrollTop);
-      }
-
-      $$['scroll' + index] = false;
-    },
-
-    getOpenDictionary() {
-      let {
-        id
-      } = getProps();
-
-      if (id === undefined) {
-        return {};
-      }
-
-      let openDictionary = localStorage.getItem('aio table ' + id);
-
-      if (openDictionary === null || openDictionary === undefined) {
-        localStorage.setItem('aio table ' + id, '{}');
-        return {};
-      } else {
-        return JSON.parse(openDictionary);
-      }
-    },
-
-    getDateNumber(value) {
-      let splitter;
-
-      for (let i = 0; i < value.length; i++) {
-        if (isNaN(parseInt(value[i]))) {
-          splitter = value[i];
-          break;
-        }
-      }
-
-      let [year, month = '01', day = '01'] = value.split(splitter);
-      let list = [year, month, day];
-      return parseInt(list.map(o => o.length === 1 ? '0' + o : o).join(''));
-    },
-
-    setCellValue: (row, getValue, value) => {
-      //row is used in eval
-      let {
-        model
-      } = getProps();
-      let evalText;
-
-      if (typeof value === 'string') {
-        evalText = `${getValue} = "${value}"`;
-      } else {
-        evalText = getValue + ' = ' + JSON.stringify(value);
-      }
-
-      eval(evalText);
-      return model;
-    },
-    getValueByField: (row, column, getValue) => {
-      let props = getProps();
-      let type = typeof getValue;
-
-      try {
-        if (type === 'function') {
-          return getValue(row, column);
-        }
-
-        if (type === 'string') {
-          if (getValue.indexOf('.') !== -1 && getValue.indexOf('row') !== -1 || getValue.indexOf('column') !== -1 || getValue.indexOf('props') !== -1) {
-            let result;
-            eval('result = ' + getValue);
-            return result;
-          }
-
-          return getValue;
-        }
-
-        return getValue;
-      } catch {
-        return;
-      }
-    },
-
-    async onChangeSort(obj, colIndex) {
-      let {
-        columns
-      } = getState();
-      columns = [...columns];
-      let column = { ...columns[colIndex]
-      };
-      column.sort = { ...column.sort,
-        ...obj
-      };
-
-      if (!column.sort.onChange && column.storageKey) {
-        column = $$.updateStorageByColumn(column, {
-          sort: column.sort
-        });
-      }
-
-      let newColumns = columns.map((o, i) => i === colIndex ? column : o);
-      let approve = true;
-
-      if (column.sort.onChange) {
-        let {
-          active = true,
-          dir = 'inc'
-        } = column.sort;
-        approve = await column.sort.onChange({
-          active,
-          dir
-        });
-      }
-
-      if (approve !== false) {
-        setState({
-          columns: newColumns
-        });
-      }
-    },
-
-    getSorts({
-      column,
-      sorts,
-      sortOptions,
-      columnTitle,
-      colIndex
-    }) {
-      let {
-        sort
-      } = column;
-      let {
-        title = columnTitle || '',
-        getValue = column.getValue,
-        type,
-        active = true,
-        toggle = true,
-        dir = 'inc',
-        onChange
-      } = sort;
-
-      if (type === 'date') {
-        getValue = row => {
-          let {
-            sort
-          } = column;
-          let {
-            getValue = column.getValue
-          } = sort;
-          let value = $$.getValueByField(row, column, getValue);
-
-          if (typeof value !== 'string') {
-            return 0;
-          }
-
-          return $$.getDateNumber(value);
+      searchs.push(field);
+    }
+    return searchs;
+  },
+  getFilterResult(row, detail) {
+    let {
+      searchText,
+      getValueByField
+    } = this.state;
+    let searchs = this.getSearchs();
+    if (searchText && searchs.length) {
+      let items = searchs.map(field => {
+        return {
+          operator: 'contain',
+          value: getValueByField(row, undefined, field).toString()
         };
-      }
-
-      sorts.push({
-        title,
-        dir,
-        active,
-        toggle,
-        getValue,
-        type,
-        onChange
       });
-
-      if (toggle) {
-        sortOptions.push({
-          text: title,
-          checked: !!active,
-          onClick: () => $$.onChangeSort({
-            active: !active
-          }, colIndex),
-          after: /*#__PURE__*/_react.default.createElement("div", {
-            style: {
-              width: '30px',
-              display: 'flex',
-              justifyContent: 'flex-end'
-            }
-          }, aioTableGetSvg(dir === 'dec' ? 'arrowDown' : 'arrowUp', {
-            onClick: e => {
-              e.stopPropagation();
-              $$.onChangeSort({
-                dir: dir === 'dec' ? 'inc' : 'dec'
-              }, colIndex);
-            }
-          }))
-        });
-      }
-    },
-
-    getToggles(obj) {
-      let {
-        column,
-        toggleOptions,
-        colIndex,
-        columnTitle
-      } = obj;
-      let {
-        columns
-      } = getState();
-      toggleOptions.push({
-        text: columnTitle,
-        checked: column.show !== false,
-        onClick: () => {
-          //change columns imutable(prevent change columns directly)
-          let column = { ...obj.column,
-            show: !obj.column.show
-          };
-          column = $$.updateStorageByColumn(column, {
-            show: column.show
-          });
-          setState({
-            columns: columns.map((o, i) => i === column.realIndex ? column : o)
-          });
-        }
-      });
-    },
-
-    getFreezes({
-      column,
-      colIndex,
-      columnTitle,
-      freezeOptions,
-      freezeColumns,
-      unFreezeColumns
-    }) {
-      (column.freeze ? freezeColumns : unFreezeColumns).push(column);
-
-      if (!column.toggleFreeze) {
-        return;
-      }
-
-      freezeOptions.push({
-        text: columnTitle,
-        checked: column.freeze === true,
-        onClick: () => {
-          let {
-            columns
-          } = getState();
-          columns = [...columns];
-          let column = { ...columns[colIndex]
-          };
-          column.freeze = !column.freeze;
-          setState({
-            columns: columns.map((o, i) => i === colIndex ? column : o)
-          });
-        }
-      });
-    },
-
-    updateColumnByStorage(column) {
-      let {
-        storageKey,
-        _readStorage
-      } = column;
-
-      if (storageKey && !_readStorage) {
-        column._readStorage = true;
-        let storageStr = localStorage.getItem('aio-table-column-storage-' + column.storageKey);
-        let storageObj;
-
-        if (!storageStr || storageStr === null) {
-          storageObj = {};
-          localStorage.setItem('aio-table-column-storage-' + column.storageKey, '{}');
-        } else {
-          storageObj = JSON.parse(storageStr);
-        }
-
-        if (storageObj.show !== undefined) {
-          column.show = storageObj.show;
-        }
-
-        if (storageObj.width !== undefined) {
-          column.width = storageObj.width;
-        }
-
-        if (storageObj.sort !== undefined) {
-          column.sort = storageObj.sort;
-        }
-
-        column._storageObj = storageObj;
-      }
-    },
-
-    updateStorageByColumn(column, obj) {
-      if (column.storageKey) {
-        column = { ...column,
-          _storageObj: { ...column._storageObj,
-            ...obj
-          }
-        };
-        localStorage.setItem('aio-table-column-storage-' + column.storageKey, JSON.stringify(column._storageObj));
-      }
-
-      return column;
-    },
-
-    getDetails() {
-      let {
-        columns,
-        groups
-      } = getState();
-      columns = [...columns];
-      let sorts = [];
-      let freezeColumns = [],
-          unFreezeColumns = [],
-          freezeOptions = [],
-          sortOptions = [],
-          toggleOptions = [],
-          groupOptions = [];
-      let excelColumns = [],
-          visibleColumns = [],
-          search = false;
-      let groupTitles = groups.map(o => o.title);
-      let renderIndex = 0;
-
-      for (let i = 0; i < columns.length; i++) {
-        columns[i].realIndex = i;
-
-        if (columns[i].sort === true) {
-          columns[i].sort = {};
-        }
-
-        if (columns[i].filter === true) {
-          columns[i].filter = {
-            items: [],
-            booleanType: 'or',
-            type: 'text'
-          };
-        }
-
-        if (columns[i].group === true) {
-          columns[i].group = {};
-        }
-
-        columns[i].width = columns[i].width || 'auto';
-        let column = { ...columns[i]
-        };
-        column.realIndex = i;
-        $$.updateColumnByStorage(column);
-        let {
-          title: columnTitle,
-          show = true,
-          sort,
-          toggleShow,
-          excel
-        } = column;
-        columnTitle = typeof columnTitle === 'function' ? columnTitle() : columnTitle;
-        column.show = typeof show === 'function' ? show() : show;
-
-        if (column.search) {
-          search = true;
-        }
-
-        if (column.group && groupTitles.indexOf(columnTitle) === -1) {
-          let {
-            title = columnTitle,
-            active = true,
-            toggle = true,
-            storageKey = column.storageKey,
-            getValue = column.getValue
-          } = column.group;
-          groups.push({
-            title,
-            active,
-            toggle,
-            storageKey,
-            getValue
-          });
-        }
-
-        if (column.show) {
-          column.renderIndex = renderIndex;
-          columns[i].renderIndex = renderIndex;
-          renderIndex++;
-          visibleColumns.push(column);
-
-          if (excel) {
-            excelColumns.push(column);
-          }
-
-          if (sort) {
-            $$.getSorts({
-              column,
-              columnTitle,
-              sorts,
-              sortOptions,
-              colIndex: i
-            });
-          }
-
-          $$.getFreezes({
-            column,
-            colIndex: i,
-            columnTitle,
-            freezeOptions,
-            freezeColumns,
-            unFreezeColumns
-          });
-        }
-
-        if (toggleShow) {
-          $$.getToggles({
-            column,
-            columnTitle,
-            toggleOptions,
-            colIndex: i
-          });
-        }
-      }
-
-      $$.getGroups(groupOptions);
-      return {
-        sorts,
-        sortOptions,
-        freezeColumns,
-        unFreezeColumns,
-        freezeOptions,
-        toggleOptions,
-        groupOptions,
-        excelColumns,
-        columns: visibleColumns,
-        search
-      };
-    },
-
-    getGroups(groupOptions) {
-      var {
-        groups
-      } = getState();
-
-      for (let i = 0; i < groups.length; i++) {
-        let group = groups[i];
-        let {
-          title,
-          active = true,
-          toggle = true,
-          storageKey,
-          _readStorage
-        } = group;
-
-        if (storageKey && !_readStorage) {
-          group._readStorage = true;
-          let storageActive = localStorage.getItem('aio table group' + storageKey);
-
-          if (storageActive === null) {
-            storageActive = true;
-            localStorage.setItem('aio table group' + storageKey, JSON.stringify(storageActive));
-          } else {
-            storageActive = JSON.parse(storageActive);
-          }
-
-          active = storageActive;
-        }
-
-        group.active = active;
-
-        if (toggle) {
-          groupOptions.push({
-            text: title,
-            checked: active === true,
-            onClick: () => {
-              let {
-                groups
-              } = getState();
-              let group = groups[i];
-              group.active = !group.active;
-
-              if (storageKey) {
-                localStorage.setItem('aio table group' + storageKey, JSON.stringify(group.active));
-              }
-
-              setState({
-                groups
-              });
-            }
-          });
-        }
-      }
-    },
-
-    isContain(text, subtext) {
-      return text.toString().toLowerCase().indexOf(subtext.toString().toLowerCase()) !== -1;
-    },
-
-    isEqual(a, b) {
-      return a.toString().toLowerCase() === b.toString().toLowerCase();
-    },
-
-    isGreater(a, b, type) {
-      if (type === 'date') {
-        return $$.getDateNumber(a) > $$.getDateNumber(b);
-      }
-
-      return parseFloat(a) > parseFloat(b);
-    },
-
-    isLess(a, b, type) {
-      if (type === 'date') {
-        return $$.getDateNumber(a) < $$.getDateNumber(b);
-      }
-
-      return parseFloat(a) < parseFloat(b);
-    },
-
-    getFilterResult_and(filters, val) {
-      if (val === undefined) {
+      if (FilterResult(items, 'or', searchText, true) === false) {
         return false;
       }
-
-      for (let i = 0; i < filters.length; i++) {
-        let {
-          operator: o,
-          value: v,
-          type
-        } = filters[i];
-
-        if (v === '' || v === undefined) {
-          continue;
-        }
-
-        if (o === 'contain') {
-          if (!$$.isContain(val, v)) {
-            return false;
-          }
-
-          continue;
-        }
-
-        if (o === 'notContain') {
-          if ($$.isContain(val, v)) {
-            return false;
-          }
-
-          continue;
-        }
-
-        if (o === 'equal') {
-          if (!$$.isEqual(val, v)) {
-            return false;
-          }
-
-          continue;
-        }
-
-        if (o === 'notEqual') {
-          if ($$.isEqual(val, v)) {
-            return false;
-          }
-
-          continue;
-        }
-
-        if (o === 'greater') {
-          if (!$$.isGreater(val, v, type)) {
-            return false;
-          }
-
-          continue;
-        }
-
-        if (o === 'less') {
-          if (!$$.isLess(val, v, type)) {
-            return false;
-          }
-
-          continue;
-        }
+    }
+    let {
+      columns = []
+    } = this.state;
+    for (let i = 0; i < columns.length; i++) {
+      let column = columns[i];
+      let {
+        filter,
+        dataColumnId
+      } = column;
+      if (!filter) {
+        continue;
       }
-
-      return true;
-    },
-
-    getFilterResult_or(filters, val) {
-      if (val === undefined) {
-        return false;
+      if (filter === true) {
+        filter = {};
+        column.filter = {};
       }
-
-      for (let i = 0; i < filters.length; i++) {
-        let {
-          operator: o,
-          value: v,
-          type
-        } = filters[i];
-
-        if (v === '' || v === undefined) {
-          return true;
-        }
-
-        if (o === 'contain') {
-          if ($$.isContain(val, v)) {
-            return true;
-          }
-
-          continue;
-        }
-
-        if (o === 'notContain') {
-          if (!$$.isContain(val, v)) {
-            return true;
-          }
-
-          continue;
-        }
-
-        if (o === 'equal') {
-          if ($$.isEqual(val, v)) {
-            return true;
-          }
-
-          continue;
-        }
-
-        if (o === 'notEqual') {
-          if (!$$.isEqual(val, v)) {
-            return true;
-          }
-
-          continue;
-        }
-
-        if (o === 'greater') {
-          if ($$.isGreater(val, v, type)) {
-            return true;
-          }
-
-          continue;
-        }
-
-        if (o === 'less') {
-          if ($$.isLess(val, v, type)) {
-            return true;
-          }
-
-          continue;
-        }
-      }
-
-      return false;
-    },
-
-    getFilterResult(column, value) {
       let {
         items = [],
         booleanType = 'or'
-      } = column.filter;
-
-      if (items.length) {
-        return $$['getFilterResult_' + booleanType](items, value);
+      } = filter;
+      if (!items.length) {
+        continue;
       }
-
-      return true;
-    },
-
-    cubes2(obj = {}) {
-      var {
-        count = 5,
-        thickness = [5, 16],
-        delay = 0.1,
-        borderRadius = 0,
-        colors = ['dodgerblue'],
-        duration = 1,
-        gap = 3
-      } = obj;
-      let Thickness = Array.isArray(thickness) ? thickness : [thickness, thickness];
-
-      let getStyle1 = i => {
-        return {
-          width: Thickness[0],
-          height: Thickness[1],
-          background: colors[i % colors.length],
-          margin: `0 ${gap / 2}px`,
-          animation: `${duration}s loadingScaleY infinite ease-in-out ${i * delay}s`,
-          borderRadius: borderRadius + 'px'
-        };
-      };
-
-      let items = [];
-
-      for (var i = 0; i < count; i++) {
-        items.push( /*#__PURE__*/_react.default.createElement("div", {
-          key: i,
-          style: getStyle1(i)
-        }));
+      let value = detail._values[dataColumnId];
+      if (FilterResult(items, booleanType, value) === false) {
+        return false;
       }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "rect",
-        style: {
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent'
-        }
-      }, items);
-    },
-
-    getLoading(isMain) {
-      if (isMain) {
-        return /*#__PURE__*/_react.default.createElement("div", {
-          className: "aio-table-loading aio-table-main-loading",
-          style: {
-            display: 'none'
-          }
-        }, $$.cubes2({
-          thickness: [6, 40]
-        }));
-      }
-
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-loading"
-      }, $$.cubes2({
-        thickness: [6, 40]
-      }));
-    },
-
-    toggleRow(row) {
-      var {
-        openDictionary
-      } = getState();
-      var {
-        id
-      } = getProps();
-
-      if (row._show === 'relativeFilter') {
-        return;
-      }
-
-      openDictionary[row._id] = !openDictionary[row._id];
-
-      if (id !== undefined) {
-        localStorage.setItem('aio table ' + id, JSON.stringify(openDictionary));
-      }
-
-      setState({
-        openDictionary
-      });
-    },
-
-    getRow(row) {
-      let {
-        searchText
-      } = getState();
-      let {
-        columns
-      } = getContext().details;
-      row._values = {};
-      let searchShow;
-      let show = true,
-          lastColumn,
-          isThereAutoColumn = false,
-          cells = [],
-          freezeCells = [],
-          unFreezeCells = [];
-
-      for (let i = 0; i < columns.length; i++) {
-        let column = columns[i];
-        let value = $$.getValueByField(row, column, column.getValue);
-        row._values[column.realIndex] = value;
-
-        if (show && column.search && searchText) {
-          if (searchShow === undefined) {
-            searchShow = false;
-          }
-
-          searchShow = searchShow || JSON.stringify(value).toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
-        }
-
-        if (show && column.filter && !column.filter.onChange) {
-          show = show && $$.getFilterResult(column, value);
-        }
-
-        let obj = {
-          key: row._index + ',' + column.realIndex,
-          column,
-          value,
-          freeze: column.freeze
-        };
-
-        if ($$.freezeMode) {
-          if (column.freeze) {
-            freezeCells.push(obj);
-          } else {
-            lastColumn = column;
-            unFreezeCells.push(obj);
-
-            if (column.width === 'auto') {
-              isThereAutoColumn = true;
-            }
-          }
-        } else {
-          cells.push(obj);
-          lastColumn = column;
-
-          if (column.width === 'auto') {
-            isThereAutoColumn = true;
-          }
-        }
-      }
-
-      row._show = show && searchShow !== false;
-
-      if (show) {
-        let parents = row._getParents();
-
-        for (let i = 0; i < parents.length; i++) {
-          if (parents[i]._show === false) {
-            parents[i]._show = 'relativeFilter';
-          }
-        }
-      }
-
-      if (!isThereAutoColumn && lastColumn) {
-        lastColumn.width = 'auto';
-      }
-
-      return {
-        cells,
-        freezeCells,
-        unFreezeCells
-      };
-    },
-
-    getRowById(id, rows) {
-      for (let i = 0; i < rows.length; i++) {
-        let row = rows[i];
-
-        if (!row.row) {
-          continue;
-        }
-
-        if (row.row._id === id) {
-          return row;
-        }
-      }
-    },
-
-    getStateByToggleAll(rows) {
-      var {
-        openDictionary,
-        groupsOpen,
-        toggleAllState
-      } = getState();
-      var {
-        id
-      } = getProps();
-
-      for (let prop in openDictionary) {
-        let row = $$.getRowById(prop, rows);
-
-        if (row && row.row && row.row._show === 'relativeFilter') {
-          continue;
-        }
-
-        openDictionary[prop] = toggleAllState;
-      }
-
-      for (let prop in groupsOpen) {
-        groupsOpen[prop] = toggleAllState;
-      }
-
-      if (id !== undefined) {
-        localStorage.setItem('aio table ' + id, JSON.stringify(openDictionary));
-      }
-
-      return {
-        openDictionary,
-        groupsOpen,
-        toggleAllState: !toggleAllState
-      };
-    },
-
-    getClient(e) {
-      return getState().touch ? [e.changedTouches[0].clientX, e.changedTouches[0].clientY] : [e.clientX, e.clientY];
-    },
-
-    getRowsReq(model, rows, _level, parents, nestedIndex) {
-      var {
-        openDictionary
-      } = getState();
-      var {
-        getRowId,
-        getRowChilds,
-        getRowVisible,
-        getRowParentId
-      } = getProps();
-
-      if (getRowParentId) {
-        getRowChilds = row => row._childs;
-      }
-
-      for (let i = 0; i < model.length; i++) {
-        let row = model[i];
-
-        if (getRowVisible && getRowVisible(row) === false) {
-          continue;
-        }
-
-        if (row._groupId) {
-          rows.push(row);
-          continue;
-        }
-
-        row._index = $$.realIndex;
-        $$.realIndex++;
-        row._childIndex = i;
-        let NI = nestedIndex.concat(i);
-        row._nestedIndex = NI;
-        row._level = _level;
-        row._isFirstChild = i === 0;
-        row._isLastChild = i === model.length - 1;
-
-        row._getParents = () => parents;
-
-        if (row._id === undefined) {
-          let id = getRowId ? getRowId(row) : 'row' + Math.random();
-
-          if (id === undefined) {
-            console.error('AIOTable => id of row is not defined, please check getRowId props of AIOTable');
-          }
-
-          row._id = id;
-        }
-
-        openDictionary[row._id] = openDictionary[row._id] === false ? false : true;
-        row._opened = openDictionary[row._id];
-        row._childsLength = 0;
-        let childs = [];
-
-        if (getRowChilds) {
-          childs = $$.getValueByField(row, undefined, getRowChilds) || [];
-          row._childsLength = childs.length;
-        }
-
-        let Row = $$.getRow(row);
-
-        if (row._level === 0) {
-          rows.push([]);
-        }
-
-        rows[rows.length - 1].push({ ...Row,
-          row
-        });
-
-        if (row._opened && row._childsLength) {
-          $$.getRowsReq(childs, rows, _level + 1, parents.concat(row), NI);
-        } else {
-          $$.realIndex += row._childsLength;
-        }
-      }
-    },
-
-    getRowsNested(model, childsField) {
-      let {
-        getRowId,
-        getRowParentId
-      } = getProps();
-
-      if (!getRowParentId) {
-        return model;
-      }
-
-      var convertModelRecursive = (array, parentId, parentObject) => {
-        for (let i = 0; i < array.length; i++) {
-          let row = array[i];
-          let rowParentId = getRowParentId(row);
-
-          if (rowParentId !== parentId) {
-            continue;
-          }
-
-          let rowId = getRowId(row);
-          row[childsField] = [];
-          parentObject.push(row);
-          array.splice(i, 1);
-          i--;
-          convertModelRecursive([...array], rowId, row[childsField]);
-        }
-      };
-
-      var result = [];
-      convertModelRecursive([...model], undefined, result);
-      return result;
-    },
-
-    getRowsBySort(rows, sorts) {
-      if (!sorts.length) {
-        return rows;
-      }
-
-      return rows.sort((a, b) => {
-        for (let i = 0; i < sorts.length; i++) {
-          let {
-            getValue,
-            dir,
-            onChange
-          } = sorts[i];
-
-          if (onChange) {
-            continue;
-          }
-
-          let aValue = $$.getValueByField(a, undefined, getValue),
-              bValue = $$.getValueByField(b, undefined, getValue);
-
-          if (aValue < bValue) {
-            return -1 * (dir === 'dec' ? -1 : 1);
-          }
-
-          if (aValue > bValue) {
-            return 1 * (dir === 'dec' ? -1 : 1);
-          }
-
-          if (i === sorts.length - 1) {
-            return 0;
-          }
-        }
-
-        return 0;
-      });
-    },
-
-    getRows(model, freezeMode) {
-      let rows = [];
-      $$.realIndex = 0;
-      $$.freezeMode = freezeMode;
-      $$.getRowsReq(model, rows, 0, [], []);
-      let result = [];
-
-      for (let i = 0; i < rows.length; i++) {
-        let list = rows[i];
-
-        if (list[0].row._show === false) {
-          continue;
-        }
-
-        let arr = list.filter(o => o.row._show !== false);
-
-        if (arr.length) {
-          result.push(arr);
-        }
-      }
-
-      return result;
-    },
-
-    getRootsByPaging(roots, index) {
-      let {
-        paging
-      } = getState();
-
-      if (!paging) {
-        return roots;
-      }
-
-      var length = paging.onChange ? paging.count : roots.length;
-      paging.pages = Math.ceil(length / paging.size);
-
-      if (paging.number > paging.pages) {
-        paging.number = paging.pages;
-      }
-
-      if (paging.number < 1) {
-        paging.number = 1;
-      }
-
-      if (paging.onChange) {
-        return roots;
-      } //اگر پیجینگ آنچنج داشت تغییری در ردیف ها نده و اجازه بده تغییرات در آنچنج روی مدل ورودی انجام شود
-
-
-      let start = (paging.number - 1) * paging.size;
-      let end = start + paging.size;
-
-      if (end > length) {
-        end = length;
-      }
-
-      index.real = start;
-      return roots.slice(start, end);
-    },
-
-    getRootsByGroup(roots, groups) {
-      if (!groups.length) {
-        return roots;
-      }
-
-      var {
-        groupsOpen
-      } = getState();
-
-      function msf(obj, _level, parents) {
-        if (Array.isArray(obj)) {
-          groupedRows = groupedRows.concat(obj);
-        } else {
-          for (var prop in obj) {
-            let newParents = parents.concat(prop);
-
-            let _groupId = newParents.toString();
-
-            groupsOpen[_groupId] = groupsOpen[_groupId] === undefined ? true : groupsOpen[_groupId];
-            groupedRows.push({
-              _groupValue: prop,
-              _groupId,
-              _level,
-              _opened: groupsOpen[_groupId]
-            });
-
-            if (groupsOpen[_groupId]) {
-              msf(obj[prop], _level + 1, newParents);
-            }
-          }
-        }
-      }
-
-      var newModel = {};
-
-      for (let i = 0; i < roots.length; i++) {
-        let root = roots[i];
-        var obj = newModel;
-        let values = groups.map(group => $$.getValueByField(root[0].row, undefined, group.getValue));
-
-        for (let j = 0; j < values.length; j++) {
-          let value = values[j];
-
-          if (j === values.length - 1) {
-            obj[value] = obj[value] || [];
-            obj[value].push(root);
-          } else {
-            obj[value] = obj[value] || {};
-            obj = obj[value];
-          }
-        }
-      }
-
-      var groupedRows = [];
-      var _level = 0;
-      msf(newModel, _level, []);
-      return groupedRows;
-    },
-
-    getRowsByRoots(rows) {
-      var result = [];
-
-      for (var i = 0; i < rows.length; i++) {
-        result = result.concat(rows[i]);
-      }
-
-      return result;
-    },
-
-    getFullCellStyle(columns) {
-      if (!columns) {
-        return {
-          gridColumnStart: 1,
-          gridColumnEnd: 2
-        };
-      }
-
-      return {
-        gridColumnStart: 1,
-        gridColumnEnd: columns.length + 1
-      };
-    },
-
-    getNoData(columns) {
-      var {
-        rowHeight,
-        translate
-      } = getProps();
-      return /*#__PURE__*/_react.default.createElement("div", {
-        className: "aio-table-nodata",
-        style: { ...$$.getFullCellStyle(columns),
-          height: rowHeight
-        }
-      }, translate('No Data'));
     }
-
+    return true;
+  },
+  isRowOpen(id) {
+    if (!this.props.rowChilds) {
+      return true;
+    }
+    let {
+      _parentIds
+    } = this.getRowDetailById(id);
+    for (let i = 0; i < _parentIds.length; i++) {
+      let parentId = _parentIds[i];
+      if (this.getRowDetailById(parentId)._open === false) {
+        return false;
+      }
+    }
+    return true;
+  },
+  ///ok
+  getClient(e) {
+    return this.context.touch ? [e.changedTouches[0].clientX, e.changedTouches[0].clientY] : [e.clientX, e.clientY];
+  },
+  ///ok
+  resizeDown(e, column, type) {
+    e.stopPropagation();
+    this.downOnResizeHandle = true;
+    let {
+      state
+    } = this.context;
+    let {
+      touch
+    } = state;
+    this.resized = false;
+    (0, _jquery.default)(window).bind(touch ? 'touchmove' : 'mousemove', _jquery.default.proxy(this.resizeMove, this));
+    (0, _jquery.default)(window).bind(touch ? 'touchend' : 'mouseup', _jquery.default.proxy(this.resizeUp, this));
+    this.resizeDetails = {
+      client: this.getClient(e),
+      width: column.width,
+      column,
+      type
+    };
+  },
+  ///ok
+  resizeMove(e) {
+    this.resized = true;
+    var {
+      rtl
+    } = this.props;
+    var Client = this.getClient(e);
+    var {
+      client,
+      width,
+      column,
+      type
+    } = this.resizeDetails;
+    var offset = (Client[0] - client[0]) * (type === 'start' ? -1 : 1);
+    let newWidth = width + offset * (rtl ? -1 : 1);
+    if (newWidth < parseInt(column.minWidth || 36)) {
+      newWidth = parseInt(column.minWidth || 36);
+    }
+    this.resizeDetails.newWidth = newWidth;
+    if (newWidth % 10 !== 0) {
+      return;
+    }
+    (0, _jquery.default)(`[data-column-id='${column.dataColumnId}']`).css({
+      width: newWidth
+    });
+  },
+  ///ok
+  resizeUp() {
+    this.downOnResizeHandle = false;
+    let {
+      state,
+      setColumns
+    } = this.context;
+    let {
+      touch
+    } = state;
+    (0, _jquery.default)(window).unbind(touch ? 'touchmove' : 'mousemove', this.resizeMove);
+    (0, _jquery.default)(window).unbind(touch ? 'touchend' : 'mouseup', this.resizeUp);
+    if (!this.resized) {
+      return;
+    }
+    let {
+      columns
+    } = state;
+    let {
+      newWidth,
+      column
+    } = this.resizeDetails;
+    column.width = newWidth;
+    state.saveColumnInStorage(column, 'width', newWidth);
+    setColumns(columns);
+  }
+};
+function convertFlatModel({
+  model,
+  childsField,
+  getId,
+  getParentId
+}) {
+  var convertModelRecursive = (array, parentId, parentObject) => {
+    for (let i = 0; i < array.length; i++) {
+      let row = array[i];
+      let rowParentId = getParentId(row);
+      if (rowParentId !== parentId) {
+        continue;
+      }
+      let rowId = getId(row);
+      row[childsField] = [];
+      parentObject.push(row);
+      array.splice(i, 1);
+      i--;
+      convertModelRecursive([...array], rowId, row[childsField]);
+    }
   };
-  return {
-    exportToExcel: $$.exportToExcel,
-    getDetails: $$.getDetails,
-    getSliderCell: $$.getSliderCell,
-    getOptionsCell: $$.getOptionsCell,
-    getGanttCell: $$.getGanttCell,
-    getCheckboxCell: $$.getCheckboxCell,
-    handleOutsideClick: $$.handleOutsideClick,
-    onScroll: $$.onScroll,
-    getCardRowCount: $$.getCardRowCount,
-    getOpenDictionary: $$.getOpenDictionary,
-    getRowsBySort: $$.getRowsBySort,
-    getGroups: $$.getGroups,
-    getRootsByGroup: $$.getRootsByGroup,
-    setColumnByStorage: $$.setColumnByStorage,
-    getFilterResult: $$.getFilterResult,
-    getLoading: $$.getLoading,
-    cubes2: $$.cubes2,
-    getRow: $$.getRow,
-    getRowById: $$.getRowById,
-    getClient: $$.getClient,
-    getStateByToggleAll: $$.getStateByToggleAll,
-    getRootsByPaging: $$.getRootsByPaging,
-    getRowsReq: $$.getRowsReq,
-    getRowsNested: $$.getRowsNested,
-    getRows: $$.getRows,
-    getRootsByRows: $$.getRootsByRows,
-    getRowsByRoots: $$.getRowsByRoots,
-    toggleRow: $$.toggleRow,
-    getFullCellStyle: $$.getFullCellStyle,
-    getNoData: $$.getNoData,
-    getSortsFromColumns: $$.getSortsFromColumns,
-    getValueByField: $$.getValueByField,
-    setCellValue: $$.setCellValue,
-    updateStorageByColumn: $$.updateStorageByColumn
-  };
-}
-
-function aioTableGetSvg(type, conf = {}) {
-  let {
-    className,
-    flip,
-    onClick,
-    box = '0 0 24 24'
-  } = conf;
-  let style1 = {
-    width: '1.05rem',
-    height: '1.05rem'
-  };
-  style1.background = '';
-
-  if (flip) {
-    style1.transform = 'scaleX(-1)';
-    style1.transformOrigin = 'center center';
-  }
-
-  let style2 = {
-    fill: 'currentcolor'
-  };
-  let Attrs = {
-    viewBox: box,
-    role: "presentation",
-    style: style1
-  };
-
-  if (className) {
-    Attrs.className = className;
-  }
-
-  if (onClick) {
-    Attrs.onClick = onClick;
-  }
-
-  if (type === 'eye') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'magnify') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'close') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'toggleAllPlus') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M18,8H8V18H6V8A2,2 0 0,1 8,6H18V8M14,2H4A2,2 0 0,0 2,4V14H4V4H14V2M22,12V20A2,2 0 0,1 20,22H12A2,2 0 0,1 10,20V12A2,2 0 0,1 12,10H20A2,2 0 0,1 22,12M20,15H17V12H15V15H12V17H15V20H17V17H20V15Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'toggleAllMinus') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M14,4H4V14H2V4A2,2 0 0,1 4,2H14V4M18,6H8A2,2 0 0,0 6,8V18H8V8H18V6M22,12V20A2,2 0 0,1 20,22H12A2,2 0 0,1 10,20V12A2,2 0 0,1 12,10H20A2,2 0 0,1 22,12M20,15H12V17H20V15Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'excel') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M21.17 3.25Q21.5 3.25 21.76 3.5 22 3.74 22 4.08V19.92Q22 20.26 21.76 20.5 21.5 20.75 21.17 20.75H7.83Q7.5 20.75 7.24 20.5 7 20.26 7 19.92V17H2.83Q2.5 17 2.24 16.76 2 16.5 2 16.17V7.83Q2 7.5 2.24 7.24 2.5 7 2.83 7H7V4.08Q7 3.74 7.24 3.5 7.5 3.25 7.83 3.25M7 13.06L8.18 15.28H9.97L8 12.06L9.93 8.89H8.22L7.13 10.9L7.09 10.96L7.06 11.03Q6.8 10.5 6.5 9.96 6.25 9.43 5.97 8.89H4.16L6.05 12.08L4 15.28H5.78M13.88 19.5V17H8.25V19.5M13.88 15.75V12.63H12V15.75M13.88 11.38V8.25H12V11.38M13.88 7V4.5H8.25V7M20.75 19.5V17H15.13V19.5M20.75 15.75V12.63H15.13V15.75M20.75 11.38V8.25H15.13V11.38M20.75 7V4.5H15.13V7Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'sort') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M18 21L14 17H17V7H14L18 3L22 7H19V17H22M2 19V17H12V19M2 13V11H9V13M2 7V5H6V7H2Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'group') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H7V18H13V20H7L5,20V9H7V11H13V13Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'freeze') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M4 22H2V2H4V22M22 7H6V10H22V7M16 14H6V17H16V14Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'filter') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'filterActive') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M11 11L16.76 3.62A1 1 0 0 0 16.59 2.22A1 1 0 0 0 16 2H2A1 1 0 0 0 1.38 2.22A1 1 0 0 0 1.21 3.62L7 11V16.87A1 1 0 0 0 7.29 17.7L9.29 19.7A1 1 0 0 0 10.7 19.7A1 1 0 0 0 11 18.87V11M13 16L18 21L23 16Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'dots') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M16,12A2,2 0 0,1 18,10A2,2 0 0,1 20,12A2,2 0 0,1 18,14A2,2 0 0,1 16,12M10,12A2,2 0 0,1 12,10A2,2 0 0,1 14,12A2,2 0 0,1 12,14A2,2 0 0,1 10,12M4,12A2,2 0 0,1 6,10A2,2 0 0,1 8,12A2,2 0 0,1 6,14A2,2 0 0,1 4,12Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'chevronDown') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M7.41,8.58L12,13.17L16.59,8.58L18,10L12,16L6,10L7.41,8.58Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'chevronRight') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'doubleChevronRight') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M5.59,7.41L7,6L13,12L7,18L5.59,16.59L10.17,12L5.59,7.41M11.59,7.41L13,6L19,12L13,18L11.59,16.59L16.17,12L11.59,7.41Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'arrowUp') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z",
-      style: style2
-    }));
-  }
-
-  if (type === 'arrowDown') {
-    return /*#__PURE__*/_react.default.createElement("svg", Attrs, /*#__PURE__*/_react.default.createElement("path", {
-      d: "M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z",
-      style: style2
-    }));
-  }
+  var result = [];
+  convertModelRecursive([...model], undefined, result);
+  return result;
 }
