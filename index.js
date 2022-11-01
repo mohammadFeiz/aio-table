@@ -112,7 +112,7 @@ class Table extends _react.Component {
           'Less Than': 'کوچکتر از',
           'and': 'و',
           'or': 'یا',
-          'add': 'افزودن',
+          'Add': 'افزودن',
           'Inter Excel File Name': 'نام فایل اکسل را وارد کنید',
           'Sort By': 'مرتب سازی بر اساس',
           'Show Columns': 'نمایش ستون ها',
@@ -1039,6 +1039,7 @@ class TableUnit extends _react.Component {
             columns
           } = this.props;
           return /*#__PURE__*/_react.default.createElement(AIOTableFilterPopup, {
+            title: column.title,
             translate: translate,
             type: type,
             items: items,
@@ -2011,6 +2012,17 @@ function FilterResult(items = [], booleanType = 'or', value, reverse) {
   return true;
 }
 class AIOTableFilterPopup extends _react.Component {
+  title_layout() {
+    let {
+      title
+    } = this.props;
+    return {
+      html: title,
+      style: {
+        padding: '0 6px'
+      }
+    };
+  }
   items_layout() {
     let {
       items
@@ -2138,7 +2150,7 @@ class AIOTableFilterPopup extends _react.Component {
         style: {
           minWidth: 250
         },
-        column: [this.items_layout(), this.add_layout()]
+        column: [this.title_layout(), this.items_layout(), this.add_layout()]
       }
     });
   }
@@ -2159,10 +2171,26 @@ class AIOfilterItem extends _react.Component {
       onChange,
       operator,
       operatorOptions,
-      add
+      add,
+      title
     } = this.props;
     if (add === false) {
       return false;
+    }
+    if (operatorOptions.filter(({
+      show
+    }) => show !== false).length === 1) {
+      return {
+        size: 90,
+        html: /*#__PURE__*/_react.default.createElement(_aioButton.default, {
+          style: {
+            width: '100%'
+          },
+          type: "button",
+          className: TableCLS.filterOperator,
+          text: operator
+        })
+      };
     }
     return {
       size: 90,

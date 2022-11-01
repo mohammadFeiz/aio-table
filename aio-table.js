@@ -54,7 +54,7 @@ export default class Table extends Component {
       if(lang === 'farsi'){
         text = {
           'Search':'جستجو','Contain':'شامل','Not Contain':'غیر شامل','Equal':'برابر','Not Equal':'مخالف','Greater Than':'بزرگتر از','Less Than':'کوچکتر از',
-          'and':'و','or':'یا','add':'افزودن','Inter Excel File Name':'نام فایل اکسل را وارد کنید','Sort By':'مرتب سازی بر اساس','Show Columns':'نمایش ستون ها',
+          'and':'و','or':'یا','Add':'افزودن','Inter Excel File Name':'نام فایل اکسل را وارد کنید','Sort By':'مرتب سازی بر اساس','Show Columns':'نمایش ستون ها',
           'Group By':'گروه بندی بر اساس',
         }[text];
       }
@@ -563,6 +563,7 @@ class TableUnit extends Component{
             let {columns} = this.props;
             return (
               <AIOTableFilterPopup 
+                title={column.title}
                 translate={translate} type={type} items={items} booleanType={booleanType} add={add} operators={operators} valueOptions={valueOptions}
                 onChangeBooleanType={(booleanType)=>{
                   let {filter} = column;
@@ -1065,6 +1066,12 @@ function FilterResult(items = [],booleanType = 'or',value,reverse){
   return true;
 }
 class AIOTableFilterPopup extends Component{
+  title_layout(){
+    let {title} = this.props;
+    return {
+      html:title,style:{padding:'0 6px'}
+    }
+  }
   items_layout(){
     let {items} = this.props;
     return {column:items.map((item,i)=>{return {column:[this.item_layout(item,i),this.boolean_layout(i)]}})}
@@ -1111,7 +1118,7 @@ class AIOTableFilterPopup extends Component{
       <RVD
         layout={{
           className:TableCLS.filterPopup,style:{minWidth:250},
-          column:[this.items_layout(),this.add_layout()]
+          column:[this.title_layout(),this.items_layout(),this.add_layout()]
         }}
       />
     )
@@ -1124,8 +1131,19 @@ class AIOfilterItem extends Component{
     this.state = {value,prevValue:value}
   }
   operator_layout(){
-    let {onChange,operator,operatorOptions,add} = this.props;
+    let {onChange,operator,operatorOptions,add,title} = this.props;
     if(add === false){return false}
+    if(operatorOptions.filter(({show})=>show !== false).length === 1){
+      return {
+        size:90,
+        html:(
+          <AIOButton 
+            style={{width:'100%'}}
+            type='button' className={TableCLS.filterOperator} text={operator}
+          />
+        )
+      }  
+    }
     return {
       size:90,
       html:(
